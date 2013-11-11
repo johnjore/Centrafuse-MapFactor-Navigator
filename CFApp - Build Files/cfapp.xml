@@ -1,0 +1,25 @@
+<CFAPP>
+  <APPDATA>
+    <APPID>0</APPID>
+    <APPNAME>Navigator</APPNAME>
+    <APPLOCATION>[CFAPPDIR]\Plugins\Navigator</APPLOCATION>
+    <APPTYPE>PLUGIN</APPTYPE>
+    <VERSION>1.0.0.2</VERSION>
+    <REQUIRESRESTART>False</REQUIRESRESTART>
+  </APPDATA>
+  <APPFILES>
+    <FILENAME register="false" overwrite="true" source="Navigator.dll" destination="[CFAPPDIR]\Plugins\Navigator\Navigator.dll" />
+    <FILENAME register="false" overwrite="true" source="Languages\English.xml" destination="[CFAPPDIR]\Plugins\Navigator\Languages\English.xml" />
+    <FILENAME register="false" overwrite="true" source="Skins\Clean\Icon.png" destination="[CFAPPDIR]\Plugins\Navigator\Skins\Clean\Icon.png" />
+    <FILENAME register="false" overwrite="true" source="Skins\Clean\Skin.xml" destination="[CFAPPDIR]\Plugins\Navigator\Skins\Clean\Skin.xml" />
+    <FILENAME register="false" overwrite="true" source="Skins\Clean\Screen\background.png" destination="[CFAPPDIR]\Plugins\Navigator\Skins\Clean\Screen\background.png" />
+    <FILENAME register="false" overwrite="true" source="Skins\Clean\buttonimages\resize_down.png" destination="[CFAPPDIR]\Plugins\Navigator\Skins\Clean\buttonimages\resize_down.png" />
+    <FILENAME register="false" overwrite="true" source="Skins\Clean\buttonimages\resize_off.png" destination="[CFAPPDIR]\Plugins\Navigator\Skins\Clean\buttonimages\resize_off.png" />
+    <FILENAME register="false" overwrite="true" source="Skins\Clean\buttonimages\voldown_down.png" destination="[CFAPPDIR]\Plugins\Navigator\Skins\Clean\buttonimages\voldown_down.png" />
+    <FILENAME register="false" overwrite="true" source="Skins\Clean\buttonimages\voldown_off.png" destination="[CFAPPDIR]\Plugins\Navigator\Skins\Clean\buttonimages\voldown_off.png" />
+    <FILENAME register="false" overwrite="true" source="Skins\Clean\buttonimages\volup_down.png" destination="[CFAPPDIR]\Plugins\Navigator\Skins\Clean\buttonimages\volup_down.png" />
+    <FILENAME register="false" overwrite="true" source="Skins\Clean\buttonimages\volup_off.png" destination="[CFAPPDIR]\Plugins\Navigator\Skins\Clean\buttonimages\volup_off.png" />
+    <FILENAME register="false" overwrite="true" source="Skins\Clean\Extra\Navigator Icon Large.png" destination="[CFAPPDIR]\Plugins\Navigator\Skins\Clean\Extra\Navigator Icon Large.png" />
+    <FILENAME register="false" overwrite="true" source="Skins\Clean\Extra\New_Icon.png" destination="[CFAPPDIR]\Plugins\Navigator\Skins\Clean\Extra\New_Icon.png" />
+  </APPFILES>
+</CFAPP>
