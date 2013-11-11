@@ -1,0 +1,21 @@
+<APPLANG>
+  <NAVIGATOR>
+    <DISPLAYNAME>Navigator</DISPLAYNAME>
+  </NAVIGATOR>
+  <SETUP>
+    <TITLE>MapFactor Navigator</TITLE>
+    <DESCRIPTION>Configure Mapfactor Navigator Plugin</DESCRIPTION>
+    <DISPLAYNAME>DISPLAY NAME</DISPLAYNAME>
+    <LOGEVENTS>LOG EVENTS</LOGEVENTS>
+    <EXEPATH>Path to PC_Navigator.exe</EXEPATH>
+    <EXEPARAMETERS>Extra Parameters</EXEPARAMETERS>
+    <TCPPORT>TCP Port</TCPPORT>
+    <FREEEDITION>OSM Edition?</FREEEDITION>
+    <OSMOK>Accepted OSM License</OSMOK>
+    <VOLUME>Navigator Audio: On, Off, [0..100]% or blank</VOLUME>
+    <BUSY>Configuring Navigator....</BUSY>
+    <MUTE>Audio Pause on Instructions</MUTE>
+    <GETGPS>Stream GPS information</GETGPS>
+    <GETALERTSTATUS>Enable Navigator Alerts</GETALERTSTATUS>
+  </SETUP>
+</APPLANG>
