@@ -21,117 +21,115 @@ using System.Xml;
 using System.Web;
 using centrafuse.Plugins;
 
+using System.Collections.Generic;
+using System.Text;
+using System.Globalization;
+
 namespace Navigator
 {
-    [System.ComponentModel.DesignerCategory("Code")]
-    public class Setup : CFSetup
+    internal class NavSetup : ICFInterfaceSetup
     {
+        private readonly ConfigReader configReader;
+        private readonly LanguageReader langReader;
+        private readonly Navigator mainForm;
 
-#region Variables
+        // Total configuration pages for each mode
+        public int nAdvancedSetupPages { get { return 1; } }
+        public int nBasicSetupPages { get { return 1; } }
+
+        #region Variables
         private const string PluginPath = @"plugins\Navigator\";
         private const string PluginPathLanguages = PluginPath + @"Languages\";
         private const string ConfigurationFile = "config.xml";
         private const string ConfigSection = "/APPCONFIG/";
         private const string LanguageSection = "/APPLANG/SETUP/";
         private const string LanguageControlSection = "/APPLANG/Navigator/";
-#endregion
-
-#region Construction
-
-        // The setup constructor will be called each time this plugin's setup is opened from the CF Setting Page
-        // This setup is opened as a dialog from the CF_pluginShowSetup() call into the main plugin application form.
-        public Setup(ICFMain mForm, ConfigReader config, LanguageReader lang)
+        #endregion
+                
+        public NavSetup(Navigator mForm, ConfigReader config, LanguageReader lang)
         {
-            // Total configuration pages for each mode
-            const sbyte NormalTotalPages = 1;
-            const sbyte AdvancedTotalPages = 1;
+            mainForm = mForm;
 
-            // MainForm must be set before calling any Centrafuse API functions
-            this.MainForm = mForm;
-
-            // pluginConfig and pluginLang should be set before calling CF_initSetup() so this CFSetup instance 
-            // will internally save any changed settings.
-            this.pluginConfig = config;
-            this.pluginLang = lang;
-
-            // When CF_initSetup() is called, the CFPlugin layer will call back into CF_setupReadSettings() to read the page
-            // Note that this.pluginConfig and this.pluginLang must be set before making this call
-            CF_initSetup(NormalTotalPages, AdvancedTotalPages);
-
-            // Update the Settings page title
-            this.CF_updateText("TITLE", this.pluginLang.ReadField("/APPLANG/SETUP/TITLE"));
+            configReader = config;
+            langReader = lang;
         }
 
-#endregion
-
-#region CFSetup
-
-        public override void CF_setupReadSettings(int currentpage, bool advanced)
+        public void CF_setupExitSettings(bool save)
         {
-            /*
-            * Number of configuration pages is defined in two constsants in Setup(...)
-            * const sbyte NormalTotalPages = ;
-            * const sbyte AdvancedTotalPages = ;
-            */
+            if (save)
+            {
+                configReader.Save();
+                mainForm.LoadSettings();
+            }
+            else
+                configReader.Reload();
+        }
 
+        public void CF_setupReadSettings(int page, bool advanced, CFSetupHandler[] ButtonHandler, string[] ButtonText, string[] ButtonValue)
+        {
             try
             {
-                int i = CFSetupButton.One;
+                /**/
+                //Update the Settings page title
+                //this.CF_updateText("TITLE", this.langReader.ReadField("/APPLANG/SETUP/TITLE"));
 
-                if (currentpage == 1)
+                int i = CFSetupButton.One;
+                
+                if (page == 1)
                 {
                     // TEXT BUTTONS (1-4)
                     ButtonHandler[i] = new CFSetupHandler(SetExePath);
-                    ButtonText[i] = this.pluginLang.ReadField("/APPLANG/SETUP/EXEPATH");
-                    ButtonValue[i++] = this.pluginConfig.ReadField("/APPCONFIG/EXEPATH");
+                    ButtonText[i] = this.langReader.ReadField("/APPLANG/SETUP/EXEPATH");
+                    ButtonValue[i++] = this.configReader.ReadField("/APPCONFIG/EXEPATH");
 
                     ButtonHandler[i] = new CFSetupHandler(SetExeParameters);
-                    ButtonText[i] = this.pluginLang.ReadField("/APPLANG/SETUP/EXEPARAMETERS");
-                    ButtonValue[i++] = this.pluginConfig.ReadField("/APPCONFIG/EXEPARAMETERS");
+                    ButtonText[i] = this.langReader.ReadField("/APPLANG/SETUP/EXEPARAMETERS");
+                    ButtonValue[i++] = this.configReader.ReadField("/APPCONFIG/EXEPARAMETERS");
 
                     ButtonHandler[i] = new CFSetupHandler(SetTCPPort);
-                    ButtonText[i] = this.pluginLang.ReadField("/APPLANG/SETUP/TCPPORT");
-                    ButtonValue[i++] = this.pluginConfig.ReadField("/APPCONFIG/TCPPORT");
+                    ButtonText[i] = this.langReader.ReadField("/APPLANG/SETUP/TCPPORT");
+                    ButtonValue[i++] = this.configReader.ReadField("/APPCONFIG/TCPPORT");
 
-                    ButtonHandler[i] = new CFSetupHandler(SetNavigatorVolume);
-                    ButtonText[i] = this.pluginLang.ReadField("/APPLANG/SETUP/VOLUME");
-                    ButtonValue[i++] = this.pluginConfig.ReadField("/APPCONFIG/VOLUME");
+                    ButtonHandler[i] = SetNavigatorVolume;
+                    ButtonText[i] = this.langReader.ReadField("/APPLANG/SETUP/VOLUME");
+                    ButtonValue[i++] = this.configReader.ReadField("/APPCONFIG/VOLUME");
 
                                                            
                     // BOOL BUTTONS (5-8)
                     ButtonHandler[i] = new CFSetupHandler(SetLogEvents);
-                    ButtonText[i] = this.pluginLang.ReadField("/APPLANG/SETUP/LOGEVENTS");
-                    ButtonValue[i++] = this.pluginConfig.ReadField("/APPCONFIG/LOGEVENTS");
+                    ButtonText[i] = this.langReader.ReadField("/APPLANG/SETUP/LOGEVENTS");
+                    ButtonValue[i++] = this.configReader.ReadField("/APPCONFIG/LOGEVENTS");
 
                     ButtonHandler[i] = new CFSetupHandler(SetEdition);
-                    ButtonText[i] = this.pluginLang.ReadField("/APPLANG/SETUP/FREEEDITION");
-                    ButtonValue[i++] = this.pluginConfig.ReadField("/APPCONFIG/FREEEDITION");
+                    ButtonText[i] = this.langReader.ReadField("/APPLANG/SETUP/FREEEDITION");
+                    ButtonValue[i++] = this.configReader.ReadField("/APPCONFIG/FREEEDITION");
 
                     ButtonHandler[i] = new CFSetupHandler(AcceptedOSM);
-                    ButtonText[i] = this.pluginLang.ReadField("/APPLANG/SETUP/OSMOK");
-                    ButtonValue[i++] = this.pluginConfig.ReadField("/APPCONFIG/OSMOK");
+                    ButtonText[i] = this.langReader.ReadField("/APPLANG/SETUP/OSMOK");
+                    ButtonValue[i++] = this.configReader.ReadField("/APPCONFIG/OSMOK");
 
                     ButtonHandler[i] = new CFSetupHandler(SetAlertStatus);
-                    ButtonText[i] = this.pluginLang.ReadField("/APPLANG/SETUP/GETALERTSTATUS");
-                    ButtonValue[i++] = this.pluginConfig.ReadField("/APPCONFIG/ALERTSENABLED");                    
+                    ButtonText[i] = this.langReader.ReadField("/APPLANG/SETUP/GETALERTSTATUS");
+                    ButtonValue[i++] = this.configReader.ReadField("/APPCONFIG/ALERTSENABLED");                    
                 }
-                // Not required. Reading CF's ATT setting instead
-                /*
-                ButtonHandler[i] = new CFSetupHandler(MuteOnInstruction);
-                ButtonText[i] = this.pluginLang.ReadField("/APPLANG/SETUP/MUTE");
-                ButtonValue[i++] = this.pluginConfig.ReadField("/APPCONFIG/MUTE");
-                */
-                
-                /*
-                    ButtonHandler[i] = new CFSetupHandler(SetDisplayName);
-                    ButtonText[i] = this.pluginLang.ReadField("APPLANG/SETUP/DISPLAYNAME");
-                    ButtonValue[i++] = this.pluginLang.ReadField("APPLANG/NAVIGATOR/DISPLAYNAME");
-                */
             }
             catch (Exception errmsg) { CFTools.writeError(errmsg.Message, errmsg.StackTrace); }
         }
 
-#endregion
+        public void CF_setupReloadSharedSettings()
+        {
+            this.mainForm.LoadSettings();
+        }
+
+        public int numAdvancedSetupPages
+        {
+            get { return nAdvancedSetupPages; }
+        }
+
+        public int numBasicSetupPages
+        {
+            get { return nBasicSetupPages; }
+        }
 
 #region User Input Events
 
@@ -144,16 +142,17 @@ namespace Navigator
                 string resultvalue, resulttext;
 
                 // Display OSK for user to type display name
-                if (this.CF_systemDisplayDialog(CF_Dialogs.OSK, this.pluginLang.ReadField("/APPLANG/SETUP/VOLUME"), ButtonValue[(int)value], null, out resultvalue, out resulttext, out tempobject, null, true, true, true, true, false, false, 1) == DialogResult.OK)
+
+                if (mainForm.CF_systemDisplayDialog(CF_Dialogs.OSK, this.langReader.ReadField("/APPLANG/SETUP/VOLUME"), (string)value, null, out resultvalue, out resulttext, out tempobject, null, true, true, true, true, false, false, 1) == DialogResult.OK)
                 {
-                    this.pluginConfig.WriteField("/APPCONFIG/VOLUME", resultvalue);
+                    this.configReader.WriteField("/APPCONFIG/VOLUME", resultvalue);
 
                     // Display new value on Settings Screen button
-                    ButtonValue[(int)value] = resultvalue;
+                    value = resultvalue;
                 }
             }
             catch (Exception errmsg) { CFTools.writeError(errmsg.Message, errmsg.StackTrace); }
-        }      
+        }
 
         //Port to use for communications with Navigator
         private void SetTCPPort(ref object value)
@@ -162,7 +161,7 @@ namespace Navigator
             {
                 string resultvalue, resulttext;
 
-                if (this.CF_systemDisplayDialog(CF_Dialogs.NumberPad, this.pluginLang.ReadField("/APPLANG/SETUP/TCPPORT"), out resultvalue, out resulttext) == DialogResult.OK)
+                if (mainForm.CF_systemDisplayDialog(CF_Dialogs.NumberPad, this.langReader.ReadField("/APPLANG/SETUP/TCPPORT"), out resultvalue, out resulttext) == DialogResult.OK)
                 {
                     //Parse the value
                     int intTemp = int.Parse(resultvalue);
@@ -172,17 +171,16 @@ namespace Navigator
                     if (intTemp < 0) intTemp = 0;
 
                     //Value is scrubbed, write it
-                    this.pluginConfig.WriteField("/APPCONFIG/TCPPORT", intTemp.ToString());
+                    this.configReader.WriteField("/APPCONFIG/TCPPORT", intTemp.ToString());
 
                     // Display new value on Settings Screen button
-                    ButtonValue[(int)value] = intTemp.ToString();
+                    value = intTemp.ToString();
                 }
             }
             catch (Exception errmsg) { CFTools.writeError(errmsg.Message, errmsg.StackTrace); }
         }
 
-
-        //Folder with exe
+              //Folder with exe
         private void SetExePath(ref object value)
         {
             try
@@ -195,11 +193,11 @@ namespace Navigator
                 dialogParams.showfiles = false;
 
                 CFDialogResults results = new CFDialogResults();
-                if (this.CF_displayDialog(CF_Dialogs.FileBrowser, dialogParams, results) == DialogResult.OK)
+                if (mainForm.CF_displayDialog(CF_Dialogs.FileBrowser, dialogParams, results) == DialogResult.OK)
                 {
                     string newPath = results.resultvalue;
-                    this.pluginConfig.WriteField("/APPCONFIG/EXEPATH", newPath + "\\PC_Navigator.exe");
-                    ButtonValue[(int)value] = newPath;
+                    this.configReader.WriteField("/APPCONFIG/EXEPATH", newPath + "\\PC_Navigator.exe");
+                    value = newPath;
                 }
             }
             catch (Exception errmsg) { CFTools.writeError(errmsg.Message, errmsg.StackTrace); }
@@ -214,78 +212,56 @@ namespace Navigator
                 string resultvalue, resulttext;              
 
                 // Display OSK for user to type display name
-                if (this.CF_systemDisplayDialog(CF_Dialogs.OSK, this.pluginLang.ReadField("/APPLANG/SETUP/EXEPARAMTERS"), ButtonValue[(int)value], null, out resultvalue, out resulttext, out tempobject, null, true, true, true, true, false, false, 1) == DialogResult.OK)
+                if (mainForm.CF_systemDisplayDialog(CF_Dialogs.OSK, this.langReader.ReadField("/APPLANG/SETUP/EXEPARAMTERS"), (string)value, null, out resultvalue, out resulttext, out tempobject, null, true, true, true, true, false, false, 1) == DialogResult.OK)
                 {
-                    this.pluginConfig.WriteField("/APPCONFIG/EXEPARAMETERS", resultvalue);
+                    this.configReader.WriteField("/APPCONFIG/EXEPARAMETERS", resultvalue);
 
                     // Display new value on Settings Screen button
-                    ButtonValue[(int)value] = resultvalue;
+                    value = resultvalue;
                 }
             }
             catch (Exception errmsg) { CFTools.writeError(errmsg.Message, errmsg.StackTrace); }
         }
         
-        private void SetDisplayName(ref object value)
-        {
-            try
-            {
-                object tempobject;
-                string resultvalue, resulttext;
-
-                // Display OSK for user to type display name
-                if (this.CF_systemDisplayDialog(CF_Dialogs.OSK, this.pluginLang.ReadField("/APPLANG/SETUP/DISPLAYNAME"), ButtonValue[(int)value], null, out resultvalue, out resulttext, out tempobject, null, true, true, true, true, false, false, 1) == DialogResult.OK)
-                {
-                    // save user value, note this does not save to file yet, as this should only be done when user confirms settings
-                    // being overwritten when they click the "Save" button.  Saving is done internally by the CFSetup instance if
-                    // pluginConfig and pluginLang were properly set before callin CF_initSetup().
-                    this.pluginLang.WriteField("/APPLANG/NAVIGATOR/DISPLAYNAME", resultvalue);
-
-                    // Display new value on Settings Screen button
-                    ButtonValue[(int)value] = resultvalue;
-                }
-            }
-            catch (Exception errmsg) { CFTools.writeError(errmsg.Message, errmsg.StackTrace); }
-        }
-
-        //Log to file during run-time
-        private void SetLogEvents(ref object value)
-        {
-            this.pluginConfig.WriteField("/APPCONFIG/LOGEVENTS", value.ToString());
-        }
-
-        //Enable alert status when Navigator is NOT active plugin?
-        private void SetAlertStatus(ref object value)
-        {
-            this.pluginConfig.WriteField("/APPCONFIG/ALERTSENABLED", value.ToString());
-        }
-
-        //Off = Licensed edition. On = Free edition. Dictates which IDC file is used at launch
-        private void SetEdition(ref object value)
-        {
-            this.pluginConfig.WriteField("/APPCONFIG/FREEEDITION", value.ToString());
-        }
-
-        //If on, supresses OSM OK box
-        private void AcceptedOSM(ref object value)
-        {
-            this.pluginConfig.WriteField("/APPCONFIG/OSMOK", value.ToString());
-        }
-        
-        //If on, mutes audio on instructions
-        private void MuteOnInstruction(ref object value)
-        {
-            this.pluginConfig.WriteField("/APPCONFIG/MUTE", value.ToString());
-        }
-
         //Helper function for selecting folder with EXE
         private string GetLocation()
         {
-            string location = this.pluginConfig.ReadField("/APPCONFIG/EXEPATH");
+            string location = this.configReader.ReadField("/APPCONFIG/EXEPATH");
             if (string.IsNullOrEmpty(location))
                 location = PluginPath;
             return location;
         }
 
+        //Log to file during run-time
+        private void SetLogEvents(ref object value)
+        {
+            this.configReader.WriteField("/APPCONFIG/LOGEVENTS", value.ToString());
+        }
+
+        //Enable alert status when Navigator is NOT active plugin?
+        private void SetAlertStatus(ref object value)
+        {
+            this.configReader.WriteField("/APPCONFIG/ALERTSENABLED", value.ToString());
+        }
+
+        //Off = Licensed edition. On = Free edition. Dictates which IDC file is used at launch
+        private void SetEdition(ref object value)
+        {
+            this.configReader.WriteField("/APPCONFIG/FREEEDITION", value.ToString());
+        }
+
+        //If on, supresses OSM OK box
+        private void AcceptedOSM(ref object value)
+        {
+            this.configReader.WriteField("/APPCONFIG/OSMOK", value.ToString());
+        }
+        
+        //If on, mutes audio on instructions
+        private void MuteOnInstruction(ref object value)
+        {
+            this.configReader.WriteField("/APPCONFIG/MUTE", value.ToString());
+        }
+        
 #endregion
 
     }

@@ -25,8 +25,7 @@ using System.Runtime.InteropServices;
 namespace Navigator
 {
     public static class Helper
-    {
-        
+    {        
         public enum CardinalPoints
         {
             N,
@@ -38,7 +37,6 @@ namespace Navigator
             SE,
             SW
         }
-        
         
         public enum UnitsOfLength
         {

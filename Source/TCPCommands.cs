@@ -308,5 +308,3 @@ namespace Navigator
         }
     }
 }
-
-        

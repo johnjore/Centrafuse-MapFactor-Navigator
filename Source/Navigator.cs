@@ -22,8 +22,7 @@
  * 
  * Change to NavPlugin
  * Remove non-required functions
- * Create default_settings.xml if settings.xml is not present?
-*/
+ */
 
 /* 
  * This is the main CS file
@@ -40,23 +39,30 @@ using Microsoft.Win32;
 using System.Reflection;            //Extra debug information
 using System.Globalization;
 
+using System.Drawing;
+using System.Net;
+using System.Net.Sockets;
+using System.Text;
+using System.Threading;
+using Timer = System.Windows.Forms.Timer;
 
 namespace Navigator
 {
 	/// <summary>
-	/// A simple Navigator plugin for the CentraFuse SDK
+	/// Mapfactor Navigator plugin for CentraFuse
 	/// </summary>
-    [System.ComponentModel.DesignerCategory("Code")]
-	public partial class Navigator : CFPlugin
+    //[System.ComponentModel.DesignerCategory("Code")]
+    public partial class Navigator : CFNavPlugin
 	{
 
 #region Variables
 		private const string PluginName = "Navigator";
-		private const string PluginPath = @"plugins\" + PluginName + @"\";
+        public static string PluginXmlElement = "Navigator";
+        private const string PluginPath = @"plugins\" + PluginName + @"\";
 		private const string PluginPathSkins = PluginPath + @"Skins\";
 		private const string PluginPathLanguages = PluginPath + @"Languages\";
 		private const string PluginPathIcons = PluginPath + @"Icons\";
-		private const string ConfigurationFile = "config.xml";
+        private const string ConfigurationFile = "config.xml";
 		private const string LogFile= "Navigator.log";        
         public static string LogFilePath = CFTools.AppDataPath + "\\Plugins\\" + PluginName + "\\" + LogFile;
                 
@@ -68,30 +74,33 @@ namespace Navigator
         private bool boolOSMOK = false;                     // If true, supresses OSM License prompt
         private bool boolAlerts = false;                    // Show alerts if NOT active plugin?
         private IntPtr mHandlePtr;                          // var for window handle number to catch
-        CFControls.CFPanel thepanel = null;                 // The panel to 'project' Navigator into
+        private readonly CFControls.CFPanel _containerPanel;
+        CFControls.CFPanel thepanel = null;                 // The panel to 'project' Navigator into        
         Process pNavigator = null;                          // Navigator's process
         private bool boolFullScreen = false;                // Window Size
         private bool boolCurrentNightMode = false;          // Are we currently in night mode?
         private bool boolCurrentCallMode = false;           // Are we currently on the phone?
-        System.Windows.Forms.Timer nightTimer = new System.Windows.Forms.Timer(); // timer for switching day/night skin      
         private int intVolume = 101;                        // Navigator volume
         private string strVolume = "";                      // Navigator volume status
         private bool boolVolText = false;                   // Volume
         private bool boolVolNumber = false;                 // Volume
         private string strAppDataPath = "";                 // Path to navigator's XML file
 
+        Timer nightTimer = new System.Windows.Forms.Timer(); // timer for switching day/night skin      
+        Timer muteCFTimer = new System.Windows.Forms.Timer();    // timer for mute'ing CF
+        Timer NavStatsTimer = new System.Windows.Forms.Timer();    // timer for retrieving Navigator's Navigation Stats
+        Timer CallStatusTimer = new System.Windows.Forms.Timer();    // timer for checking if a call is in progress
+        Timer EnableGPSTimer = new System.Windows.Forms.Timer();    // timer before enabling the GPS after hibernation
+        Timer NavDestinationTimer = new System.Windows.Forms.Timer();    // timer for checking for destination proximity if not active plugin
+
         //From Mark
         private readonly CfNavData _currentPosition = new CfNavData();
         private readonly byte[] _mByBuff = new byte[0x100];
-        
-        //private bool boolATT = false;                       // Mute CF when Navigator speaks
-        System.Windows.Forms.Timer muteCFTimer = new System.Windows.Forms.Timer();    // timer for mute'ing CF
-        System.Windows.Forms.Timer NavStatsTimer = new System.Windows.Forms.Timer();    // timer for retrieving Navigator's Navigation Stats
-        System.Windows.Forms.Timer CallStatusTimer = new System.Windows.Forms.Timer();    // timer for checking if a call is in progress
-        System.Windows.Forms.Timer EnableGPSTimer = new System.Windows.Forms.Timer();    // timer before enabling the GPS after hibernation
-        System.Windows.Forms.Timer NavDestinationTimer = new System.Windows.Forms.Timer();    // timer for checking for destination proximity if not active plugin
+        private Rectangle _nMapSize;
+        private Rectangle _nNavSize;
+        public override event CFNavVoiceEventHandler CF_navVoiceEvent;
+        private delegate void VoidDelegate();
 
-              
         [DllImport("user32.dll")]
         static extern IntPtr SetParent(IntPtr hWndChild, IntPtr hWndNewParent);
 
@@ -110,18 +119,6 @@ namespace Navigator
 
 #endregion
 
-#region Construction
-
-		/// <summary>
-		/// Default constructor (creates the plugin and sets its properties).
-		/// </summary>
-		public Navigator()
-		{
-            // Usually it is safe to just use the CF_initPlugin() override to do initialization
-        }
-
-#endregion
-
 #region CFPlugin methods
 
 		/// <summary>
@@ -133,28 +130,30 @@ namespace Navigator
 			{
                 // Call writeModuleLog() with the string startup() to keep only last 2 runtimes...
                 // Note CF_loadConfig() must be called before WriteLog() can be used
-                WriteLog("startup");
+                WriteLog(PluginName + " starting");
                 WriteLog("CF_pluginInit");
 
                 // CF3_initPlugin() Will configure pluginConfig and pluginLang automatically
-                this.CF3_initPlugin("Navigator", true);
-
+                // All plugins must call this method once
+                CF3_initPlugin(PluginName, true);
+                ICFSetup = new NavSetup(this, pluginConfig, pluginLang);
+                
                 //Log current version of DLL for debug purposes
                 WriteLog("Assembly Version: '" + Assembly.GetExecutingAssembly().GetName().Version.ToString() + "'");
 
                 // All controls should be created or Setup in CF_localskinsetup.
                 // This method is also called when the resolution or skin has changed.
-                this.CF_localskinsetup();
+                CF_localskinsetup();
 
                 //From http://wiki.centrafuse.com/wiki/Application-Description.ashx
-                this.CF_params.settingsDisplayDesc = this.pluginLang.ReadField("/APPLANG/SETUP/DESCRIPTION");
+                CF_params.settingsDisplayDesc = this.pluginLang.ReadField("/APPLANG/SETUP/DESCRIPTION");
 
                 //Get configuration settings
                 LoadSettings();
 
                 //Setup the Panel used by PC_Navigator.exe
                 WriteLog("Init the panel to use for MapFactor");
-                thepanel = new CFControls.CFPanel();
+                thepanel = new CFControls.CFPanel();                
 
                 //Set panel size to match size defined in the skin.xml (Not required as 'bounds' is used by default)
                 thepanel.Bounds = base.CF_createRect(SkinReader.ParseBounds(SkinReader.GetControlAttribute("Navigator", "PanelNavigator", ("bounds").ToLower(), base.pluginSkinReader)));
@@ -197,10 +196,14 @@ namespace Navigator
 
                 //Modify Navigator's Settings XML file...
                 ConfigureNavigatorXML();
-                
-				// add event handlers for keyboard and power mode change
+
+                // Creates new events to catch when CF is being closed, loaded or the power mode changed
 				this.KeyDown += new KeyEventHandler(Navigator_KeyDown);
                 this.CF_events.CFPowerModeChanged += new CFPowerModeChangedEventHandler(OnPowerModeChanged); //Hibernation support
+                this.CF_events.applicationClosing += OnApplicationClosing;
+                this.CF_events.applicationLoaded += OnApplicationLoaded;
+                this.CF_events.CFPowerModeChanged += OnPowerModeChanged;
+
 			}
 			catch(Exception errmsg) { CFTools.writeError(errmsg.ToString()); }
 		}
@@ -214,14 +217,38 @@ namespace Navigator
 		{
             WriteLog("CF_localskinsetup");
 
-            // Read the skin file, controls will be automatically created
+            // Handle async invocation
+            try
+            {
+                if (InvokeRequired)
+                {
+                    BeginInvoke(new VoidDelegate(CF_localskinsetup), new object[] { });
+                    return;
+                }
+            }
+            catch (Exception ex)
+            {
+                WriteLog("skin setup: '" + ex.Message);
+            }
+
+            // Read the skin file, controls from the skin will be automatically created
             // CF_localskinsetup() should always call CF3_initSection() first, with the exception of setting any
             // CF_displayHooks flags, which affect the behaviour of the CF3_initSection() call.
+            CF3_initSection(PluginName);
+
+            CF_getConfigFlag(CF_ConfigFlags.GPSFullscreen);
+
+            // Set display hook so that future CF3_initSection() calls will not clear the panels array
+            CF_displayHooks.clearControl.panels = false;
+
             if (boolFirstStart) this.CF3_initSection("Navigator");
-            
-            // Set up custom button handlers for buttons without a CML action in skin.xml            
+
+            // Set up custom button handlers for buttons without a CML action in skin.xml
             this.CF_createButtonClick("MinMax", new MouseEventHandler(btnMinMax_Click));
+
+            CFTools.writeLog(PluginName, "CF_localskinsetup", "Exiting");
 		}
+
 
 		/// <summary>
 		/// This is called by the system when it exits or the plugin has been deleted.
@@ -329,13 +356,9 @@ namespace Navigator
 
             try
             {
-                //Status message
-                //this.CF_systemCommand(CF_Actions.SHOWINFO, base.pluginLang.ReadField("/APPLANG/SETUP/BUSY"), "AUTOHIDE");                
-
                 //Configure screen size. Use the panel size
                 SendCommand("$window=" + thepanel.Bounds.Left.ToString() + "," + thepanel.Bounds.Top.ToString() + "," + thepanel.Bounds.Right.ToString() + "," + thepanel.Bounds.Bottom.ToString() + ",noborder\r\n", false);                
                 SendCommand("$maximize\r\n", false);              
-
             }
             catch { WriteLog("Failed to configure Navigators screensize"); }
                                                
@@ -362,61 +385,6 @@ namespace Navigator
 
             base.CF_pluginHide(); // sets form !Visible property
         }
-
-
-		/// <summary>
-		/// This is called by the system when the plugin setup is clicked.
-		/// </summary>
-		/// <returns>Returns the dialog result.</returns>
-		public override DialogResult CF_pluginShowSetup()
-		{
-            WriteLog("CF_pluginShowSetup");
-			
-            // Return DialogResult.OK for the main application to update from plugin changes.
-			DialogResult returnvalue = DialogResult.Cancel;
-
-			try
-			{
-				// Creates a new plugin setup instance. If you create a CFDialog or CFSetup you must
-				// set its MainForm property to the main plugins MainForm property.
-				Setup setup = new Setup(this.MainForm, this.pluginConfig, this.pluginLang);
-				returnvalue = setup.ShowDialog();
-				if(returnvalue == DialogResult.OK)
-				{
-                    LoadSettings();
-
-                    //Configure Navigator Audio                    
-                    if (boolVolNumber)
-                    {
-                        SendCommand("$sound_volume=" + intVolume.ToString() + "\r\n", false);
-                    }
-                    if (boolVolText)
-                    {
-                        SendCommand("$sound_volume=" + strVolume + "\r\n", false);
-                    }
-
-                    //Toggle Day/Night skin?
-                    SetDayNightToggle();
-
-                    //Do we want to know?
-                    if (boolAlerts)
-                    {
-                        SendCommand("$navigation_info=waypoint_info:on\r\n", false);
-                        SendCommand("$navigation_info=recalculation_warning:on\r\n", false);
-                    }
-                    else
-                    {
-                        SendCommand("$navigation_info=waypoint_info:off\r\n", false);
-                        SendCommand("$navigation_info=recalculation_warning:off\r\n", false);
-                    }
-                }
-				setup.Close();
-				setup = null;
-			}
-			catch(Exception errmsg) { CFTools.writeError(errmsg.ToString()); }
-
-			return returnvalue;
-		}
 
 
 		/// <summary>
@@ -776,17 +744,81 @@ namespace Navigator
             return false;
         }
 
+        private void OnApplicationClosing(object sender, EventArgs e)
+        {
+            CFTools.writeLog(PluginName, "OnApplicationClosing", "");
+        }
+        
+        private void OnApplicationLoaded(object sender, EventArgs e)
+        {
+            CFTools.writeLog(PluginName, "OnApplicationLoaded", "");
+        }
+
+        // Called when Centrafuse is is going to switch between full screen mode
+        public override void CF_sectionToggleFullScreen()
+        {
+            // Handle async invocation
+            try
+            {
+                if (InvokeRequired)
+                {
+                    BeginInvoke(new VoidDelegate(CF_sectionToggleFullScreen), new object[] { });
+                    return;
+                }
+            }
+            catch { }
+
+            CFTools.writeLog(PluginName, "CF_sectionToggleFullScreen", "");
+
+            int nViewMode = 0; // View mode 0 = showing main controls, 1 = non-full-screen, 2 = full-screen
+
+            try
+            {
+                nViewMode++;
+                if (nViewMode > 2) nViewMode = 1;
+
+                if (nViewMode == 1 &&  (!CFTools.IsSecondaryDisplay(this, CF_displayHooks.displayNumber) || CF_displayHooks.rearScreen))
+                {
+                    CF_displayHooks.boundsAttributeId = "bounds";
+                    Rectangle rect = SkinReader.ParseBounds(SkinReader.GetSectionAttribute(CF_params.sectionID, CF_displayHooks.boundsAttributeId, pluginSkinReader));
+                    Bounds = CF_createRect(rect, true);
+                    rect = SkinReader.ParseBounds(SkinReader.GetControlAttribute(CF_params.sectionID, "NavContainer", CF_displayHooks.boundsAttributeId, pluginSkinReader));
+                    _containerPanel.Bounds = CF_createRect(rect);
+                }
+                else if (nViewMode == 2 && (!CFTools.IsSecondaryDisplay(this, CF_displayHooks.displayNumber) || CF_displayHooks.rearScreen))
+                {
+                    CF_displayHooks.boundsAttributeId = "fullbounds";
+                    Rectangle rect = SkinReader.ParseBounds(SkinReader.GetSectionAttribute(CF_params.sectionID, CF_displayHooks.boundsAttributeId, pluginSkinReader));
+                    Bounds = CF_createRect(rect, true);
+                    rect = SkinReader.ParseBounds(SkinReader.GetControlAttribute(CF_params.sectionID, "NavContainer", CF_displayHooks.boundsAttributeId, pluginSkinReader));
+                    _containerPanel.Bounds = CF_createRect(rect);
+                }
+                else
+                    return;
+
+                if (Handle != IntPtr.Zero) Win32.SetWindowPos(Handle, IntPtr.Zero, 0, 0, _containerPanel.Bounds.Width, _containerPanel.Bounds.Height, 0);
+
+                _nNavSize = Bounds;
+                _nMapSize = _containerPanel.Bounds;
+            }
+            catch (Exception errmsg)
+            {
+                CFTools.writeError(errmsg.Message, errmsg.StackTrace);
+            }
+        }
+
+
 #endregion
 		
 #region System Functions
 
-        private void LoadSettings()
+        public void LoadSettings()
         {
             // The display name is shown in the application to represent
             // the plugin.  This sets the display name from the configuration file.
             this.CF_params.displayName = this.pluginLang.ReadField("/APPLANG/NAVIGATOR/DISPLAYNAME");
             CFTools.writeLog("Navigator", "New display name = " + this.CF_params.displayName);
-
+            
             //Get Navigator Configuration
             try
             {
