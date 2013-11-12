@@ -64,7 +64,7 @@ namespace Navigator
                     server.Blocking = false;
                     AsyncCallback onconnect = new AsyncCallback(OnConnect);
                     server.BeginConnect(ipep, onconnect, server);
-                    WriteLog("Trying to establish connection");
+                    WriteLog("Trying to establish connection. BeginConnect() Started");
 
                     //Get some basic information about Navigator
                     string strTmp = "$protocol_version\r\n";
@@ -110,7 +110,6 @@ namespace Navigator
                         boolTerminateOrphanedProcess = true;
                         theprocess.Kill();
                         System.Threading.Thread.Sleep(1000); // Allow the process time to terminate
-                        //this.CF_systemCommand(CF_Actions.SHOWINFO, "Found PC_Navigator running. Terminating process", "AUTOHIDE");
                     }
                 }
             }
@@ -135,20 +134,40 @@ namespace Navigator
                 //Split on the CRLF
                 string[] strParse = sMessage.ToUpper().Split(new string[] { "\r\n" }, StringSplitOptions.None);
 
+                //Changed as per Louk's suggestion
+                //CF_systemCommand(CF_Actions.PLAYPAUSE);
+
                 //This is messy as there's no "standard" way Navigator provides the messages
                 foreach (string strCommands in strParse)
                 {
                     if (strCommands.Contains("SOUND"))
                     {
-                        if (CF_getConfigFlag(CF_ConfigFlags.AttMute))
+                        //Mute/unmute
+                        if (CF_getConfigFlag(CF_ConfigFlags.GPSAttMute))                            
                         {
-                            WriteLog("Mute (ATT) CF Audio. Start Timer");
-                            //Changed as per Louk's suggestion
-                            //CF_systemCommand(CF_Actions.PLAYPAUSE);
+                            WriteLog("Mute (GPS ATT) CF Audio. Start Timer");
                             CF_systemCommand(CF_Actions.MUTE);
                             muteCFTimer.Enabled = true;
                         }
-                        else WriteLog("CF ATT not enabled");
+                        else WriteLog("CF GPS ATT not enabled");
+
+                        //Play/Pause
+                        if (bool.Parse(this.pluginConfig.ReadField("/APPCONFIG/PAUSEPLAYSTATUS")) == true)
+                        {
+                            WriteLog("PlayPause Enabled");
+                            CF_systemCommand(CF_Actions.PLAYPAUSE);
+                            muteCFTimer.Enabled = true;
+                        }
+                        else WriteLog("PlayPause not enabled");
+
+                        //Send notification
+                        if (bool.Parse(this.pluginConfig.ReadField("/APPCONFIG/NOTIFICATIONSTATUS")) == true)
+                        {
+                            WriteLog("Notification Enabled");
+                            //CF3_raisePluginEvent(Mmute)                            
+                            muteCFTimer.Enabled = true;
+                        }
+                        else WriteLog("Notification not enabled");
                     }
                     else if (strCommands.Contains("WAYPOINT") || strCommands.Contains("RECALCULATING") || strCommands.Contains("LOST"))
                     {
@@ -212,10 +231,10 @@ namespace Navigator
                     }
                     else if (strCommands.Contains("OK"))
                     {
-                        //WriteLog("Ack message... for which command is not known....");
+                        WriteLog("Ack message... for which command is not known....");
                     }
                     else if (strCommands.Split(',').Length == 4)
-                    {                        
+                    {    
                         if (this.Visible == true)
                         {
                             WriteLog("Navigation stats. Do nothing as plugin is visible: '" + strCommands + "'");
@@ -303,7 +322,7 @@ namespace Navigator
                 }
             }
             catch { 
-                WriteLog("Unusual error druing Recieve!"); 
+                WriteLog("Unusual error during recieve!"); 
             }
         }
     }
