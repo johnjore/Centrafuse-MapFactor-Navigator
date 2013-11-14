@@ -162,7 +162,7 @@ namespace Navigator
                 CFDialogParams dialogParams = new CFDialogParams("Select the folder with PC_Navigator.exe", location);
                 dialogParams.browseable = true;
                 dialogParams.enablesubactions = true;
-                dialogParams.showfiles = true;
+                dialogParams.showfiles = false;
 
                 CFDialogResults results = new CFDialogResults();
                 if (mainForm.CF_displayDialog(CF_Dialogs.FileBrowser, dialogParams, results) == DialogResult.OK)

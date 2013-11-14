@@ -4,8 +4,8 @@
     <APPNAME>Navigator</APPNAME>
     <APPLOCATION>[CFAPPDIR]\Plugins\Navigator</APPLOCATION>
     <APPTYPE>PLUGIN</APPTYPE>
-    <VERSION>1.0.0.2</VERSION>
-    <REQUIRESRESTART>False</REQUIRESRESTART>
+    <VERSION>2.0.0.1</VERSION>
+    <REQUIRESRESTART>True</REQUIRESRESTART>
   </APPDATA>
   <APPFILES>
     <FILENAME register="false" overwrite="true" source="Navigator.dll" destination="[CFAPPDIR]\Plugins\Navigator\Navigator.dll" />

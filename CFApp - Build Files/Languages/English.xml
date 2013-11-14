@@ -1,9 +1,14 @@
 <APPLANG>
   <NAVIGATOR>
     <DISPLAYNAME>Navigator</DISPLAYNAME>
+    <WAYPOINT>Waypoint Reached</WAYPOINT>
+    <RECALCULATING>Recalculating the route</RECALCULATING>
+    <LOST>Unable to route to destination</LOST>
+    <ARRIVING>Arriving at destination in </ARRIVING>
+    <EMBEDDINGFAILED>Unable to terminated existing PC_Navigator. Embedding will fail</EMBEDDINGFAILED>
+    <SECONDS>seconds</SECONDS>
   </NAVIGATOR>
   <SETUP>
-    <TITLE>MapFactor Navigator</TITLE>
     <DESCRIPTION>Configure Mapfactor Navigator Plugin</DESCRIPTION>
     <DISPLAYNAME>DISPLAY NAME</DISPLAYNAME>
     <LOGEVENTS>LOG EVENTS</LOGEVENTS>
@@ -12,10 +17,10 @@
     <TCPPORT>TCP Port</TCPPORT>
     <FREEEDITION>OSM Edition?</FREEEDITION>
     <OSMOK>Accepted OSM License</OSMOK>
-    <VOLUME>Navigator Audio: On, Off, [0..100]% or blank</VOLUME>
-    <BUSY>Configuring Navigator....</BUSY>
     <MUTE>Audio Pause on Instructions</MUTE>
     <GETGPS>Stream GPS information</GETGPS>
     <GETALERTSTATUS>Enable Navigator Alerts</GETALERTSTATUS>
+    <PAUSEPLAYSTATUS>Voice Prompt use Play/Pause</PAUSEPLAYSTATUS>
+    <NOTIFICATIONSTATUS>Voice Prompt send Notification</NOTIFICATIONSTATUS>
   </SETUP>
 </APPLANG>

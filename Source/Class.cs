@@ -44,4 +44,21 @@ namespace Navigator
         public double LongitudeSeconds;
     }
 
+    public enum TCPCommand
+    {
+        Protocol = 1,
+        SoftwareVersion = 2,
+        Minimize = 3,
+        Maximize = 4,
+        GPSSending = 5,
+        GPSReceiving = 6,
+        NavInfoSoundWarning = 7,
+        SoundVolume = 8,
+        NavInfoWaypointInfo = 9,
+        NavInfoRecalculationWarning = 10,
+        DayNight = 11,
+        Window = 12,
+        Destination = 13,
+        Statistics = 14
+    }
 }
