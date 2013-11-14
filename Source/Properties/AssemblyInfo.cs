@@ -25,7 +25,7 @@ using System.Runtime.CompilerServices;
 [assembly: AssemblyDescription("Launcher for Mapfactor Navigator")]
 [assembly: AssemblyConfiguration("")]
 [assembly: AssemblyCompany("Kala Solutions Pty Ltd")]
-[assembly: AssemblyProduct("Mapfactor Navigator")]
+[assembly: AssemblyProduct("Mapfactor Navigator Launcher")]
 [assembly: AssemblyCopyright("Copyright 2013 John Jore")]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]
@@ -35,6 +35,6 @@ using System.Runtime.CompilerServices;
 //      Minor Version 
 //      Build Number
 //      Revision
-[assembly: AssemblyVersion("2.0.0.1")]
+[assembly: AssemblyVersion("2.0.0.2")]
 [assembly: AssemblyDelaySign(false)]
-[assembly: AssemblyFileVersionAttribute("2.0.0.1")]
+[assembly: AssemblyFileVersionAttribute("2.0.0.2")]

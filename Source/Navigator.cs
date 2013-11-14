@@ -374,7 +374,7 @@ namespace Navigator
             CallStatusTimer.Enabled = false;
             EnableGPSTimer.Enabled = false;
             NavDestinationTimer.Enabled = false;
-            
+         
             //Switch to Nav if not free edition
             if (boolFREE)
             {
@@ -383,15 +383,19 @@ namespace Navigator
                 System.Threading.Thread.Sleep(500);
             }
 
+            //Close the connection
+            try
+            {
+                server.Shutdown(SocketShutdown.Both);
+                server.Disconnect(false);
+                server.Close();
+                WriteLog("Closed Connection");
+            }
+            catch { WriteLog("Failed to close connection."); }
+
             //Close it
             pNavigator.CloseMainWindow();
-            pNavigator.Close();
-                       
-            //Close the connection.
-            server.Disconnect(false);
-            server.Close();
-            ipep = null;
-            WriteLog("Closed Connection");
+            pNavigator.Close();                     
 
             //Wait for Navigator to close before swapping XML files around
             for (int loop=0; loop<100; loop++)
