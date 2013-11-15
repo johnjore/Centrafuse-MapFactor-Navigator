@@ -20,19 +20,20 @@
  * Bug: TCP setup on Navigator? (Workaround implemented, modify settings.xml)
  * What if Navigator restarts? Disconnect from panel and re-connect?
  * XP and embedding?
+ * Move SendCommand and receive to thread?
+ * Parse TCP responses from Navigator... counter++ for each SendCommand. Create FIFO buffer? Create thread?
  * 
  * Remove non-required functions
  * 
- * Not used in Setup:
- *      Port
- *      Baud Rate
- *      GPS Protocol
- *      Voice Prompts
- *      Route from other screen
- */
-/*
-* Parse TCP responses from Navigator... counter++ for each SendCommand. Create FIFO buffer?
+ /*
+*
 * CF3_raisePluginEvent()
+ * 
+ * "extra params" not working?
+ * 2nd screen with lines of NMEA data
+ * 
+ * GPS Data: /100
+ * button for GPS info screen
 */
 /* 
  * This is the main CS file
@@ -92,6 +93,7 @@ namespace Navigator
         private bool boolCurrentCallMode = false;           // Are we currently on the phone?
         private string strAppDataPath = "";                 // Path to Navigator's XML file
         private CFNavLocation navCurrentLocation = new CFNavLocation();       // Navigator's current location
+        private NavStats _navStats = new NavStats();         // Navigation statistics
 
         Timer nightTimer = new System.Windows.Forms.Timer(); // timer for switching day/night skin      
         Timer muteCFTimer = new System.Windows.Forms.Timer();    // timer for mute'ing CF
@@ -108,6 +110,9 @@ namespace Navigator
         public override event CFNavVoiceEventHandler CF_navVoiceEvent;
         private delegate void VoidDelegate();
 
+        //From Louk. Used by patched Navigator for mute/unmute instructions
+        private PipeServer.Server pipeServer = new PipeServer.Server();
+                
         [DllImport("user32.dll")]
         static extern IntPtr SetParent(IntPtr hWndChild, IntPtr hWndNewParent);
 
@@ -318,10 +323,40 @@ namespace Navigator
                     SendCommand("$navigation_info=waypoint_info:off\r\n", false, TCPCommand.NavInfoWaypointInfo);
                     SendCommand("$navigation_info=recalculation_warning:off\r\n", false, TCPCommand.NavInfoRecalculationWarning);
                 }
+
+                //Louk's Pipe
+                if (!this.pipeServer.Running)
+                {
+                    this.pipeServer.PipeName = @"\\.\Pipe\" + "NavigatorCF4Plugin"; //this.tbPipeName.Text;
+                    this.pipeServer.Start();
+                    WriteLog("Is Louk's pipe '" + pipeServer.PipeName + "' Running: '" + (this.pipeServer.Running).ToString() + "'");
+
+                    //Create event handler
+                    this.pipeServer.MessageReceived += new PipeServer.Server.MessageReceivedHandler(pipeServer_MessageReceived);
+                }
+                else
+                    WriteLog("Louk'Pipe Server already running");
 			}
 			catch(Exception errmsg) { CFTools.writeError(errmsg.ToString()); }
 		}
 
+        //Louk's Pipe received a message
+        void pipeServer_MessageReceived(PipeServer.Server.Client client, string message)
+        {
+            this.Invoke(new PipeServer.Server.MessageReceivedHandler(DisplayMessageReceived), new object[] { client, message });
+        }
+
+        //Louk's Pipe actioned the message
+        void DisplayMessageReceived(PipeServer.Server.Client client, string message)
+        {
+            //WriteLog("Louk's pipe received the message: '" + message + "'");
+            WriteLog("Louk's pipe received a message. What is it?");
+            try
+            {
+                WriteLog(message);
+            }
+            catch { WriteLog("Failed to read message"); }
+        }
 
 		/// <summary>
 		/// This is called to setup the skin.  This will usually be called in CF_pluginInit.  It will 
@@ -353,10 +388,12 @@ namespace Navigator
             // Set display hook so that future CF3_initSection() calls will not clear the panels array
             CF_displayHooks.clearControl.panels = false;
 
-            if (boolFirstStart) this.CF3_initSection("Navigator");
+            //if (boolFirstStart) this.CF3_initSection("Navigator");
 
             // Set up custom button handlers for buttons without a CML action in skin.xml
             this.CF_createButtonClick("MinMax", new MouseEventHandler(btnMinMax_Click));
+            this.CF_createButtonClick("SectionA", new MouseEventHandler(btnSectionA_Click));
+            this.CF_createButtonClick("SectionB", new MouseEventHandler(btnSectionB_Click));
 
             CFTools.writeLog(PluginName, "CF_localskinsetup", "Exiting");
 		}
@@ -374,7 +411,18 @@ namespace Navigator
             CallStatusTimer.Enabled = false;
             EnableGPSTimer.Enabled = false;
             NavDestinationTimer.Enabled = false;
-         
+
+
+            //Louk's Pipe
+            if (this.pipeServer.Running)
+            {
+                WriteLog("Closing Louk's pipe");
+                this.pipeServer.Stop();
+                this.pipeServer.MessageReceived -= new PipeServer.Server.MessageReceivedHandler(pipeServer_MessageReceived);
+                this.pipeServer = null;
+            }
+            else WriteLog("Can't stop a non-running pipe-server");
+
             //Switch to Nav if not free edition
             if (boolFREE)
             {
@@ -629,7 +677,7 @@ namespace Navigator
                     retvalue = "";
                     break;
                 case CFNavInfo.ETR:
-                    retvalue = "";
+                    retvalue = _navStats.TimeSecondsNextWaypoint.ToString();
                     break;
                 case CFNavInfo.HouseNumber:
                     retvalue = "";
@@ -644,7 +692,7 @@ namespace Navigator
                     retvalue = _currentPosition.Longitude.ToString(CultureInfo.InvariantCulture);
                     break;
                 case CFNavInfo.RemainingDistance:
-                    retvalue = "";
+                    retvalue = _navStats.DistanceMetersDestination.ToString();
                     break;
                 case CFNavInfo.Speed:
                     retvalue = _currentPosition.Speed.ToString(CultureInfo.InvariantCulture);
@@ -677,10 +725,10 @@ namespace Navigator
                     retvalue = "";
                     break;
                 case CFNavInfo.NextTurn:
-                    retvalue = "";
+                    retvalue = _navStats.TimeSecondsNextWaypoint.ToString();
                     break;
                 case CFNavInfo.InRoute:
-                    retvalue = _currentPosition.InRoute.ToString();
+                    retvalue = _navStats.DistanceMetersNextWaypoint.ToString();
                     break;
             }
 
@@ -1104,10 +1152,20 @@ namespace Navigator
 
                 // Navigator Volume
                 try
-                {
-                    
+                {                  
+                    WriteLog("CF_ConfigFlags.AttMute:             '" + CF_getConfigFlag(CF_ConfigFlags.AttMute).ToString() + "'");
+                    WriteLog("CF_ConfigFlags.Fullscreen:          '" + CF_getConfigFlag(CF_ConfigFlags.Fullscreen).ToString() + "'");
+                    WriteLog("CF_ConfigFlags.GPSAttMute:          '" + CF_getConfigFlag(CF_ConfigFlags.GPSAttMute).ToString() + "'");
+                    WriteLog("CF_ConfigFlags.GPSEnableVoice:      '" + CF_getConfigFlag(CF_ConfigFlags.GPSEnableVoice).ToString() + "'");
+                    WriteLog("CF_ConfigFlags.GPSFullscreen:       '" + CF_getConfigFlag(CF_ConfigFlags.GPSFullscreen).ToString() + "'");
                     WriteLog("CF_ConfigFlags.GPSSetNavSoundLevel: '" + CF_getConfigFlag(CF_ConfigFlags.GPSSetNavSoundLevel).ToString() + "'");
-                    WriteLog("CF_ConfigSettings.GPSNavSoundLevel: '" + CF_getConfigSetting(CF_ConfigSettings.GPSNavSoundLevel).ToString() + "'");                    
+                    WriteLog("CF_ConfigFlags.NightSkinFlag:       '" + CF_getConfigFlag(CF_ConfigFlags.NightSkinFlag).ToString() + "'");
+                    WriteLog("CF_ConfigFlags.RadioMute:           '" + CF_getConfigFlag(CF_ConfigFlags.RadioMute).ToString() + "'");
+                    WriteLog("CF_ConfigSettings.GPSNavSoundLevel: '" + CF_getConfigSetting(CF_ConfigSettings.GPSNavSoundLevel).ToString() + "'");
+                    WriteLog("CF_ConfigSettings.AttMuteLevel:     '" + CF_getConfigSetting(CF_ConfigSettings.AttMuteLevel).ToString() + "'");
+                    WriteLog("CF_ConfigSettings.GPSNavSoundLevel: '" + CF_getConfigSetting(CF_ConfigSettings.GPSNavSoundLevel).ToString() + "'");
+                    WriteLog("CF_ConfigSettings.GPSVoicePrompts:  '" + CF_getConfigSetting(CF_ConfigSettings.GPSVoicePrompts).ToString() + "'");
+                    WriteLog("CF_ConfigSettings.OSVersion:        '" + CF_getConfigSetting(CF_ConfigSettings.OSVersion).ToString() + "'");
                 }
                 catch { }
             }
@@ -1277,20 +1335,15 @@ namespace Navigator
 
             //Mute/unmute
             if (CF_getConfigFlag(CF_ConfigFlags.GPSAttMute)) CF_systemCommand(CF_Actions.UNMUTE);
-            
-            
-            if (ReadCFValue("/SETTINGS/CURRENT/MUSICMODE", "1", settingsPath) == false || CF_getConfigFlag(CF_ConfigFlags.GPSAttMute) == false)
-            {
-                //Play/Pause
-                if (bool.Parse(this.pluginConfig.ReadField("/APPCONFIG/PAUSEPLAYSTATUS")) == true) CF_systemCommand(CF_Actions.PLAY);
+                    
+            //Play/Pause
+            if (bool.Parse(this.pluginConfig.ReadField("/APPCONFIG/PAUSEPLAYSTATUS")) == true) CF_systemCommand(CF_Actions.PLAY);
 
-                /**/
-                //Not implemented
-                //Send notification;            
-                if (bool.Parse(this.pluginConfig.ReadField("/APPCONFIG/NOTIFICATIONSTATUS")) == true)
-                {
-                    //CF3_raisePluginEvent(Unmute)
-                }
+            /**/ //Not implemented
+            //Send notification;            
+            if (bool.Parse(this.pluginConfig.ReadField("/APPCONFIG/NOTIFICATIONSTATUS")) == true)
+            {
+                //CF3_raisePluginEvent(Unmute)
             }
 
             muteCFTimer.Enabled = false; //Turn off timer until next time
@@ -1336,16 +1389,7 @@ namespace Navigator
                 if (boolCurrentNightMode != nightMode)
                 {
                     WriteLog("Switching mode");
-                    string t1 = "";
-                    if (nightMode)
-                    {
-                        t1 = "$set_mode=night\r\n";
-                    }
-                    else
-                    {
-                        t1 = "$set_mode=day\r\n";
-                    }
-                    SendCommand(t1, false, TCPCommand.DayNight);
+                    if (nightMode) SendCommand("$set_mode=night\r\n", false, TCPCommand.DayNight); else SendCommand("$set_mode=day\r\n", false, TCPCommand.DayNight);
 
                     //Update current mode
                     boolCurrentNightMode = nightMode;
@@ -1430,8 +1474,30 @@ namespace Navigator
 
             return false;
         }
- 
 
+        //Switch to status window
+        private void btnSectionA_Click(object sender, MouseEventArgs e)
+        {
+            // The Section button has been clicked...
+            WriteLog("SectionA Button clicked.");
+
+            //Minimize Navigator to hide it
+            SendCommand("$minimize\r\n", false, TCPCommand.Minimize);
+
+            this.CF3_initSection("GPSStatus");
+        }
+
+        //Switch to Navigation window
+        private void btnSectionB_Click(object sender, MouseEventArgs e)
+        {
+            // The Section button has been clicked...
+            WriteLog("SectionB Button clicked.");
+
+            //Minimize Navigator to hide it
+            SendCommand("$maximize\r\n", false, TCPCommand.Minimize);
+          
+            this.CF3_initSection("Navigator");
+        }
 
         //Resize window
         private void btnMinMax_Click(object sender, MouseEventArgs e)
@@ -1452,7 +1518,6 @@ namespace Navigator
             catch (Exception errmsg) { WriteLog(errmsg.ToString()); }
         }
 
-
         private void SetFullScreen()
         {
             //Not currently fullscreen, change to fullscreen
@@ -1462,7 +1527,7 @@ namespace Navigator
             this.thepanel.Bounds = base.CF_createRect(SkinReader.ParseBounds(SkinReader.GetControlAttribute("Navigator", "PanelNavigator", ("fullbounds").ToLower(), base.pluginSkinReader)));
 
             //Repos buttons
-            //RePosbutton("MinMax", "fullbounds");
+            RePosbutton("Section", "fullbounds");
             RePosbutton("VolDown", "fullbounds");
             RePosbutton("VolUp", "fullbounds");
             RePosbutton("Exit", "fullbounds");
@@ -1493,7 +1558,7 @@ namespace Navigator
             thepanel.Bounds = base.CF_createRect(SkinReader.ParseBounds(SkinReader.GetControlAttribute("Navigator", "PanelNavigator", ("bounds").ToLower(), base.pluginSkinReader)));
 
             //Repos buttons
-            //RePosbutton("MinMax", "bounds");
+            RePosbutton("Section", "bounds");
             RePosbutton("VolDown", "bounds");
             RePosbutton("VolUp", "bounds");
             RePosbutton("Exit", "bounds");

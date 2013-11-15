@@ -273,35 +273,27 @@ namespace Navigator
                                     }
                                     else WriteLog("CF GPS ATT not enabled");
 
-                                    //MUSICMODE: 3 = plugin source, 2 = radio, 1 = media player
-                                    //If not mediaplayer, not GPSAttMute is not enabled, then use playpaus
-                                    if (ReadCFValue("/SETTINGS/CURRENT/MUSICMODE", "1", settingsPath) == false || CF_getConfigFlag(CF_ConfigFlags.GPSAttMute) == false)
+                                    //Play/Pause
+                                    if (bool.Parse(this.pluginConfig.ReadField("/APPCONFIG/PAUSEPLAYSTATUS")) == true)
                                     {
-                                        WriteLog("Mediaplayer is not active");
+                                        WriteLog("PlayPause Enabled.");
+                                        CF_systemCommand(CF_Actions.PAUSE);
 
-                                        //Play/Pause
-                                        if (bool.Parse(this.pluginConfig.ReadField("/APPCONFIG/PAUSEPLAYSTATUS")) == true)
-                                        {
-                                            WriteLog("PlayPause Enabled.");
-                                            CF_systemCommand(CF_Actions.PAUSE);
-
-                                            //Can't enable timer in a non-UI thread!
-                                            this.BeginInvoke(new MethodInvoker(delegate { muteCFTimer.Enabled = true; }));
-                                        }
-                                        else WriteLog("PlayPause not enabled");
-
-                                        //Send notification
-                                        if (bool.Parse(this.pluginConfig.ReadField("/APPCONFIG/NOTIFICATIONSTATUS")) == true)
-                                        {
-                                            WriteLog("Notification Enabled");
-                                            //CF3_raisePluginEvent(Mmute)
-
-                                            //Can't enable timer in a non-UI thread!
-                                            this.BeginInvoke(new MethodInvoker(delegate { muteCFTimer.Enabled = true; }));
-                                        }
-                                        else WriteLog("Notification not enabled");
+                                        //Can't enable timer in a non-UI thread!
+                                        this.BeginInvoke(new MethodInvoker(delegate { muteCFTimer.Enabled = true; }));
                                     }
-                                    else WriteLog("Mediaplayer is active or ATT is not enabled. Not sending Pause or Event");
+                                    else WriteLog("PlayPause not enabled");
+
+                                    //Send notification
+                                    if (bool.Parse(this.pluginConfig.ReadField("/APPCONFIG/NOTIFICATIONSTATUS")) == true)
+                                    {
+                                        WriteLog("Notification Enabled");
+                                        //CF3_raisePluginEvent(Mmute)
+
+                                        //Can't enable timer in a non-UI thread!
+                                        this.BeginInvoke(new MethodInvoker(delegate { muteCFTimer.Enabled = true; }));
+                                    }
+                                    else WriteLog("Notification not enabled");
                                 }
                                 else if (strCommands.Contains("WAYPOINT"))
                                 {
@@ -371,10 +363,8 @@ namespace Navigator
                                     try
                                     {
                                         string[] ggaData = strCommands.Split(',');
-                                        try { _currentPosition.LockedSatellites = int.Parse(ggaData[7], CultureInfo.InvariantCulture); }
-                                        catch { } //WriteLog("Failed to convert LockedSatellites"); }
-                                        try { _currentPosition.Altitude = double.Parse(ggaData[9], CultureInfo.InvariantCulture); }
-                                        catch { } //WriteLog("Failed to convert Altitude"); }
+                                        try { _currentPosition.LockedSatellites = int.Parse(ggaData[7], CultureInfo.InvariantCulture); } catch { } //WriteLog("Failed to convert LockedSatellites"); }
+                                        try { _currentPosition.Altitude = double.Parse(ggaData[9], CultureInfo.InvariantCulture); } catch { } //WriteLog("Failed to convert Altitude"); }
                                     }
                                     catch
                                     {
@@ -391,6 +381,14 @@ namespace Navigator
                                 {
                                     WriteLog("Ack message... for which command is not known....");
                                 }
+                                else if (strCommands.Contains("NOTNAVIGATING"))
+                                {
+                                    //If not navigating, clear these
+                                    _navStats.DistanceMetersDestination = 0;
+                                    _navStats.DistanceMetersNextWaypoint = 0;
+                                    _navStats.TimeSecondsDestination = 0;
+                                    _navStats.TimeSecondsNextWaypoint = 0;
+                                }
                                 else if (strCommands.Split(',').Length == 4)
                                 {
                                     if (this.Visible == true)
@@ -401,14 +399,19 @@ namespace Navigator
                                     {
                                         try
                                         {
-                                            //0=distance in meters to next waypoint
-                                            //1=time in seconds to next waypoint
-                                            //2=distance in meters to destination
-                                            //3=time in seconds to destination
-                                            int intTimeToDestination = int.Parse(strCommands.Split(',')[3]);
-                                            if ((intTimeToDestination < 30))
+                                            try { _navStats.DistanceMetersDestination = int.Parse(strCommands.Split(',')[0]); }
+                                            catch { };
+                                            try { _navStats.DistanceMetersNextWaypoint = int.Parse(strCommands.Split(',')[1]); }
+                                            catch { };
+                                            try { _navStats.TimeSecondsDestination = int.Parse(strCommands.Split(',')[2]); }
+                                            catch { };
+                                            try { _navStats.TimeSecondsNextWaypoint = int.Parse(strCommands.Split(',')[3]); }
+                                            catch { };
+
+                                            //Tell the user?
+                                            if ((_navStats.TimeSecondsNextWaypoint < 30))
                                             {
-                                                this.CF_systemCommand(CF_Actions.SHOWINFO, this.pluginLang.ReadField("/APPLANG/NAVIGATOR/ARRIVING") + intTimeToDestination.ToString() + this.pluginLang.ReadField("/APPLANG/NAVIGATOR/SECONDS"), "AUTOHIDE");
+                                                this.CF_systemCommand(CF_Actions.SHOWINFO, this.pluginLang.ReadField("/APPLANG/NAVIGATOR/ARRIVING") + _navStats.TimeSecondsNextWaypoint.ToString() + this.pluginLang.ReadField("/APPLANG/NAVIGATOR/SECONDS"), "AUTOHIDE");
                                             }
                                         }
                                         catch { WriteLog("Unable to parse navigation statistics"); }

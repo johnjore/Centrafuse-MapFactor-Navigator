@@ -44,6 +44,15 @@ namespace Navigator
         public double LongitudeSeconds;
     }
 
+    // Structure for holding navigation statistics
+    public struct NavStats
+    {
+        public int DistanceMetersNextWaypoint;
+        public int TimeSecondsNextWaypoint;
+        public int DistanceMetersDestination;
+        public int TimeSecondsDestination;
+    }
+
     public enum TCPCommand
     {
         Protocol = 1,
