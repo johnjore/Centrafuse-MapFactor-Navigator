@@ -85,6 +85,7 @@ namespace Navigator
         private bool boolFREE = true;                       // Free edition?
         private bool boolOSMOK = false;                     // If true, supresses OSM License prompt
         private bool boolAlerts = false;                    // Show alerts if NOT active plugin?
+        private bool boolNamedPipes = false;                // Use Louk's named pipes for mute/unmute?
         private IntPtr mHandlePtr;                          // var for window handle number to catch
         private readonly CFControls.CFPanel _containerPanel;
         CFControls.CFPanel thepanel = null;                 // The panel to 'project' Navigator into        
@@ -205,7 +206,7 @@ namespace Navigator
                 
                 //Timer to use to check if arrived at destination
                 NavDestinationTimer.Interval = 5000; // Wait this long...
-                NavDestinationTimer.Enabled = false;
+                NavDestinationTimer.Enabled = true;
                 NavDestinationTimer.Tick += new EventHandler(NavDestinationTimer_Tick);
 
                 // Creates new events to catch when CF is being closed, loaded or the power mode changed
@@ -324,38 +325,44 @@ namespace Navigator
                     SendCommand("$navigation_info=recalculation_warning:off\r\n", false, TCPCommand.NavInfoRecalculationWarning);
                 }
 
-                //Louk's Pipe
+                //Louk's Named pipe server
                 if (!this.pipeServer.Running)
                 {
-                    this.pipeServer.PipeName = @"\\.\Pipe\" + "NavigatorCF4Plugin"; //this.tbPipeName.Text;
+                    this.pipeServer.PipeName = @"\\.\Pipe\" + "NavigatorCF4Plugin";
                     this.pipeServer.Start();
-                    WriteLog("Is Louk's pipe '" + pipeServer.PipeName + "' Running: '" + (this.pipeServer.Running).ToString() + "'");
+                    WriteLog("Named pipe '" + pipeServer.PipeName + "' is '" + (this.pipeServer.Running).ToString() + "'");
 
                     //Create event handler
                     this.pipeServer.MessageReceived += new PipeServer.Server.MessageReceivedHandler(pipeServer_MessageReceived);
-                }
+                    }
                 else
-                    WriteLog("Louk'Pipe Server already running");
+                    WriteLog("Named pipe server is already running");
 			}
 			catch(Exception errmsg) { CFTools.writeError(errmsg.ToString()); }
 		}
 
-        //Louk's Pipe received a message
+        //Louk's Named pipe received a message
         void pipeServer_MessageReceived(PipeServer.Server.Client client, string message)
         {
             this.Invoke(new PipeServer.Server.MessageReceivedHandler(DisplayMessageReceived), new object[] { client, message });
         }
 
-        //Louk's Pipe actioned the message
+        //Action the message from the named pipe
         void DisplayMessageReceived(PipeServer.Server.Client client, string message)
-        {
-            //WriteLog("Louk's pipe received the message: '" + message + "'");
-            WriteLog("Louk's pipe received a message. What is it?");
-            try
+        {            
+            if (message.Contains("Un"))
             {
-                WriteLog(message);
+                WriteLog("Named pipe received the 'unmute' message");
+                //Lets try and unmute
+                muteCFTimer.Interval = 1000;
+                muteCFTimer.Enabled = true;
             }
-            catch { WriteLog("Failed to read message"); }
+            else
+            {
+                WriteLog("Named pipe received the 'mute' message");
+                muteCFTimer.Enabled = false; //Stop the timer, Navigator spoke...
+                NavigatorStopCFAudio();
+            }
         }
 
 		/// <summary>
@@ -505,9 +512,6 @@ namespace Navigator
             //Configure night mode toggle option
             SetDayNightToggle();
 
-            //Don't check for navigation updates if Navigator is active plugin
-            NavDestinationTimer.Enabled = false;
-
             //Resume window
             SendCommand("$maximize\r\n", false, TCPCommand.Maximize);
                                                
@@ -526,9 +530,6 @@ namespace Navigator
 
                 //Don't check for skin change. Plugin not visible => no update required
                 nightTimer.Enabled = false;
-
-                //Check for navigation updates if user selected to enable this
-                if (boolAlerts) NavDestinationTimer.Enabled = true;
             }
             catch { WriteLog("Failed to send minimize command"); }
 
@@ -1002,7 +1003,7 @@ namespace Navigator
                 }
                 catch
                 {
-                    this.pluginConfig.WriteField("/APPCONFIG/PAUSEPLAYSTATUS", "false", true);
+                    this.pluginConfig.WriteField("/APPCONFIG/PAUSEPLAYSTATUS", "False", true);
                 }
 
                 // Send notification
@@ -1012,7 +1013,7 @@ namespace Navigator
                 }
                 catch
                 {
-                    this.pluginConfig.WriteField("/APPCONFIG/NOTIFICATIONSTATUS", "false", true);
+                    this.pluginConfig.WriteField("/APPCONFIG/NOTIFICATIONSTATUS", "True", true);
                 }
 
                 // OSMOK (Supresses OSM License prompt)
@@ -1142,7 +1143,7 @@ namespace Navigator
                 }
                 catch
                 {
-                    boolAlerts = false;
+                    boolAlerts = true;
                     this.pluginConfig.WriteField("/APPCONFIG/ALERTSENABLED", boolAlerts.ToString(), true);
                 }
                 finally
@@ -1150,9 +1151,24 @@ namespace Navigator
                     WriteLog("boolAlerts: " + boolAlerts.ToString());
                 }
 
-                // Navigator Volume
+                //Use Louk's named pipes?
                 try
-                {                  
+                {
+                    boolNamedPipes = bool.Parse(this.pluginConfig.ReadField("/APPCONFIG/NAMEDPIPE"));
+                }
+                catch
+                {
+                    boolNamedPipes = false;
+                    this.pluginConfig.WriteField("/APPCONFIG/NAMEDPIPE", boolNamedPipes.ToString(), true);
+                }
+                finally
+                {
+                    WriteLog("boolNamedPipes: " + boolNamedPipes.ToString());
+                }
+
+                // CF Settings
+                try
+                {
                     WriteLog("CF_ConfigFlags.AttMute:             '" + CF_getConfigFlag(CF_ConfigFlags.AttMute).ToString() + "'");
                     WriteLog("CF_ConfigFlags.Fullscreen:          '" + CF_getConfigFlag(CF_ConfigFlags.Fullscreen).ToString() + "'");
                     WriteLog("CF_ConfigFlags.GPSAttMute:          '" + CF_getConfigFlag(CF_ConfigFlags.GPSAttMute).ToString() + "'");
@@ -1168,6 +1184,8 @@ namespace Navigator
                     WriteLog("CF_ConfigSettings.OSVersion:        '" + CF_getConfigSetting(CF_ConfigSettings.OSVersion).ToString() + "'");
                 }
                 catch { }
+
+
             }
             catch { }
         }
@@ -1327,7 +1345,6 @@ namespace Navigator
             SendCommand("$navigation_statistics\r\n", false, TCPCommand.Statistics);
         }
 
-
         // Event to get CF to play audio again
         private void muteCFTimer_Tick(object sender, EventArgs e)
         {
@@ -1368,7 +1385,6 @@ namespace Navigator
             //Configure night mode toggle option
             try
             {
-
                 //Get CF setting
                 bool boolTmp = ReadCFValue("/APPCONFIG/AUTOSWITCHSKIN", "True", CFTools.AppDataPath + "\\System\\config.xml");
                 if (boolTmp) nightTimer.Enabled = true; else nightTimer.Enabled = false;
@@ -1591,6 +1607,44 @@ namespace Navigator
                 a.Bounds = base.CF_createRect(SkinReader.ParseBounds(SkinReader.GetControlAttribute("Navigator", strID, (strSize).ToLower(), base.pluginSkinReader)));
             }
             catch { WriteLog("Failed to send set button's new position"); }
+        }
+
+
+        //Called when Navigator Speaks (Either SOUND via TCP or messages via Louk's named pipe
+        private void NavigatorStopCFAudio()
+        {
+            //Mute/unmute
+            if (CF_getConfigFlag(CF_ConfigFlags.GPSAttMute))
+            {
+                WriteLog("Mute (GPS ATT) CF Audio");
+                CF_systemCommand(CF_Actions.ATT);
+
+                //Can't enable timer in a non-UI thread. Only start timer if not using named pipe
+                if (!boolNamedPipes) this.BeginInvoke(new MethodInvoker(delegate { muteCFTimer.Interval = 2500;  muteCFTimer.Enabled = true; }));
+            }
+            else WriteLog("CF GPS ATT not enabled");
+
+            //Play/Pause
+            if (bool.Parse(this.pluginConfig.ReadField("/APPCONFIG/PAUSEPLAYSTATUS")) == true)
+            {
+                WriteLog("PlayPause Enabled.");
+                CF_systemCommand(CF_Actions.PAUSE);
+
+                //Can't enable timer in a non-UI thread. Only start timer if not using named pipe
+                if (!boolNamedPipes) this.BeginInvoke(new MethodInvoker(delegate { muteCFTimer.Interval = 2500; muteCFTimer.Enabled = true; }));
+            }
+            else WriteLog("PlayPause not enabled");
+
+            //Send notification
+            if (bool.Parse(this.pluginConfig.ReadField("/APPCONFIG/NOTIFICATIONSTATUS")) == true)
+            {
+                WriteLog("Notification Enabled");
+                //CF3_raisePluginEvent(Mmute)
+
+                //Can't enable timer in a non-UI thread. Only start timer if not using named pipe
+                if (!boolNamedPipes) this.BeginInvoke(new MethodInvoker(delegate { muteCFTimer.Interval = 2500; muteCFTimer.Enabled = true; }));
+            }
+            else WriteLog("Notification not enabled");
         }
 
         //Write to plugin log file

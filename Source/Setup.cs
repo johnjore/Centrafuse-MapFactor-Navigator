@@ -118,6 +118,10 @@ namespace Navigator
                     ButtonHandler[i] = null; ButtonText[i] = ""; ButtonValue[i++] = "";
 
                     // BOOL BUTTONS (5-8)
+                    ButtonHandler[i] = new CFSetupHandler(SetNamedPipeStatus);
+                    ButtonText[i] = this.langReader.ReadField("/APPLANG/SETUP/NAMEDPIPE");
+                    ButtonValue[i++] = this.configReader.ReadField("/APPCONFIG/NAMEDPIPE");
+
                     ButtonHandler[i] = new CFSetupHandler(SetPausePlayStatus);
                     ButtonText[i] = this.langReader.ReadField("/APPLANG/SETUP/PAUSEPLAYSTATUS");
                     ButtonValue[i++] = this.configReader.ReadField("/APPCONFIG/PAUSEPLAYSTATUS");
@@ -126,7 +130,6 @@ namespace Navigator
                     ButtonText[i] = this.langReader.ReadField("/APPLANG/SETUP/NOTIFICATIONSTATUS");
                     ButtonValue[i++] = this.configReader.ReadField("/APPCONFIG/NOTIFICATIONSTATUS");
 
-                    ButtonHandler[i] = null; ButtonText[i] = ""; ButtonValue[i++] = "";
                     ButtonHandler[i] = null; ButtonText[i] = ""; ButtonValue[i++] = "";
                 }
 
@@ -255,6 +258,12 @@ namespace Navigator
         private void SetNotificationStatus(ref object value)
         {
             this.configReader.WriteField("/APPCONFIG/NOTIFICATIONSTATUS", value.ToString());
+        }
+
+        //Enable Louk's message handler
+        private void SetNamedPipeStatus(ref object value)
+        {
+            this.configReader.WriteField("/APPCONFIG/NAMEDPIPE", value.ToString());
         }
         
 #endregion

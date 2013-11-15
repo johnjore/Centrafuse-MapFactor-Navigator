@@ -161,6 +161,7 @@ namespace Navigator
             catch { WriteLog("Unknown error during connect"); }
         }
 
+        
         private byte[] m_byBuff = new byte[256];    // Recieved data buffer
         public void SetupRecieveCallback(Socket sock)
         {
@@ -262,38 +263,12 @@ namespace Navigator
                                 */
                                 if (strCommands.Contains("SOUND"))
                                 {
-                                    //Mute/unmute
-                                    if (CF_getConfigFlag(CF_ConfigFlags.GPSAttMute))
+                                    //Only do this if we're not using named pipes
+                                    if (!boolNamedPipes)
                                     {
-                                        WriteLog("Mute (GPS ATT) CF Audio. Start Timer");
-                                        CF_systemCommand(CF_Actions.ATT);
-
-                                        //Can't enable timer in a non-UI thread!
-                                        this.BeginInvoke(new MethodInvoker(delegate { muteCFTimer.Enabled = true; }));
+                                        //Configure CF sound handling
+                                        NavigatorStopCFAudio();
                                     }
-                                    else WriteLog("CF GPS ATT not enabled");
-
-                                    //Play/Pause
-                                    if (bool.Parse(this.pluginConfig.ReadField("/APPCONFIG/PAUSEPLAYSTATUS")) == true)
-                                    {
-                                        WriteLog("PlayPause Enabled.");
-                                        CF_systemCommand(CF_Actions.PAUSE);
-
-                                        //Can't enable timer in a non-UI thread!
-                                        this.BeginInvoke(new MethodInvoker(delegate { muteCFTimer.Enabled = true; }));
-                                    }
-                                    else WriteLog("PlayPause not enabled");
-
-                                    //Send notification
-                                    if (bool.Parse(this.pluginConfig.ReadField("/APPCONFIG/NOTIFICATIONSTATUS")) == true)
-                                    {
-                                        WriteLog("Notification Enabled");
-                                        //CF3_raisePluginEvent(Mmute)
-
-                                        //Can't enable timer in a non-UI thread!
-                                        this.BeginInvoke(new MethodInvoker(delegate { muteCFTimer.Enabled = true; }));
-                                    }
-                                    else WriteLog("Notification not enabled");
                                 }
                                 else if (strCommands.Contains("WAYPOINT"))
                                 {
@@ -363,8 +338,10 @@ namespace Navigator
                                     try
                                     {
                                         string[] ggaData = strCommands.Split(',');
-                                        try { _currentPosition.LockedSatellites = int.Parse(ggaData[7], CultureInfo.InvariantCulture); } catch { } //WriteLog("Failed to convert LockedSatellites"); }
-                                        try { _currentPosition.Altitude = double.Parse(ggaData[9], CultureInfo.InvariantCulture); } catch { } //WriteLog("Failed to convert Altitude"); }
+                                        try { _currentPosition.LockedSatellites = int.Parse(ggaData[7], CultureInfo.InvariantCulture); }
+                                        catch { } //WriteLog("Failed to convert LockedSatellites"); }
+                                        try { _currentPosition.Altitude = double.Parse(ggaData[9], CultureInfo.InvariantCulture); }
+                                        catch { } //WriteLog("Failed to convert Altitude"); }
                                     }
                                     catch
                                     {
