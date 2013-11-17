@@ -20,15 +20,16 @@
  * Bug: TCP setup on Navigator? (Workaround implemented, modify settings.xml)
  * 
  * What if Navigator restarts? Disconnect from panel and re-connect?
- * XP and embedding?
  * Move SendCommand and receive to its own thread?
  * Parse TCP responses from Navigator... counter++ for each SendCommand. Create FIFO buffer? Create thread?
- * Remove non-required functions
+ * Remove non-used functions
  * 
  * Setup screen values not refreshing
  * How to detect if media is playing or not
- * Patch navigator for named pipe fix
 */
+
+
+
 /* 
  * This is the main CS file
  */
@@ -225,11 +226,65 @@ namespace Navigator
                 //Modify Navigator's Settings XML file...
                 ConfigureNavigatorXML();
 
+                //Patch or UnPatch PC_Navigator.exe for named pipe support
+                //xxx
+                string strPatchedFile = strEXEPath + "\\PC_Navigator.exe";
+                string strBackupFile = strEXEPath + "\\PC_Navigator.exe.orig";
+                FileInfo fiUnPatched = new FileInfo(strBackupFile);
+                FileInfo fiPatched = new FileInfo(strPatchedFile);
+
+                if (boolNamedPipes)
+                {
+                    WriteLog("Validating PC_Navigator.exe is patched for Named Pipe Support");
+                    
+                    if (fiUnPatched.Exists)
+                    {
+                        WriteLog("Patch already applied. Nothing to do.");
+                    }
+                    else
+                    {
+                        try { 
+                            //Create backup file first
+                            System.IO.File.Copy(strPatchedFile, strBackupFile);
+                            
+                            //Copy the extra dll
+                            System.IO.File.Copy(@PluginPath + "\\NamedPipePatch\\CF_NP.dll", strEXEPath + "\\CF_NP.dll");
+                            
+                            //Patch the Executable
+                            Process pPatch = new Process();
+                            pPatch.StartInfo.FileName = PluginPath + "\\NamedPipePatch\\binmay.exe";
+                            pPatch.StartInfo.Arguments = "-i \"" + strBackupFile + "\" -o \"" + strPatchedFile + "\" -s \"57494e4d4d\" -r \"43465f4e50\"";
+                            WriteLog(pPatch.StartInfo.FileName);
+                            WriteLog(pPatch.StartInfo.Arguments);                            
+                            pPatch.Start();
+                            pPatch.WaitForExit();
+                            if (pPatch.ExitCode != 0) WriteLog("Failed to patch PC_Navigator.exe, return code: " + pPatch.ExitCode.ToString());
+                        }
+                        catch
+                        {
+                            WriteLog("Failed to apply named pipe patch.");
+                        };
+                    }
+                }
+                else
+                {
+                    WriteLog("Validating PC_Navigator.exe is not patched for Named Pipe Support");
+                    if (fiUnPatched.Exists)
+                    {
+                        //Put the exe files back...
+                        System.IO.File.Copy(strBackupFile, strPatchedFile, true);
+                        
+                        //Delete the extra dll
+                        System.IO.File.Delete(strEXEPath + "\\CF_NP.dll");
+
+                        //Delete the extra EXE
+                        System.IO.File.Delete(strBackupFile);
+                    }
+                }
+
                 // Configured?
                 try
                 {
-                 
-
                     //Launch Navigator                    
                     try
                     {

@@ -22,5 +22,8 @@
     <FILENAME register="false" overwrite="true" source="Skins\Clean\buttonimages\gps.png" destination="[CFAPPDIR]\Plugins\Navigator\Skins\Clean\buttonimages\gps.png" />
     <FILENAME register="false" overwrite="true" source="Skins\Clean\Extra\Navigator Icon Large.png" destination="[CFAPPDIR]\Plugins\Navigator\Skins\Clean\Extra\Navigator Icon Large.png" />
     <FILENAME register="false" overwrite="true" source="Skins\Clean\Extra\New_Icon.png" destination="[CFAPPDIR]\Plugins\Navigator\Skins\Clean\Extra\New_Icon.png" />
+    <FILENAME register="false" overwrite="true" source="NamedPipePatch\binmay.exe" destination="[CFAPPDIR]\Plugins\Navigator\NamedPipePatch\binmay.exe" />
+    <FILENAME register="false" overwrite="true" source="NamedPipePatch\CF_NP.dll" destination="[CFAPPDIR]\Plugins\Navigator\NamedPipePatch\CF_NP.dll" />
+    <FILENAME register="false" overwrite="true" source="NamedPipePatch\Readme_CF_NP.txt" destination="[CFAPPDIR]\Plugins\Navigator\NamedPipePatch\Readme_CF_NP.txt" />
   </APPFILES>
 </CFAPP>
