@@ -4,7 +4,7 @@
     <APPNAME>Navigator</APPNAME>
     <APPLOCATION>[CFAPPDIR]\Plugins\Navigator</APPLOCATION>
     <APPTYPE>PLUGIN</APPTYPE>
-    <VERSION>2.0.0.2</VERSION>
+    <VERSION>2.0.0.3</VERSION>
     <REQUIRESRESTART>True</REQUIRESRESTART>
   </APPDATA>
   <APPFILES>
@@ -19,6 +19,7 @@
     <FILENAME register="false" overwrite="true" source="Skins\Clean\buttonimages\voldown_off.png" destination="[CFAPPDIR]\Plugins\Navigator\Skins\Clean\buttonimages\voldown_off.png" />
     <FILENAME register="false" overwrite="true" source="Skins\Clean\buttonimages\volup_down.png" destination="[CFAPPDIR]\Plugins\Navigator\Skins\Clean\buttonimages\volup_down.png" />
     <FILENAME register="false" overwrite="true" source="Skins\Clean\buttonimages\volup_off.png" destination="[CFAPPDIR]\Plugins\Navigator\Skins\Clean\buttonimages\volup_off.png" />
+    <FILENAME register="false" overwrite="true" source="Skins\Clean\buttonimages\gps.png" destination="[CFAPPDIR]\Plugins\Navigator\Skins\Clean\buttonimages\gps.png" />
     <FILENAME register="false" overwrite="true" source="Skins\Clean\Extra\Navigator Icon Large.png" destination="[CFAPPDIR]\Plugins\Navigator\Skins\Clean\Extra\Navigator Icon Large.png" />
     <FILENAME register="false" overwrite="true" source="Skins\Clean\Extra\New_Icon.png" destination="[CFAPPDIR]\Plugins\Navigator\Skins\Clean\Extra\New_Icon.png" />
   </APPFILES>
