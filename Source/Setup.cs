@@ -120,9 +120,9 @@ namespace Navigator
                     ButtonText[i] = this.langReader.ReadField("/APPLANG/SETUP/NAMEDPIPE");
                     ButtonValue[i++] = this.configReader.ReadField("/APPCONFIG/NAMEDPIPE");
 
-                    ButtonHandler[i] = new CFSetupHandler(SetPausePlayStatus);
-                    ButtonText[i] = this.langReader.ReadField("/APPLANG/SETUP/PAUSEPLAYSTATUS");
-                    ButtonValue[i++] = this.configReader.ReadField("/APPCONFIG/PAUSEPLAYSTATUS");
+                    ButtonHandler[i] = new CFSetupHandler(SetMuteUnmuteStatus);
+                    ButtonText[i] = this.langReader.ReadField("/APPLANG/SETUP/MUTEUNMUTESTATUS");
+                    ButtonValue[i++] = this.configReader.ReadField("/APPCONFIG/MUTEUNMUTESTATUS");
                     
                     ButtonHandler[i] = new CFSetupHandler(SetNoHiRes);
                     ButtonText[i] = this.langReader.ReadField("/APPLANG/SETUP/NOHIRES");
@@ -270,10 +270,10 @@ namespace Navigator
             this.configReader.WriteField("/APPCONFIG/ALERTSENABLED", value.ToString());
         }
 
-        //Enable Sending Pause/Play on Sound alert?
-        private void SetPausePlayStatus(ref object value)
+        //Enable Sending Mute/Unmute on Sound alert?
+        private void SetMuteUnmuteStatus(ref object value)
         {
-            this.configReader.WriteField("/APPCONFIG/PAUSEPLAYSTATUS", value.ToString());
+            this.configReader.WriteField("/APPCONFIG/MUTEUNMUTESTATUS", value.ToString());
         }
 
         //Enable Louk's message handler

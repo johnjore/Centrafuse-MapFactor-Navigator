@@ -5,6 +5,7 @@
     <RECALCULATING>Recalculating the route</RECALCULATING>
     <LOST>Unable to route to destination</LOST>
     <ARRIVING>Arriving at destination in </ARRIVING>
+    <DESTINATION>Destination reached</DESTINATION>
     <EMBEDDINGFAILED>Unable to terminated existing PC_Navigator. Embedding will fail</EMBEDDINGFAILED>
     <SECONDS>seconds</SECONDS>
     <LBLLONGITUDE>LONGITUDE:</LBLLONGITUDE>
@@ -32,10 +33,11 @@
     <MUTE>Audio Pause on Instructions</MUTE>
     <GETGPS>Stream GPS information</GETGPS>
     <GETALERTSTATUS>Enable Navigator Alerts</GETALERTSTATUS>
-    <PAUSEPLAYSTATUS>Voice Prompt use Play/Pause</PAUSEPLAYSTATUS>
-    <NOTIFICATIONSTATUS>Voice Prompt send Notification</NOTIFICATIONSTATUS>
+    <MUTEUNMUTESTATUS>Voice Prompt uses Mute/Unmute</MUTEUNMUTESTATUS>
     <NAMEDPIPE>Use Named Pipe</NAMEDPIPE>
     <NOHIRES>Enable --nohires option</NOHIRES>
     <WINDOWSIZE>Startup Window Size (Affects Font size)</WINDOWSIZE>
+    <PATCHNAVIGATOR>PC_Navigator.exe will be patched to support named pipe on next CF restart</PATCHNAVIGATOR>
+    <UNPATCHNAVIGATOR>Patch for named pipe will be removed on next CF restart</UNPATCHNAVIGATOR>
   </SETUP>
 </APPLANG>

@@ -48,8 +48,6 @@ namespace Navigator
                 //If we dont have a connection with Navigator, try and create one
                 try
                 {
-                    //Setup the telnet connection
-
                     //Configure the connection
                     server.Blocking = false;
                     AsyncCallback onconnect = new AsyncCallback(OnConnect);
@@ -62,6 +60,7 @@ namespace Navigator
                     if (server.Connected)
                     {
                         WriteLog("Connected");
+
                         //Get some basic information about Navigator
                         string strTmp = "$protocol_version\r\n";
                         WriteLog("Sending '" + strTmp + "'");
@@ -177,12 +176,12 @@ namespace Navigator
         //Triggered when new data arrives
         public void OnRecievedData(IAsyncResult ar)
         {
-            // Socket was the passed in object
-            Socket sock = (Socket)ar.AsyncState;
-
             // Check if we got any data
             try
             {
+                // Socket was the passed in object
+                Socket sock = (Socket)ar.AsyncState;
+
                 if (sock.Connected)
                 {
                     int nBytesRec = sock.EndReceive(ar);
@@ -194,9 +193,6 @@ namespace Navigator
                         // Any unhandled errors in this function causes all future messages from Navigator to be lost
                         try
                         {
-                            // Thread safe operation here
-                            //WriteLog("Recieved from Navigator: " + sMessage);
-
                             //Split on the CRLF and remove the empty spaces
                             sMessage = sMessage.Replace(" ", "");
                             string[] strParse = sMessage.ToUpper().Split(new string[] { "\r\n" }, StringSplitOptions.None);
@@ -204,70 +200,9 @@ namespace Navigator
                             //This is messy as there's no "standard" way Navigator provides the messages
                             foreach (string strCommands in strParse)
                             {
-                                //Using async is fast, but no idea if the response back is due to a command, or a NMEA string. This is messy....
-                                /*
-                                                            if (strCommands.Length < 2) break;
-                                                            //xxx
-                                                            //WriteLog("Next command response should be for : " + TCPCommandQueue.Peek().ToString() + " " + TCPCommandQueue.Count.ToString());                                
-                                                            }
-
-                                                            switch (TCPCommandQueue.Peek().ToString())
-                                                            {
-                                                                case ("Protocol"):
-                                                                    WriteLog("Protocol:" + strCommands);
-                                                                    break;
-                                                                case ("SoftwareVersion"):
-                                                                    WriteLog("SoftwareVersion:" + strCommands);
-                                                                    break;
-                                                                case ("Minimize"):
-                                                                    WriteLog("Minimize:" + strCommands);
-                                                                    break;
-                                                                case ("Maximize"):
-                                                                    WriteLog("Maximize:" + strCommands);
-                                                                    break;
-                                                                case ("GPSSending"):
-                                                                    WriteLog("GPSSending:" + strCommands);
-                                                                    break;
-                                                                case ("GPSReceiving"):
-                                                                    WriteLog("GPSReceiving:" + strCommands);
-                                                                    break;
-                                                                case ("NavInfoSoundWarning"):
-                                                                    WriteLog("NavInfoSoundWarning:" + strCommands);
-                                                                    break;
-                                                                case ("SoundVolume"):
-                                                                    WriteLog("SoundVolume:" + strCommands);
-                                                                    break;
-                                                                case ("NavInfoWaypointInfo"):
-                                                                    WriteLog("NavInfoWaypointInfo:" + strCommands);
-                                                                    break;
-                                                                case ("NavInfoRecalculationWarning"):
-                                                                    WriteLog("NavInfoRecalculationWarning:" + strCommands);
-                                                                    break;
-                                                                case ("DayNight"):
-                                                                    WriteLog("DayNight:" + strCommands);
-                                                                    break;
-                                                                case ("Window"):
-                                                                    WriteLog("Window:" + strCommands);
-                                                                    break;
-                                                                case ("Destination"):
-                                                                    WriteLog("Destination:" + strCommands);
-                                                                    break;
-                                                                case ("Statistics"):
-                                                                    WriteLog("Statistics:" + strCommands);
-                                                                    break;
-                                                                default:
-                                                                    WriteLog("Unknown:" + strCommands);
-                                                                    break;
-                                                            }
-                                                            TCPCommandQueue.Dequeue();
-                                */
                                 if (strCommands.Contains("SOUND"))
                                 {
                                     /**/ //First check if audio is playing, if not, ignore
-                                    //xxx                                    
-                                    //CF_params.mediaPlaying and CF_params.pauseAudio
-                                    //CF_params.mediaPlaying
-
 
                                     //Only do this if we're not using named pipes
                                     if (!boolNamedPipes)
@@ -310,6 +245,18 @@ namespace Navigator
                                     {
                                         WriteLog("Lost: '" + strCommands + "'");
                                         this.CF_systemCommand(CF_Actions.SHOWINFO, this.pluginLang.ReadField("/APPLANG/NAVIGATOR/LOST"), "AUTOHIDE");
+                                    }
+                                }
+                                else if (strCommands.Contains("DESTINATIONREACHED"))
+                                {
+                                    if (this.Visible == true)
+                                    {
+                                        WriteLog("Destination reached. Do nothing as plugin is visible: '" + strCommands + "'");
+                                    }
+                                    else
+                                    {
+                                        WriteLog("Destination reached: '" + strCommands + "'");
+                                        this.CF_systemCommand(CF_Actions.SHOWINFO, this.pluginLang.ReadField("/APPLANG/NAVIGATOR/DESTINATION"), "AUTOHIDE");
                                     }
                                 }
                                 else if (strCommands.Contains("$GPRMC"))
@@ -363,9 +310,9 @@ namespace Navigator
                                     {
                                         string[] ggaData = strCommands.Split(',');
                                         try { _currentPosition.LockedSatellites = int.Parse(ggaData[7], CultureInfo.InvariantCulture); }
-                                        catch { WriteLog("Failed to convert LockedSatellites"); }
+                                        catch { }; //WriteLog("Failed to convert LockedSatellites"); }
                                         try { _currentPosition.Altitude = double.Parse(ggaData[9], CultureInfo.InvariantCulture); }
-                                        catch { WriteLog("Failed to convert Altitude"); }
+                                        catch { }; //WriteLog("Failed to convert Altitude"); }
                                     }
                                     catch
                                     {
@@ -408,7 +355,7 @@ namespace Navigator
                                     else
                                     {
                                         //Tell the user?
-                                        if ((_navStats.TimeSecondsNextWaypoint < 30))
+                                        if ((_navStats.TimeSecondsNextWaypoint < 30) && (_navStats.TimeSecondsNextWaypoint > 20))
                                         {
                                             this.CF_systemCommand(CF_Actions.SHOWINFO, this.pluginLang.ReadField("/APPLANG/NAVIGATOR/ARRIVING") + " " + _navStats.TimeSecondsNextWaypoint.ToString() + " " + this.pluginLang.ReadField("/APPLANG/NAVIGATOR/SECONDS"), "AUTOHIDE");
                                         }

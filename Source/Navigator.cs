@@ -23,12 +23,11 @@
  * Move SendCommand and receive to its own thread?
  * Parse TCP responses from Navigator... counter++ for each SendCommand. Create FIFO buffer? Create thread?
  * Remove non-used functions
+ * Switch to/from other GPS engines?
  * 
  * Setup screen values not refreshing
- * How to detect if media is playing or not
-*/
-
-
+ * How to detect if media is playing or not - Not required?
+ */
 
 /* 
  * This is the main CS file
@@ -227,12 +226,10 @@ namespace Navigator
                 ConfigureNavigatorXML();
 
                 //Patch or UnPatch PC_Navigator.exe for named pipe support
-                //xxx
                 string strPatchedFile = strEXEPath + "\\PC_Navigator.exe";
                 string strBackupFile = strEXEPath + "\\PC_Navigator.exe.orig";
                 FileInfo fiUnPatched = new FileInfo(strBackupFile);
                 FileInfo fiPatched = new FileInfo(strPatchedFile);
-
                 if (boolNamedPipes)
                 {
                     WriteLog("Validating PC_Navigator.exe is patched for Named Pipe Support");
@@ -316,8 +313,7 @@ namespace Navigator
                 {
                 }
                 finally
-                {
-                    this.pluginConfig.WriteField("/APPCONFIG/CONFIGURED", "True", true);
+                {                    
                     this.pluginConfig.WriteField("/APPCONFIG/LOGEVENTS", "True", true);
                 }
 
@@ -410,6 +406,9 @@ namespace Navigator
         {
             /**/
             //First check if audio is playing, if not, ignore
+            //CF_AudioStatus CF_Main_getMainAudioStatus()
+            //CF_Actions.MUTEAUDIO / CF_Actions.UNMUTEAUDIO for ATT mute and CF_Actions.MUTE  / CF_Actions.UNMUTE; they don’t toggle.
+            //CF_getmai
 
             //Note: 'message' is not \0 terminated!
             WriteLog("boolInMutePeriod: " + boolInMutePeriod.ToString());
@@ -420,7 +419,8 @@ namespace Navigator
                 //Lets try and unmute
 
                 //Using Pause/Play causes much longer delays than using ATT
-                if (bool.Parse(this.pluginConfig.ReadField("/APPCONFIG/PAUSEPLAYSTATUS")) == true) muteCFTimer.Interval = 2000; else muteCFTimer.Interval = 1000;
+                //if (bool.Parse(this.pluginConfig.ReadField("/APPCONFIG/MUTEUNMUTESTATUS")) == true) muteCFTimer.Interval = 1000; else muteCFTimer.Interval = 1000;
+                muteCFTimer.Interval = 1000;
                 muteCFTimer.Enabled = true;
             }
             else
@@ -475,6 +475,19 @@ namespace Navigator
 		/// </summary>
 		public override void CF_pluginClose()
 		{
+            WriteLog("CF_pluginClose() - Start");
+
+            //Make sure we can connect to it...
+            if (boolFirstLaunch)
+            {
+                //Connect to panel                
+                SetParent(pNavigator.MainWindowHandle, mHandlePtr);
+                WriteLog("Connected to Panel");
+
+                //Never do this again...
+                boolFirstLaunch = false;
+            }
+
             //Stop all timers
             nightTimer.Enabled = false;
             muteCFTimer.Enabled = false;
@@ -501,7 +514,7 @@ namespace Navigator
                 System.Threading.Thread.Sleep(500);
                 if (!boolMainScreen)
                 {
-                    thepanel.Visible = true;
+                    thepanel.Visible = true; // Make sure its visible, and not behind stats screen
                     SendCommand("$maximize\r\n", false, TCPCommand.Minimize);
                 }
             }
@@ -555,8 +568,9 @@ namespace Navigator
                 WriteLog("Failed to restore .NAV to settings.xml"); 
             }
 
-            WriteLog("All done."); 
+            WriteLog("CF_pluginClose() - End");
             base.CF_pluginClose(); // calls form Dispose() method
+            WriteLog("CF_pluginClose() - End");
 		}
 		
 
@@ -631,8 +645,6 @@ namespace Navigator
 		public override void CF_pluginCommand(string command, string param1, string param2)
 		{
             WriteLog("CF_pluginCommand: " + command + " " + param1 + ", " + param2);
-
-
 		}
 
         /// <summary>
@@ -1068,14 +1080,14 @@ namespace Navigator
             {
                 WriteLog("App Load Config File");
 
-                // PlayPause prompt?
+                // Mute/Unmute prompt?
                 try
                 {
-                    bool.Parse(this.pluginConfig.ReadField("/APPCONFIG/PAUSEPLAYSTATUS"));
+                    bool.Parse(this.pluginConfig.ReadField("/APPCONFIG/MUTEUNMUTESTATUS"));
                 }
                 catch
                 {
-                    this.pluginConfig.WriteField("/APPCONFIG/PAUSEPLAYSTATUS", "False", true);
+                    this.pluginConfig.WriteField("/APPCONFIG/MUTEUNMUTESTATUS", "False", true);
                 }
 
                 // OSMOK (Supresses OSM License prompt)
@@ -1242,7 +1254,7 @@ namespace Navigator
                     WriteLog("boolAlerts: " + boolAlerts.ToString());
                 }
 
-                //Use Louk's named pipes?
+                //Use Louk's named pipe?
                 try
                 {
                     boolNamedPipes = bool.Parse(this.pluginConfig.ReadField("/APPCONFIG/NAMEDPIPE"));
@@ -1285,8 +1297,6 @@ namespace Navigator
                     WriteLog("CF_ConfigSettings.OSVersion:        '" + CF_getConfigSetting(CF_ConfigSettings.OSVersion).ToString() + "'");
                 }
                 catch { }
-
-
             }
             catch { }
         }
@@ -1453,9 +1463,11 @@ namespace Navigator
 
             //Mute/unmute
             if (CF_getConfigFlag(CF_ConfigFlags.GPSAttMute)) CF_systemCommand(CF_Actions.UNMUTE);
-                    
+                                
             //Play/Pause
-            if (bool.Parse(this.pluginConfig.ReadField("/APPCONFIG/PAUSEPLAYSTATUS")) == true) CF_systemCommand(CF_Actions.PLAYPAUSE);
+            /**/ //if (bool.Parse(this.pluginConfig.ReadField("/APPCONFIG/PAUSEPLAYSTATUS")) == true) CF_systemCommand(CF_Actions.PLAYPAUSE);
+            //XXX
+            if (bool.Parse(this.pluginConfig.ReadField("/APPCONFIG/MUTEUNMUTESTATUS")) == true) CF_systemCommand(CF_Actions.UNMUTE);
 
             boolInMutePeriod = false; // No longer in mute phase
             muteCFTimer.Enabled = false; //Turn off timer until next time
@@ -1763,12 +1775,9 @@ namespace Navigator
         //Called when Navigator Speaks (Either SOUND via TCP or messages via Louk's named pipe
         private void NavigatorStopCFAudio()
         {
-            /*//CF_setPlayPauseButton
-            CF_getAudioStatus
-                CF_AudioAction.Pause*/
+            //xxx
 
-
-            //Mute/unmute
+            //ATT Mute/unmute
             if (CF_getConfigFlag(CF_ConfigFlags.GPSAttMute))
             {
                 WriteLog("Mute (GPS ATT) CF Audio");
@@ -1779,16 +1788,16 @@ namespace Navigator
             }
             else WriteLog("CF GPS ATT not enabled");
 
-            //Play/Pause
-            if (bool.Parse(this.pluginConfig.ReadField("/APPCONFIG/PAUSEPLAYSTATUS")) == true)
+            //Mute/Unmute
+            if (bool.Parse(this.pluginConfig.ReadField("/APPCONFIG/MUTEUNMUTESTATUS")) == true)
             {
-                WriteLog("PlayPause Enabled.");
-                CF_systemCommand(CF_Actions.PLAYPAUSE);
+                WriteLog("MuteUnmute Enabled.");
+                CF_systemCommand(CF_Actions.MUTE);
                 
                 //Can't enable timer in a non-UI thread. Only start timer if not using named pipe
                 if (!boolNamedPipes) this.BeginInvoke(new MethodInvoker(delegate { muteCFTimer.Interval = 2500; muteCFTimer.Enabled = true; }));
             }
-            else WriteLog("PlayPause not enabled");
+            else WriteLog("MuteUnmute not enabled");
 
             //We're in a MUTE period
             this.BeginInvoke(new MethodInvoker(delegate { boolInMutePeriod = true; }));            
