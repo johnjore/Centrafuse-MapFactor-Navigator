@@ -45,7 +45,7 @@ namespace Navigator
         {
             if (server.Connected == false)
             {
-                //If we dont have a connection with Navigator, try and create one               
+                //If we dont have a connection with Navigator, try and create one
                 try
                 {
                     //Setup the telnet connection
@@ -263,6 +263,12 @@ namespace Navigator
                                 */
                                 if (strCommands.Contains("SOUND"))
                                 {
+                                    /**/ //First check if audio is playing, if not, ignore
+                                    //xxx                                    
+                                    //CF_params.mediaPlaying and CF_params.pauseAudio
+                                    //CF_params.mediaPlaying
+
+
                                     //Only do this if we're not using named pipes
                                     if (!boolNamedPipes)
                                     {
@@ -312,14 +318,32 @@ namespace Navigator
                                     try
                                     {
                                         string[] rmCdata = strCommands.Split(',');
-                                        try { _currentPosition.Latitude = rmCdata[4] == "N" ? double.Parse(rmCdata[3], CultureInfo.InvariantCulture) : double.Parse("-" + rmCdata[3], CultureInfo.InvariantCulture); }
+                                        try { _currentPosition.Latitude = rmCdata[4] == "N" ? NMEAtoDecimal(rmCdata[3]) : NMEAtoDecimal(rmCdata[3]) * -1; }
                                         catch { WriteLog("Failed to convert Latitude"); }
-                                        try { _currentPosition.Longitude = rmCdata[6] == "E" ? double.Parse(rmCdata[5], CultureInfo.InvariantCulture) : double.Parse("-" + rmCdata[5], CultureInfo.InvariantCulture); }
+                                        try { _currentPosition.Longitude = rmCdata[6] == "E" ? NMEAtoDecimal(rmCdata[5]) : NMEAtoDecimal(rmCdata[5]) * -1; }
                                         catch { WriteLog("Failed to convert Longitude"); }
-                                        try { _currentPosition.Heading = double.Parse(rmCdata[8], CultureInfo.InvariantCulture); }
+                                        try {_currentPosition.Heading = double.Parse(rmCdata[8], CultureInfo.InvariantCulture); }
                                         catch { WriteLog("Failed to convert Heading"); }
-                                        try { _currentPosition.Speed = double.Parse(rmCdata[7], CultureInfo.InvariantCulture); }
+                                        try {                                          
+                                            //Speed is in knots in NMEA strings
+
+                                            //Convert to Metric?
+                                            if (ReadCFValue("/APPCONFIG/SPEEDUNIT", "M", CFTools.AppDataPath + "\\System\\config.xml"))
+                                            {
+                                                _currentPosition.Speed = double.Parse(rmCdata[7], CultureInfo.InvariantCulture) * 0.539956803456;
+                                            }
+
+                                            //Convert to Imperial?
+                                            if (ReadCFValue("/APPCONFIG/SPEEDUNIT", "I", CFTools.AppDataPath + "\\System\\config.xml"))
+                                            {
+                                                _currentPosition.Speed = double.Parse(rmCdata[7], CultureInfo.InvariantCulture) * 1.1507794480136;
+                                            }                                        
+                                        }
                                         catch { WriteLog("Failed to convert Speed"); }
+                                        try { _navStats.GPSTime = rmCdata[1]; }
+                                        catch { WriteLog("Failed to convert GPS Time"); }
+                                        try { _navStats.GPSDate = rmCdata[9]; }
+                                        catch { WriteLog("Failed to convert GPS Date"); }
                                     }
                                     catch
                                     {
@@ -339,9 +363,9 @@ namespace Navigator
                                     {
                                         string[] ggaData = strCommands.Split(',');
                                         try { _currentPosition.LockedSatellites = int.Parse(ggaData[7], CultureInfo.InvariantCulture); }
-                                        catch { } //WriteLog("Failed to convert LockedSatellites"); }
+                                        catch { WriteLog("Failed to convert LockedSatellites"); }
                                         try { _currentPosition.Altitude = double.Parse(ggaData[9], CultureInfo.InvariantCulture); }
-                                        catch { } //WriteLog("Failed to convert Altitude"); }
+                                        catch { WriteLog("Failed to convert Altitude"); }
                                     }
                                     catch
                                     {
@@ -368,30 +392,26 @@ namespace Navigator
                                 }
                                 else if (strCommands.Split(',').Length == 4)
                                 {
+                                    try { _navStats.DistanceMetersNextWaypoint = int.Parse(strCommands.Split(',')[0]); }
+                                    catch { };
+                                    try { _navStats.TimeSecondsNextWaypoint = int.Parse(strCommands.Split(',')[1]); }
+                                    catch { };
+                                    try { _navStats.DistanceMetersDestination = int.Parse(strCommands.Split(',')[2]); }
+                                    catch { };                                    
+                                    try { _navStats.TimeSecondsDestination = int.Parse(strCommands.Split(',')[3]); }
+                                    catch { };
+                                    
                                     if (this.Visible == true)
                                     {
                                         WriteLog("Navigation stats. Do nothing as plugin is visible: '" + strCommands + "'");
                                     }
                                     else
                                     {
-                                        try
+                                        //Tell the user?
+                                        if ((_navStats.TimeSecondsNextWaypoint < 30))
                                         {
-                                            try { _navStats.DistanceMetersDestination = int.Parse(strCommands.Split(',')[0]); }
-                                            catch { };
-                                            try { _navStats.DistanceMetersNextWaypoint = int.Parse(strCommands.Split(',')[1]); }
-                                            catch { };
-                                            try { _navStats.TimeSecondsDestination = int.Parse(strCommands.Split(',')[2]); }
-                                            catch { };
-                                            try { _navStats.TimeSecondsNextWaypoint = int.Parse(strCommands.Split(',')[3]); }
-                                            catch { };
-
-                                            //Tell the user?
-                                            if ((_navStats.TimeSecondsNextWaypoint < 30))
-                                            {
-                                                this.CF_systemCommand(CF_Actions.SHOWINFO, this.pluginLang.ReadField("/APPLANG/NAVIGATOR/ARRIVING") + _navStats.TimeSecondsNextWaypoint.ToString() + this.pluginLang.ReadField("/APPLANG/NAVIGATOR/SECONDS"), "AUTOHIDE");
-                                            }
+                                            this.CF_systemCommand(CF_Actions.SHOWINFO, this.pluginLang.ReadField("/APPLANG/NAVIGATOR/ARRIVING") + " " + _navStats.TimeSecondsNextWaypoint.ToString() + " " + this.pluginLang.ReadField("/APPLANG/NAVIGATOR/SECONDS"), "AUTOHIDE");
                                         }
-                                        catch { WriteLog("Unable to parse navigation statistics"); }
                                     }
                                 }
                                 else if (strCommands != "")

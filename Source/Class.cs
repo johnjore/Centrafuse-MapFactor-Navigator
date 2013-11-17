@@ -51,6 +51,8 @@ namespace Navigator
         public int TimeSecondsNextWaypoint;
         public int DistanceMetersDestination;
         public int TimeSecondsDestination;
+        public string GPSDate;
+        public string GPSTime;
     }
 
     public enum TCPCommand

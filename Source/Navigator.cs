@@ -18,22 +18,16 @@
 /*
  * http://static.mapfactor.com/files/Navigator_RemoteCommands_-_KB_1.pdf
  * Bug: TCP setup on Navigator? (Workaround implemented, modify settings.xml)
+ * 
  * What if Navigator restarts? Disconnect from panel and re-connect?
  * XP and embedding?
- * Move SendCommand and receive to thread?
+ * Move SendCommand and receive to its own thread?
  * Parse TCP responses from Navigator... counter++ for each SendCommand. Create FIFO buffer? Create thread?
- * 
  * Remove non-required functions
  * 
- /*
-*
-* CF3_raisePluginEvent()
- * 
- * "extra params" not working?
- * 2nd screen with lines of NMEA data
- * 
- * GPS Data: /100
- * button for GPS info screen
+ * Setup screen values not refreshing
+ * How to detect if media is playing or not
+ * Patch navigator for named pipe fix
 */
 /* 
  * This is the main CS file
@@ -80,12 +74,14 @@ namespace Navigator
         /**/ //This should be moved to a AppConfigure class?
         private string strEXEPath = "";                     // Folder and EXE name
         private string strEXEParameters = "";               // Paramters to use
-        private bool boolFirstStart = true;                 // First time pluginshow is run?
         private bool boolFullScreen = false;                // Full screen?
         private bool boolFREE = true;                       // Free edition?
         private bool boolOSMOK = false;                     // If true, supresses OSM License prompt
         private bool boolAlerts = false;                    // Show alerts if NOT active plugin?
+        private bool boolFirstLaunch = true;                // If first launch?
         private bool boolNamedPipes = false;                // Use Louk's named pipes for mute/unmute?
+        private bool boolMainScreen = true;                 // Start in main navigation screen
+        private bool boolInMutePeriod = false;               // True if already in MUTE period
         private IntPtr mHandlePtr;                          // var for window handle number to catch
         private readonly CFControls.CFPanel _containerPanel;
         CFControls.CFPanel thepanel = null;                 // The panel to 'project' Navigator into        
@@ -102,6 +98,7 @@ namespace Navigator
         Timer CallStatusTimer = new System.Windows.Forms.Timer();    // timer for checking if a call is in progress
         Timer EnableGPSTimer = new System.Windows.Forms.Timer();    // timer before enabling the GPS after hibernation
         Timer NavDestinationTimer = new System.Windows.Forms.Timer();    // timer for checking for destination proximity if not active plugin
+        Timer NavStatustimer = new System.Windows.Forms.Timer();        //timer for updating GPS status screen
 
         //From Mark
         private readonly CfNavData _currentPosition = new CfNavData();
@@ -155,7 +152,10 @@ namespace Navigator
                 // All plugins must call this method once
                 CF3_initPlugin(PluginName, true);
                 ICFSetup = new NavSetup(this, pluginConfig, pluginLang);
-                
+
+                //Clear old values from log file
+                CFTools.writeModuleLog("startup", LogFilePath);
+
                 //Log current version of DLL for debug purposes
                 WriteLog("Assembly Version: '" + Assembly.GetExecutingAssembly().GetName().Version.ToString() + "'");
 
@@ -228,24 +228,28 @@ namespace Navigator
                 // Configured?
                 try
                 {
-                    //This fails and crashes during initial install
-                    bool.Parse(this.pluginConfig.ReadField("/APPCONFIG/CONFIGURED"));
+                 
 
-                    //Launch Navigator
+                    //Launch Navigator                    
                     try
                     {
                         pNavigator = new Process();
                         pNavigator.StartInfo.FileName = strEXEPath + "\\PC_Navigator.exe";
-                        //Do NOT change the size of this window. If OSMOK is not True, user can't see OK button!
-                        pNavigator.StartInfo.Arguments = "--window_border=no " + strEXEParameters + " --window_position=0,88,288,200";
-                        //+ thepanel.Bounds.Left.ToString() + "," + thepanel.Bounds.Top.ToString() + "," + thepanel.Bounds.Right.ToString() + "," + thepanel.Bounds.Bottom.ToString();
+                        pNavigator.StartInfo.Arguments = "--window_border=no " + strEXEParameters + " --window_position=" + this.pluginConfig.ReadField("/APPCONFIG/WINDOWSIZE");
+                        try
+                        {
+                            if (bool.Parse(this.pluginConfig.ReadField("/APPCONFIG/NOHIRES")) == true)
+                            {
+                                pNavigator.StartInfo.Arguments = pNavigator.StartInfo.Arguments + " --nohires";
+                            }
+                        }
+                        catch { WriteLog("Failed to interpret NOHIRES setting"); }
                         //This does not work: "--tcpserver=127.0.0.1:" + intTCPPort.ToString(); Settings.XML modified
                         WriteLog("Launching Navigator using: '" + pNavigator.StartInfo.FileName + "'");
                         WriteLog("Parameters: '" + pNavigator.StartInfo.Arguments + "'");
                         pNavigator.Start();
                         System.Threading.Thread.Sleep(500); // Allow the process to open it's window
-                        //pNavigator.WaitForInputIdle();     //Dont use this, the window location is messed up. Can't press OK
-                        //SetParent(pNavigator.MainWindowHandle, mHandlePtr);
+                        //pNavigator.WaitForInputIdle();     //Dont use this, the window location is messed up. Can't press OK                        
                         WriteLog("Launched");
                     }
                     catch (Exception ex)
@@ -261,7 +265,6 @@ namespace Navigator
                     this.pluginConfig.WriteField("/APPCONFIG/CONFIGURED", "True", true);
                     this.pluginConfig.WriteField("/APPCONFIG/LOGEVENTS", "True", true);
                 }
-
 
                 //Say YES to OSM data usage, if user changed to ON
                 try
@@ -349,19 +352,30 @@ namespace Navigator
 
         //Action the message from the named pipe
         void DisplayMessageReceived(PipeServer.Server.Client client, string message)
-        {            
+        {
+            /**/
+            //First check if audio is playing, if not, ignore
+
+            //Note: 'message' is not \0 terminated!
+            WriteLog("boolInMutePeriod: " + boolInMutePeriod.ToString());
+
             if (message.Contains("Un"))
             {
                 WriteLog("Named pipe received the 'unmute' message");
                 //Lets try and unmute
-                muteCFTimer.Interval = 1000;
+
+                //Using Pause/Play causes much longer delays than using ATT
+                if (bool.Parse(this.pluginConfig.ReadField("/APPCONFIG/PAUSEPLAYSTATUS")) == true) muteCFTimer.Interval = 2000; else muteCFTimer.Interval = 1000;
                 muteCFTimer.Enabled = true;
             }
             else
             {
                 WriteLog("Named pipe received the 'mute' message");
+
+                //If timer is already enabled, mute has been sent. Make it stop!
+                muteCFTimer.Stop();
                 muteCFTimer.Enabled = false; //Stop the timer, Navigator spoke...
-                NavigatorStopCFAudio();
+                if (boolInMutePeriod == false) NavigatorStopCFAudio();
             }
         }
 
@@ -391,17 +405,12 @@ namespace Navigator
             // CF_localskinsetup() should always call CF3_initSection() first, with the exception of setting any
             // CF_displayHooks flags, which affect the behaviour of the CF3_initSection() call.
             CF3_initSection(PluginName);
-            
+                        
             // Set display hook so that future CF3_initSection() calls will not clear the panels array
             CF_displayHooks.clearControl.panels = false;
-
-            //if (boolFirstStart) this.CF3_initSection("Navigator");
-
+            
             // Set up custom button handlers for buttons without a CML action in skin.xml
             this.CF_createButtonClick("MinMax", new MouseEventHandler(btnMinMax_Click));
-            this.CF_createButtonClick("SectionA", new MouseEventHandler(btnSectionA_Click));
-            this.CF_createButtonClick("SectionB", new MouseEventHandler(btnSectionB_Click));
-
             CFTools.writeLog(PluginName, "CF_localskinsetup", "Exiting");
 		}
 
@@ -419,7 +428,6 @@ namespace Navigator
             EnableGPSTimer.Enabled = false;
             NavDestinationTimer.Enabled = false;
 
-
             //Louk's Pipe
             if (this.pipeServer.Running)
             {
@@ -436,6 +444,11 @@ namespace Navigator
                 WriteLog("Switch to NAV and close it");
                 CF3_executeCMLAction("Centrafuse.CFActions.Nav");
                 System.Threading.Thread.Sleep(500);
+                if (!boolMainScreen)
+                {
+                    thepanel.Visible = true;
+                    SendCommand("$maximize\r\n", false, TCPCommand.Minimize);
+                }
             }
 
             //Close the connection
@@ -496,19 +509,17 @@ namespace Navigator
 		/// This is called by the system when a button with this plugin action has been clicked.
 		/// </summary>
 		public override void CF_pluginShow()
-		{
-            //Must do this here and NOT in CF_pluginInit()
-            if (boolFirstStart)
+		{   
+            if (boolFirstLaunch)
             {
-                //Connect to panel
+                //Connect to panel                
                 SetParent(pNavigator.MainWindowHandle, mHandlePtr);
                 WriteLog("Connected to Panel");
 
-                //Do not re-init connection
-                boolFirstStart = false;
+                //Never do this again...
+                boolFirstLaunch = false;
             }
-            //End first startup
-
+            
             //Configure night mode toggle option
             SetDayNightToggle();
 
@@ -565,6 +576,8 @@ namespace Navigator
 		public override void CF_pluginCommand(string command, string param1, string param2)
 		{
             WriteLog("CF_pluginCommand: " + command + " " + param1 + ", " + param2);
+
+
 		}
 
         /// <summary>
@@ -670,7 +683,7 @@ namespace Navigator
                     break;
                 case CFNavInfo.Direction:
                     double temp;
-                    retvalue = double.TryParse(_currentPosition.Heading.ToString(CultureInfo.InvariantCulture), out temp)
+                    retvalue = double.TryParse(_currentPosition.Heading.ToString(CultureInfo.InvariantCulture), out temp) 
                                    ? _currentPosition.Heading.ToCardinalMark().ToString()
                                    : "";
                     break;
@@ -684,13 +697,13 @@ namespace Navigator
                     retvalue = "";
                     break;
                 case CFNavInfo.Latitude:
-                    retvalue = _currentPosition.Latitude.ToString(CultureInfo.InvariantCulture);
+                    retvalue = _currentPosition.Latitude.ToString("F5", CultureInfo.InvariantCulture);
                     break;
                 case CFNavInfo.LockedSatellites:
                     retvalue = _currentPosition.LockedSatellites.ToString(CultureInfo.InvariantCulture);
                     break;
                 case CFNavInfo.Longitude:
-                    retvalue = _currentPosition.Longitude.ToString(CultureInfo.InvariantCulture);
+                    retvalue = _currentPosition.Longitude.ToString("F5", CultureInfo.InvariantCulture);
                     break;
                 case CFNavInfo.RemainingDistance:
                     retvalue = _navStats.DistanceMetersDestination.ToString();
@@ -910,10 +923,14 @@ namespace Navigator
 
             WriteLog("CF_pluginCMLCommand: " + id);
 
-/*          switch (id.ToUpper())
+
+            switch (id.ToUpper())
             {
+                case "GOTOSTATUS": //Flip Status / Navigation
+                    btnSectionStatus_Click(null, null);
+                    return true;
             }
-*/
+
             return false;
         }
 
@@ -1006,16 +1023,6 @@ namespace Navigator
                     this.pluginConfig.WriteField("/APPCONFIG/PAUSEPLAYSTATUS", "False", true);
                 }
 
-                // Send notification
-                try
-                {
-                    bool.Parse(this.pluginConfig.ReadField("/APPCONFIG/NOTIFICATIONSTATUS"));
-                }
-                catch
-                {
-                    this.pluginConfig.WriteField("/APPCONFIG/NOTIFICATIONSTATUS", "True", true);
-                }
-
                 // OSMOK (Supresses OSM License prompt)
                 try
                 {
@@ -1091,12 +1098,13 @@ namespace Navigator
                 finally
                 {
                     WriteLog("strEXEParameters: " + strEXEParameters);
-                }
-                
+                }                
+
                 //Get correct atlas setting:
                 try
                 {
-                    //Read from registry
+                    //Read from registry 
+                    /**/ //Should not read hardcoded registry values. Either move to xml file, or enumerate registry
                     RegistryKey rk = Registry.LocalMachine;
                     RegistryKey sk1 = rk.OpenSubKey("SOFTWARE\\MapFactor\\set\\pcnavigator_12");
 
@@ -1104,7 +1112,11 @@ namespace Navigator
                     {
                         //Add the '_free' text to the filename        
                         string strTmp = sk1.GetValue("Atlas").ToString();
-                        strEXEParameters = strEXEParameters + " --atlas=" + strTmp.Substring(0, strTmp.Length - 4) + "_free.idc";
+                        strTmp = strTmp.ToUpper();
+                        if (!strTmp.Contains("_FREE.IDC")) 
+                            strEXEParameters = strEXEParameters + " --atlas=" + strTmp.Substring(0, strTmp.Length - 4) + "_free.idc";
+                        else 
+                            strEXEParameters = strEXEParameters + " --atlas=" + sk1.GetValue("Atlas").ToString();
                     }
                     else
                     {
@@ -1120,7 +1132,31 @@ namespace Navigator
                     WriteLog("strEXEParameters: " + strEXEParameters);
                 }
 
+                //Get/Set initial window size
+                string strWindowSize = "0,0,700,392";
+                try
+                {
+                    string tmpStr = pluginConfig.ReadField("/APPCONFIG/WINDOWSIZE");
+                    if (tmpStr.Length < 8)
+                    {
+                        pluginConfig.WriteField("/APPCONFIG/WINDOWSIZE", strWindowSize, true);
+                    }
+                    else
+                    {
+                        strWindowSize = tmpStr;
+                    }
+                }
+                catch
+                {
+                    pluginConfig.WriteField("/APPCONFIG/WINDOWSIZE", strWindowSize, true);
+                    
+                }
+                finally
+                {                    
+                    WriteLog("Window Size: " + strWindowSize);
+                }
 
+                
                 // TCP Port
                 try
                 {
@@ -1164,6 +1200,16 @@ namespace Navigator
                 finally
                 {
                     WriteLog("boolNamedPipes: " + boolNamedPipes.ToString());
+                }
+
+                // NoHiRes?
+                try
+                {
+                    bool.Parse(this.pluginConfig.ReadField("/APPCONFIG/NOHIRES"));
+                }
+                catch
+                {
+                    this.pluginConfig.WriteField("/APPCONFIG/NOHIRES", "False", true);
                 }
 
                 // CF Settings
@@ -1354,15 +1400,9 @@ namespace Navigator
             if (CF_getConfigFlag(CF_ConfigFlags.GPSAttMute)) CF_systemCommand(CF_Actions.UNMUTE);
                     
             //Play/Pause
-            if (bool.Parse(this.pluginConfig.ReadField("/APPCONFIG/PAUSEPLAYSTATUS")) == true) CF_systemCommand(CF_Actions.PLAY);
+            if (bool.Parse(this.pluginConfig.ReadField("/APPCONFIG/PAUSEPLAYSTATUS")) == true) CF_systemCommand(CF_Actions.PLAYPAUSE);
 
-            /**/ //Not implemented
-            //Send notification;            
-            if (bool.Parse(this.pluginConfig.ReadField("/APPCONFIG/NOTIFICATIONSTATUS")) == true)
-            {
-                //CF3_raisePluginEvent(Unmute)
-            }
-
+            boolInMutePeriod = false; // No longer in mute phase
             muteCFTimer.Enabled = false; //Turn off timer until next time
         }
 
@@ -1491,30 +1531,85 @@ namespace Navigator
             return false;
         }
 
+        // Event to get CF to ask for stats
+        private void NavStatustimer_Tick(object sender, EventArgs e)
+        {
+            try { CF_updateText("DataLongitude", CF_navGetInfo(CFNavInfo.Longitude)); } catch { };
+            try { CF_updateText("DataLatitude", CF_navGetInfo(CFNavInfo.Latitude)); } catch { };
+            try { CF_updateText("DataAltitude", CF_navGetInfo(CFNavInfo.Altitude)); } catch { };
+            try { CF_updateText("DataLockedSatellites", CF_navGetInfo(CFNavInfo.LockedSatellites)); } catch { };
+            try {
+                if (ReadCFValue("/APPCONFIG/SPEEDUNIT", "I", CFTools.AppDataPath + "\\System\\config.xml")) CF_updateText("DataSpeed", CF_navGetInfo(CFNavInfo.Speed).Substring(0, 5) + " mph");
+                if (ReadCFValue("/APPCONFIG/SPEEDUNIT", "M", CFTools.AppDataPath + "\\System\\config.xml")) CF_updateText("DataSpeed", CF_navGetInfo(CFNavInfo.Speed).Substring(0, 5) + " km/h"); 
+            } 
+            catch { };
+            try { CF_updateText("DataDirection", CF_navGetInfo(CFNavInfo.Direction)); } catch { };
+            try { CF_updateText("DataAzimuth", CF_navGetInfo(CFNavInfo.Azimuth)); } catch { };
+            try { CF_updateText("DataETR", CF_navGetInfo(CFNavInfo.ETR)); } catch { };
+            try { CF_updateText("DataRemainingDistance", CF_navGetInfo(CFNavInfo.RemainingDistance)); } catch { };
+            try { CF_updateText("DataNextTurn", CF_navGetInfo(CFNavInfo.NextTurn)); } catch { };
+            try { CF_updateText("DataInRoute", CF_navGetInfo(CFNavInfo.InRoute)); } catch { };
+            try { CF_updateText("DataGPSTime", _navStats.GPSTime.Substring(0, 2) + ":" + _navStats.GPSTime.Substring(2, 2) + ":" + _navStats.GPSTime.Substring(4, 2) + " Offset:" + GetGmtOffset(_currentPosition.Latitude, _currentPosition.Longitude).ToString() + "+DST"); }catch { };
+        }
+
+        private void SetLabelStatus(bool status)
+        {
+            CF_setLabelEnableFlag("DataLongitude", status);
+            CF_setLabelEnableFlag("DataLatitude", status);
+            CF_setLabelEnableFlag("DataAltitude", status);
+            CF_setLabelEnableFlag("DataLockedSatellites", status);
+            CF_setLabelEnableFlag("DataSpeed", status);
+            CF_setLabelEnableFlag("DataDirection", status);
+            CF_setLabelEnableFlag("DataAzimuth", status);
+            CF_setLabelEnableFlag("DataETR", status);
+            CF_setLabelEnableFlag("DataRemainingDistance", status);
+            CF_setLabelEnableFlag("DataNextTurn", status);
+            CF_setLabelEnableFlag("DataInRoute", status);
+            CF_setLabelEnableFlag("DataGPSTime", status);
+            CF_setLabelEnableFlag("lblLongitude", status);
+            CF_setLabelEnableFlag("lblLatitude", status);
+            CF_setLabelEnableFlag("lblAltitude", status);
+            CF_setLabelEnableFlag("lblLockedSatellites", status);
+            CF_setLabelEnableFlag("lblSpeed", status);
+            CF_setLabelEnableFlag("lblDirection", status);
+            CF_setLabelEnableFlag("lblAzimuth", status);
+            CF_setLabelEnableFlag("lblETR", status);
+            CF_setLabelEnableFlag("lblRemainingDistance", status);
+            CF_setLabelEnableFlag("lblNextTurn", status);
+            CF_setLabelEnableFlag("lblInRoute", status);
+            CF_setLabelEnableFlag("lblGPSTime", status);
+        }
+
         //Switch to status window
-        private void btnSectionA_Click(object sender, MouseEventArgs e)
+        private void btnSectionStatus_Click(object sender, MouseEventArgs e)
         {
-            // The Section button has been clicked...
-            WriteLog("SectionA Button clicked.");
+            if (boolMainScreen)
+            {
+                WriteLog("Switch to status screen");
+                SendCommand("$minimize\r\n", false, TCPCommand.Minimize);
+                thepanel.Visible = false;
+                SetLabelStatus(true);
 
-            //Minimize Navigator to hide it
-            SendCommand("$minimize\r\n", false, TCPCommand.Minimize);
+                //Timer to update GPS Status screen
+                NavStatustimer_Tick(null, null); //Make first update now
+                NavStatustimer.Interval = 1000; // Wait this long between the next updates
+                NavStatustimer.Enabled = true;
+                NavStatustimer.Tick += new EventHandler(NavStatustimer_Tick);
 
-            this.CF3_initSection("GPSStatus");
+                boolMainScreen = false;
+            }
+            else
+            {
+                WriteLog("Switch to Navigator");
+                NavStatustimer.Enabled = false; //Stop the updates
+                SetLabelStatus(false);
+                thepanel.Visible = true;
+                SendCommand("$maximize\r\n", false, TCPCommand.Minimize);
+                boolMainScreen = true;
+            }
         }
 
-        //Switch to Navigation window
-        private void btnSectionB_Click(object sender, MouseEventArgs e)
-        {
-            // The Section button has been clicked...
-            WriteLog("SectionB Button clicked.");
-
-            //Minimize Navigator to hide it
-            SendCommand("$maximize\r\n", false, TCPCommand.Minimize);
-          
-            this.CF3_initSection("Navigator");
-        }
-
+        
         //Resize window
         private void btnMinMax_Click(object sender, MouseEventArgs e)
         {
@@ -1541,9 +1636,9 @@ namespace Navigator
 
             //Resize panel
             this.thepanel.Bounds = base.CF_createRect(SkinReader.ParseBounds(SkinReader.GetControlAttribute("Navigator", "PanelNavigator", ("fullbounds").ToLower(), base.pluginSkinReader)));
-
+            
             //Repos buttons
-            RePosbutton("Section", "fullbounds");
+            RePosbutton("GPSStatus", "fullbounds");
             RePosbutton("VolDown", "fullbounds");
             RePosbutton("VolUp", "fullbounds");
             RePosbutton("Exit", "fullbounds");
@@ -1574,7 +1669,7 @@ namespace Navigator
             thepanel.Bounds = base.CF_createRect(SkinReader.ParseBounds(SkinReader.GetControlAttribute("Navigator", "PanelNavigator", ("bounds").ToLower(), base.pluginSkinReader)));
 
             //Repos buttons
-            RePosbutton("Section", "bounds");
+            RePosbutton("GPSStatus", "bounds");
             RePosbutton("VolDown", "bounds");
             RePosbutton("VolUp", "bounds");
             RePosbutton("Exit", "bounds");
@@ -1613,12 +1708,17 @@ namespace Navigator
         //Called when Navigator Speaks (Either SOUND via TCP or messages via Louk's named pipe
         private void NavigatorStopCFAudio()
         {
+            /*//CF_setPlayPauseButton
+            CF_getAudioStatus
+                CF_AudioAction.Pause*/
+
+
             //Mute/unmute
             if (CF_getConfigFlag(CF_ConfigFlags.GPSAttMute))
             {
                 WriteLog("Mute (GPS ATT) CF Audio");
                 CF_systemCommand(CF_Actions.ATT);
-
+              
                 //Can't enable timer in a non-UI thread. Only start timer if not using named pipe
                 if (!boolNamedPipes) this.BeginInvoke(new MethodInvoker(delegate { muteCFTimer.Interval = 2500;  muteCFTimer.Enabled = true; }));
             }
@@ -1628,23 +1728,15 @@ namespace Navigator
             if (bool.Parse(this.pluginConfig.ReadField("/APPCONFIG/PAUSEPLAYSTATUS")) == true)
             {
                 WriteLog("PlayPause Enabled.");
-                CF_systemCommand(CF_Actions.PAUSE);
-
+                CF_systemCommand(CF_Actions.PLAYPAUSE);
+                
                 //Can't enable timer in a non-UI thread. Only start timer if not using named pipe
                 if (!boolNamedPipes) this.BeginInvoke(new MethodInvoker(delegate { muteCFTimer.Interval = 2500; muteCFTimer.Enabled = true; }));
             }
             else WriteLog("PlayPause not enabled");
 
-            //Send notification
-            if (bool.Parse(this.pluginConfig.ReadField("/APPCONFIG/NOTIFICATIONSTATUS")) == true)
-            {
-                WriteLog("Notification Enabled");
-                //CF3_raisePluginEvent(Mmute)
-
-                //Can't enable timer in a non-UI thread. Only start timer if not using named pipe
-                if (!boolNamedPipes) this.BeginInvoke(new MethodInvoker(delegate { muteCFTimer.Interval = 2500; muteCFTimer.Enabled = true; }));
-            }
-            else WriteLog("Notification not enabled");
+            //We're in a MUTE period
+            this.BeginInvoke(new MethodInvoker(delegate { boolInMutePeriod = true; }));            
         }
 
         //Write to plugin log file
@@ -1659,7 +1751,15 @@ namespace Navigator
         }
 #endregion
 
-        #region Helper methods
+        //Convert NMEA string to Decimal value
+        private double NMEAtoDecimal(String Pos)
+        {
+            //WriteLog("Raw NMEA value:" + Pos);
+            double PosDb = double.Parse(Pos, CultureInfo.InvariantCulture);
+            double Deg = Math.Floor(PosDb / 100);
+            double DecPos = Math.Round(Deg + ((PosDb - (Deg * 100)) / 60), 5);
+            return DecPos;
+        }
 
         public LatLonDms ConvertDecimalToDms(double latitude, double longitude)
         {
@@ -1798,8 +1898,17 @@ namespace Navigator
 
             return retvalue;
         }
+       
+        private DateTime parsTimeOfFix(String dateOfFix, String timeOfFix) 
+        {
+            DateTime convertedDate = DateTime.SpecifyKind(DateTime.Parse(dateOfFix + " " + timeOfFix), DateTimeKind.Utc);
+            var kind = convertedDate.Kind; // will equal DateTimeKind.Utc
 
-        #endregion
+            DateTime dt = convertedDate.ToLocalTime();
+            return dt;
+        }
+
+
 
         //Send mouse click. Used to exit Navigator
         private void ClickOnPoint(IntPtr wndHandle, Point clientPoint)
@@ -1821,6 +1930,7 @@ namespace Navigator
             /// return mouse 
             Cursor.Position = oldPos;
         }
+
 #region Click Events
 
 

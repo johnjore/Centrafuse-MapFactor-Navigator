@@ -86,11 +86,9 @@ namespace Navigator
                     ButtonText[i] = this.langReader.ReadField("/APPLANG/SETUP/TCPPORT");
                     ButtonValue[i++] = this.configReader.ReadField("/APPCONFIG/TCPPORT");
 
-                    ButtonHandler[i] = null; ButtonText[i] = ""; ButtonValue[i++] = "";
-
-                    /*ButtonHandler[i] = SetNavigatorVolume;
-                    ButtonText[i] = this.langReader.ReadField("/APPLANG/SETUP/VOLUME");
-                    ButtonValue[i++] = this.configReader.ReadField("/APPCONFIG/VOLUME");*/
+                    ButtonHandler[i] = new CFSetupHandler(SetInitialWindowSize);
+                    ButtonText[i] = this.langReader.ReadField("/APPLANG/SETUP/WINDOWSIZE");
+                    ButtonValue[i++] = this.configReader.ReadField("/APPCONFIG/WINDOWSIZE");
                                                            
                     // BOOL BUTTONS (5-8)
                     ButtonHandler[i] = new CFSetupHandler(SetLogEvents);
@@ -125,10 +123,10 @@ namespace Navigator
                     ButtonHandler[i] = new CFSetupHandler(SetPausePlayStatus);
                     ButtonText[i] = this.langReader.ReadField("/APPLANG/SETUP/PAUSEPLAYSTATUS");
                     ButtonValue[i++] = this.configReader.ReadField("/APPCONFIG/PAUSEPLAYSTATUS");
-
-                    ButtonHandler[i] = new CFSetupHandler(SetNotificationStatus);
-                    ButtonText[i] = this.langReader.ReadField("/APPLANG/SETUP/NOTIFICATIONSTATUS");
-                    ButtonValue[i++] = this.configReader.ReadField("/APPCONFIG/NOTIFICATIONSTATUS");
+                    
+                    ButtonHandler[i] = new CFSetupHandler(SetNoHiRes);
+                    ButtonText[i] = this.langReader.ReadField("/APPLANG/SETUP/NOHIRES");
+                    ButtonValue[i++] = this.configReader.ReadField("/APPCONFIG/NOHIRES");
 
                     ButtonHandler[i] = null; ButtonText[i] = ""; ButtonValue[i++] = "";
                 }
@@ -162,7 +160,7 @@ namespace Navigator
                 string location = this.configReader.ReadField("/APPCONFIG/EXEPATH");
                 if (string.IsNullOrEmpty(location)) location = PluginPath;
 
-                CFDialogParams dialogParams = new CFDialogParams("Select the folder with PC_Navigator.exe", location);
+                CFDialogParams dialogParams = new CFDialogParams(this.langReader.ReadField("/APPLANG/SETUP/EXEPATH"), location);
                 dialogParams.browseable = true;
                 dialogParams.enablesubactions = true;
                 dialogParams.showfiles = false;
@@ -172,10 +170,10 @@ namespace Navigator
                 {
                     string newPath = results.resultvalue;
                     this.configReader.WriteField("/APPCONFIG/EXEPATH", newPath);
-                    value = newPath;
-                }
+                    value = newPath;                    
+                }               
             }
-            catch (Exception errmsg) { CFTools.writeError(errmsg.Message, errmsg.StackTrace); }
+            catch (Exception errmsg) { CFTools.writeError(errmsg.Message, errmsg.StackTrace); }            
         }
 
         //Extra parameters
@@ -183,21 +181,23 @@ namespace Navigator
         {
             try
             {
-                object tempobject;
-                string resultvalue, resulttext;
-
                 // Display OSK for user to type display name
-                if (mainForm.CF_systemDisplayDialog(CF_Dialogs.OSK, this.langReader.ReadField("/APPLANG/SETUP/EXEPARAMTERS"), (string)value, null, out resultvalue, out resulttext, out tempobject, null, true, true, true, true, false, false, 1) == DialogResult.OK)
-                {
-                    this.configReader.WriteField("/APPCONFIG/EXEPARAMETERS", resultvalue);
+                CFDialogParams dialogParams = new CFDialogParams(this.langReader.ReadField("/APPLANG/SETUP/EXEPARAMETERS"), this.configReader.ReadField("/APPCONFIG/EXEPARAMETERS"));
+                dialogParams.browseable = false;
+                dialogParams.enablesubactions = false;
+                dialogParams.showfiles = false;
 
-                    // Display new value on Settings Screen button
-                    value = resultvalue;
+                CFDialogResults results = new CFDialogResults();
+                if (mainForm.CF_displayDialog(CF_Dialogs.OSK, dialogParams, results) == DialogResult.OK)
+                {
+                    string newParameters = results.resultvalue;
+                    this.configReader.WriteField("/APPCONFIG/EXEPARAMETERS", newParameters);                  
+                    value = newParameters;
                 }
             }
             catch (Exception errmsg) { CFTools.writeError(errmsg.Message, errmsg.StackTrace); }
         }
-        
+
         //Port to use for communications with Navigator
         private void SetTCPPort(ref object value)
         {
@@ -216,13 +216,35 @@ namespace Navigator
 
                     //Value is scrubbed, write it
                     this.configReader.WriteField("/APPCONFIG/TCPPORT", intTemp.ToString());
-
-                    // Display new value on Settings Screen button
                     value = intTemp.ToString();
                 }
             }
             catch (Exception errmsg) { CFTools.writeError(errmsg.Message, errmsg.StackTrace); }
         }
+
+        //Initial Window Size
+        private void SetInitialWindowSize(ref object value)
+        {
+            try
+            {
+                // Display OSK for user to type display name
+                CFDialogParams dialogParams = new CFDialogParams(this.langReader.ReadField("/APPLANG/SETUP/WINDOWSIZE"), this.configReader.ReadField("/APPCONFIG/WINDOWSIZE"));
+                dialogParams.browseable = false;
+                dialogParams.enablesubactions = false;
+                dialogParams.showfiles = false;
+
+                CFDialogResults results = new CFDialogResults();
+                if (mainForm.CF_displayDialog(CF_Dialogs.OSK, dialogParams, results) == DialogResult.OK)
+                {
+                    string newParameters = results.resultvalue;
+                    this.configReader.WriteField("/APPCONFIG/WINDOWSIZE", newParameters);
+                    value = newParameters;
+                }
+            }
+            catch (Exception errmsg) { CFTools.writeError(errmsg.Message, errmsg.StackTrace); }
+            mainForm.Invalidate();
+        }
+
 
         //Log to file during run-time
         private void SetLogEvents(ref object value)
@@ -254,16 +276,16 @@ namespace Navigator
             this.configReader.WriteField("/APPCONFIG/PAUSEPLAYSTATUS", value.ToString());
         }
 
-        //Enable Sending Notification Message on Sound alert?
-        private void SetNotificationStatus(ref object value)
-        {
-            this.configReader.WriteField("/APPCONFIG/NOTIFICATIONSTATUS", value.ToString());
-        }
-
         //Enable Louk's message handler
         private void SetNamedPipeStatus(ref object value)
         {
             this.configReader.WriteField("/APPCONFIG/NAMEDPIPE", value.ToString());
+        }
+
+        //NoHiRes on or off
+        private void SetNoHiRes(ref object value)
+        {
+            this.configReader.WriteField("/APPCONFIG/NOHIRES", value.ToString());
         }
         
 #endregion

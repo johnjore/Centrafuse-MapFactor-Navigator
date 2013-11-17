@@ -123,38 +123,42 @@ namespace PipeServer
         /// </summary>
         private void ListenForClients()
         {
-            while (true)
+            try
             {
-                SafeFileHandle clientHandle =
-                CreateNamedPipe(
-                     this.pipeName,
-                     DUPLEX | FILE_FLAG_OVERLAPPED,
-                     0,
-                     255,
-                     BUFFER_SIZE,
-                     BUFFER_SIZE,
-                     0,
-                     IntPtr.Zero);
+                while (true)
+                {
+                    SafeFileHandle clientHandle =
+                    CreateNamedPipe(
+                         this.pipeName,
+                         DUPLEX | FILE_FLAG_OVERLAPPED,
+                         0,
+                         255,
+                         BUFFER_SIZE,
+                         BUFFER_SIZE,
+                         0,
+                         IntPtr.Zero);
 
-                //could not create named pipe
-                if (clientHandle.IsInvalid)
-                    return;
+                    //could not create named pipe
+                    if (clientHandle.IsInvalid)
+                        return;
 
-                Client client = new Client();
-                client.handle = clientHandle;
+                    Client client = new Client();
+                    client.handle = clientHandle;
 
-                lock (clients)
-                    this.clients.Add(client);
+                    lock (clients)
+                        this.clients.Add(client);
 
-                int success = ConnectNamedPipe(clientHandle, IntPtr.Zero);
+                    int success = ConnectNamedPipe(clientHandle, IntPtr.Zero);
 
-                //could not connect client
-                if (success == 0)
-                    return;
+                    //could not connect client
+                    if (success == 0)
+                        return;
 
-                Thread readThread = new Thread(new ParameterizedThreadStart(Read));
-                readThread.Start(client);
+                    Thread readThread = new Thread(new ParameterizedThreadStart(Read));
+                    readThread.Start(client);
+                }
             }
+            catch { }
         }
 
         /// <summary>
@@ -163,39 +167,43 @@ namespace PipeServer
         /// <param name="clientObj"></param>
         private void Read(object clientObj)
         {
-            Client client = (Client)clientObj;
-            client.stream = new FileStream(client.handle, FileAccess.ReadWrite, BUFFER_SIZE, true);
-            byte[] buffer = new byte[BUFFER_SIZE];
-            ASCIIEncoding encoder = new ASCIIEncoding();
-
-            while (true)
+            try
             {
-                int bytesRead = 0;
+                Client client = (Client)clientObj;
+                client.stream = new FileStream(client.handle, FileAccess.ReadWrite, BUFFER_SIZE, true);
+                byte[] buffer = new byte[BUFFER_SIZE];
+                ASCIIEncoding encoder = new ASCIIEncoding();
 
-                try
+                while (true)
                 {
-                    bytesRead = client.stream.Read(buffer, 0, BUFFER_SIZE);
-                }
-                catch
-                {
-                    //read error has occurred
-                    break;
+                    int bytesRead = 0;
+
+                    try
+                    {
+                        bytesRead = client.stream.Read(buffer, 0, BUFFER_SIZE);
+                    }
+                    catch
+                    {
+                        //read error has occurred
+                        break;
+                    }
+
+                    //client has disconnected
+                    if (bytesRead == 0)
+                        break;
+
+                    //fire message received event
+                    if (this.MessageReceived != null)
+                        this.MessageReceived(client, encoder.GetString(buffer, 0, bytesRead));
                 }
 
-                //client has disconnected
-                if (bytesRead == 0)
-                    break;
-
-                //fire message received event
-                if (this.MessageReceived != null)
-                    this.MessageReceived(client, encoder.GetString(buffer, 0, bytesRead));
+                //clean up resources
+                client.stream.Close();
+                client.handle.Close();
+                lock (this.clients)
+                    this.clients.Remove(client);
             }
-
-            //clean up resources
-            client.stream.Close();
-            client.handle.Close();
-            lock (this.clients)
-                this.clients.Remove(client);
+            catch { };
         }
 
         /// <summary>
@@ -204,19 +212,23 @@ namespace PipeServer
         /// <param name="message">the message to send</param>
         public void SendMessage(string message)
         {
-            lock (this.clients)
+            try
             {
-                ASCIIEncoding encoder = new ASCIIEncoding();
-                byte[] messageBuffer = encoder.GetBytes(message);
-                foreach (Client client in this.clients)
+                lock (this.clients)
                 {
-                    if (client.stream != null)
+                    ASCIIEncoding encoder = new ASCIIEncoding();
+                    byte[] messageBuffer = encoder.GetBytes(message);
+                    foreach (Client client in this.clients)
                     {
-                        client.stream.Write(messageBuffer, 0, messageBuffer.Length);
-                        client.stream.Flush();
+                        if (client.stream != null)
+                        {
+                            client.stream.Write(messageBuffer, 0, messageBuffer.Length);
+                            client.stream.Flush();
+                        }
                     }
                 }
             }
+            catch { }
         }
     }
 }

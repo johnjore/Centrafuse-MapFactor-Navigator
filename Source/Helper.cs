@@ -17,7 +17,6 @@
 
 
 // This was donated by Mark
-// Anything not used in here should be removed!
 using System;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
@@ -44,7 +43,7 @@ namespace Navigator
             NauticalMiles,
             Kilometer
         }
-        
+
         public static double Bearing(Coordinate coordinate1, Coordinate coordinate2)
         {
             double latitude1 = coordinate1.Latitude.ToRadian();
@@ -54,8 +53,7 @@ namespace Navigator
             double x = (Math.Cos(latitude1)*Math.Sin(latitude2)) - ((Math.Sin(latitude1)*Math.Cos(latitude2))*Math.Cos(longitudeDifference));
             return ((Math.Atan2(y, x).ToDegree() + 360.0)%360.0);
         }
-        
-        
+       
         public static double Distance(Coordinate coordinate1, Coordinate coordinate2, UnitsOfLength unitsOfLength)
         {
             double theta = coordinate1.Longitude - coordinate2.Longitude;
@@ -140,10 +138,12 @@ namespace Navigator
                     HighRange = 360.1
                 };
             crange0.Add(crange9);
+
             List<CardinalRanges> cardinalRanges = crange0;
             if ((degree < 0.0) || (degree > 360.0))
             {
-                throw new ArgumentOutOfRangeException("degree", "Degree value must be greater than or equal to 0 and less than or equal to 360.");
+                //new ArgumentOutOfRangeException("degree", "Degree value must be greater than or equal to 0 and less than or equal to 360. (" + degree.ToString() + ")");
+                degree = 0;
             }
             return cardinalRanges.Find(p => (degree >= p.LowRange) && (degree < p.HighRange)).CardinalPoint;
         }
@@ -192,11 +192,13 @@ public class Coordinate
         {
             if (value > 90.0)
             {
-                throw new ArgumentOutOfRangeException("value", "Latitude value cannot be greater than 90.");
+                //throw new ArgumentOutOfRangeException("value", "Latitude value cannot be greater than 90.");
+                value = 0;
             }
             if (value < -90.0)
             {
-                throw new ArgumentOutOfRangeException("value", "Latitude value cannot be less than -90.");
+                //throw new ArgumentOutOfRangeException("value", "Latitude value cannot be less than -90.");
+                value = 0;
             }
             _latitude = value;
         }
@@ -209,11 +211,13 @@ public class Coordinate
         {
             if (value > 180.0)
             {
-                throw new ArgumentOutOfRangeException("value", "Longitude value cannot be greater than 180.");
+                //throw new ArgumentOutOfRangeException("value", "Longitude value cannot be greater than 180.");
+                value = 0;
             }
             if (value < -180.0)
             {
-                throw new ArgumentOutOfRangeException("value", "Longitude value cannot be less than -180.");
+                //throw new ArgumentOutOfRangeException("value", "Longitude value cannot be less than -180.");
+                value = 0;
             }
             _longitude = value;
         }
