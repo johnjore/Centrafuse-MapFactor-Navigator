@@ -739,7 +739,6 @@ namespace Navigator
             }
         }
 
-
         // Handle Navigator Exited event
         private void pNavigator_Exited(object sender, System.EventArgs e)
         {
@@ -1478,8 +1477,6 @@ namespace Navigator
                     catch { WriteLog("Failed to set IP / Port details"); }
 
                     //Remove Exit and Minimize from Navigator
-                    /**/
-                    /*
                     try
                     {
                         XmlNodeList xnList = configxml.SelectNodes("/settings/APP/mainMenu/action");
@@ -1499,7 +1496,6 @@ namespace Navigator
                         configxml.Save(strAppDataPath + "\\settings.xml");
                     }
                     catch { WriteLog("Failed to disable menu options"); }
-                     * */
                 }
                 catch { WriteLog("Failed to configure Navigator's settings.xml file"); }
             }
