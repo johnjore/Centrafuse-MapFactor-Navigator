@@ -180,11 +180,15 @@ namespace Navigator
             try
             {
                 // Socket was the passed in object
+                WriteLog("Check socket");
                 Socket sock = (Socket)ar.AsyncState;
+                WriteLog("Socket is good");
 
                 if (sock.Connected)
                 {
+                    WriteLog("sock.Connected == true");
                     int nBytesRec = sock.EndReceive(ar);
+                    WriteLog("sock.Connected == true");
                     if (nBytesRec > 0)
                     {
                         // Wrote the data to the List
@@ -203,6 +207,8 @@ namespace Navigator
                                 if (strCommands.Contains("SOUND"))
                                 {
                                     /**/ //First check if audio is playing, if not, ignore
+                                    //calling “CF_AudioStatus CF_Main_getMainAudioStatus()” where CF_AudioStatus is a Boolean. 
+                                    WriteLog(CF_getAudioStatus(0).ToString());                                   
 
                                     //Only do this if we're not using named pipes
                                     if (!boolNamedPipes)

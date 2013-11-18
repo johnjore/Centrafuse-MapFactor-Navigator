@@ -280,56 +280,13 @@ namespace Navigator
                     }
                 }
 
-                // Configured?
-                try
-                {
-                    //Launch Navigator                    
-                    try
-                    {
-                        pNavigator = new Process();
-                        pNavigator.StartInfo.FileName = strEXEPath + "\\PC_Navigator.exe";
-                        pNavigator.StartInfo.Arguments = "--window_border=no " + strEXEParameters + " --window_position=" + this.pluginConfig.ReadField("/APPCONFIG/WINDOWSIZE");
-                        try
-                        {
-                            if (bool.Parse(this.pluginConfig.ReadField("/APPCONFIG/NOHIRES")) == true)
-                            {
-                                pNavigator.StartInfo.Arguments = pNavigator.StartInfo.Arguments + " --nohires";
-                            }
-                        }
-                        catch { WriteLog("Failed to interpret NOHIRES setting"); }
-                        //This does not work: "--tcpserver=127.0.0.1:" + intTCPPort.ToString(); Settings.XML modified
-                        WriteLog("Launching Navigator using: '" + pNavigator.StartInfo.FileName + "'");
-                        WriteLog("Parameters: '" + pNavigator.StartInfo.Arguments + "'");
-                        pNavigator.Start();
-                        System.Threading.Thread.Sleep(500); // Allow the process to open it's window
-                        //pNavigator.WaitForInputIdle();     //Dont use this, the window location is messed up. Can't press OK                        
-                        WriteLog("Launched");
-                    }
-                    catch (Exception ex)
-                    {
-                        WriteLog("Failed to launch Navigator: " + ex.Message);
-                    }
-                }
-                catch
-                {
-                }
-                finally
-                {                    
-                    this.pluginConfig.WriteField("/APPCONFIG/LOGEVENTS", "True", true);
-                }
-
-                //Say YES to OSM data usage, if user changed to ON
-                try
-                {
-                    if (boolOSMOK && boolFREE)
-                    {
-                        System.Threading.Thread.Sleep(500); // Allow the process to open it's window
-                        WriteLog("Sending ENTER");
-                        SendKeys.SendWait("{ENTER}");
-                    }
-                }
-                catch { WriteLog("Failed to send OK to OSM usage"); }
-
+                /**/
+                //Force logging...
+                this.pluginConfig.WriteField("/APPCONFIG/LOGEVENTS", "True", true);
+                
+                //Launch navigator
+                LaunchNavigator();
+                
                 //Get Fullscreen information
                 boolFullScreen = CF_getConfigFlag(CF_ConfigFlags.GPSFullscreen);
 
@@ -407,9 +364,6 @@ namespace Navigator
         {
             /**/
             //First check if audio is playing, if not, ignore
-            //CF_AudioStatus CF_Main_getMainAudioStatus()
-            //CF_Actions.MUTEAUDIO / CF_Actions.UNMUTEAUDIO for ATT mute and CF_Actions.MUTE  / CF_Actions.UNMUTE; they don’t toggle.
-            //CF_getmai
 
             //Note: 'message' is not \0 terminated!
             WriteLog("boolInMutePeriod: " + boolInMutePeriod.ToString());
@@ -735,6 +689,103 @@ namespace Navigator
 
             return retvalue;
         }
+
+        //Launch Navigator
+        private bool LaunchNavigator()
+        {
+            //Launch Navigator                    
+            try
+            {
+
+                pNavigator = new Process();
+                pNavigator.StartInfo.FileName = strEXEPath + "\\PC_Navigator.exe";
+                pNavigator.StartInfo.Arguments = "--window_border=no " + strEXEParameters + " --window_position=" + this.pluginConfig.ReadField("/APPCONFIG/WINDOWSIZE");
+                try
+                {
+                    if (bool.Parse(this.pluginConfig.ReadField("/APPCONFIG/NOHIRES")) == true)
+                    {
+                        pNavigator.StartInfo.Arguments = pNavigator.StartInfo.Arguments + " --nohires";
+                    }
+                }
+                catch { WriteLog("Failed to interpret NOHIRES setting"); }
+                //This does not work: "--tcpserver=127.0.0.1:" + intTCPPort.ToString(); Settings.XML modified
+                WriteLog("Launching Navigator using: '" + pNavigator.StartInfo.FileName + "'");
+                WriteLog("Parameters: '" + pNavigator.StartInfo.Arguments + "'");
+                pNavigator.EnableRaisingEvents = true;
+                pNavigator.Exited += new EventHandler(pNavigator_Exited);
+                pNavigator.Start();
+                System.Threading.Thread.Sleep(500); // Allow the process to open it's window
+                //pNavigator.WaitForInputIdle();     //Dont use this, the window location is messed up. Can't press OK                        
+                WriteLog("Launched");
+
+                //Say YES to OSM data usage, if user changed to ON
+                try
+                {
+                    if (boolOSMOK && boolFREE)
+                    {
+                        System.Threading.Thread.Sleep(500); // Allow the process to open it's window
+                        WriteLog("Sending ENTER");
+                        SendKeys.SendWait("{ENTER}");
+                    }
+                }
+                catch { WriteLog("Failed to send OK to OSM usage"); }
+
+                return true;
+            }
+            catch (Exception ex)
+            {
+                WriteLog("Failed to launch Navigator: " + ex.Message);
+                return false;
+            }
+        }
+
+
+        // Handle Navigator Exited event
+        private void pNavigator_Exited(object sender, System.EventArgs e)
+        {
+            WriteLog("Navigator no longer running. Exit code: " + pNavigator.ExitCode.ToString());
+
+            //If navigator is not running, its probably half hidden behind CF. Switch to Nav screen
+            CF3_executeCMLAction("Centrafuse.CFActions.Nav");            
+            
+            //Get current timer status
+            bool nightTimer_Status = nightTimer.Enabled;
+            bool muteCFTimer_Status = muteCFTimer.Enabled;
+            bool NavStatsTimer_Status = NavStatsTimer.Enabled;
+            bool CallStatusTimer_Status = CallStatusTimer.Enabled;
+            bool EnableGPSTimer_Status = EnableGPSTimer.Enabled;
+            bool NavDestinationTimer_Status = NavDestinationTimer.Enabled;
+
+            //Stop all timers. Call back does not work and causes grief...
+            nightTimer.Enabled = false;
+            muteCFTimer.Enabled = false;
+            NavStatsTimer.Enabled = false;
+            CallStatusTimer.Enabled = false;
+            EnableGPSTimer.Enabled = false;
+            NavDestinationTimer.Enabled = false;
+
+            //Launch Navigator
+            LaunchNavigator();
+
+            //Disconnect the TCP connection so it can be re-established
+            server.Disconnect(true);
+
+            //Connect to panel                
+            SetParent(pNavigator.MainWindowHandle, mHandlePtr);
+            WriteLog("Connected to Panel");
+
+            //Set correct size
+            if (boolFullScreen) SetFullScreen(); else SetNonFullScreen();
+
+            //Set timers back the way they were
+            nightTimer.Enabled = nightTimer_Status;
+            muteCFTimer.Enabled = muteCFTimer_Status;
+            NavStatsTimer.Enabled = NavStatsTimer_Status;
+            CallStatusTimer.Enabled = CallStatusTimer_Status;
+            EnableGPSTimer.Enabled = EnableGPSTimer_Status;
+            NavDestinationTimer.Enabled = NavDestinationTimer_Status;
+        }
+
 
         // This returns the underlying data your plugin has. It is called by CF_pluginData as well as Centrafuse
         public override string CF_navGetInfo(CFNavInfo infoType)
@@ -1427,6 +1478,8 @@ namespace Navigator
                     catch { WriteLog("Failed to set IP / Port details"); }
 
                     //Remove Exit and Minimize from Navigator
+                    /**/
+                    /*
                     try
                     {
                         XmlNodeList xnList = configxml.SelectNodes("/settings/APP/mainMenu/action");
@@ -1446,6 +1499,7 @@ namespace Navigator
                         configxml.Save(strAppDataPath + "\\settings.xml");
                     }
                     catch { WriteLog("Failed to disable menu options"); }
+                     * */
                 }
                 catch { WriteLog("Failed to configure Navigator's settings.xml file"); }
             }
@@ -1468,7 +1522,8 @@ namespace Navigator
                                 
             //Play/Pause
             /**/ //if (bool.Parse(this.pluginConfig.ReadField("/APPCONFIG/PAUSEPLAYSTATUS")) == true) CF_systemCommand(CF_Actions.PLAYPAUSE);
-            //XXX
+
+            //Mute/Unmute
             if (bool.Parse(this.pluginConfig.ReadField("/APPCONFIG/MUTEUNMUTESTATUS")) == true) CF_systemCommand(CF_Actions.UNMUTE);
 
             boolInMutePeriod = false; // No longer in mute phase
