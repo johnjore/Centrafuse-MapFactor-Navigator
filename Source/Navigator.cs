@@ -1200,8 +1200,9 @@ namespace Navigator
                     WriteLog("strEXEParameters: " + strEXEParameters);
                 }
 
-                //Get/Set initial window size
-                string strWindowSize = "0,0,1024,768";
+                //Get/Set initial window size. This value should closely match your screen size for optimum experience
+                Rectangle resolution = Screen.PrimaryScreen.Bounds;
+                string strWindowSize = "0,0," + resolution.Width.ToString() + "," + resolution.Height.ToString();
                 try
                 {
                     string tmpStr = pluginConfig.ReadField("/APPCONFIG/WINDOWSIZE");
