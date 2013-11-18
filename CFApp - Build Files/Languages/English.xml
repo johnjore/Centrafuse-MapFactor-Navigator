@@ -2,9 +2,9 @@
   <NAVIGATOR>
     <DISPLAYNAME>Navigator</DISPLAYNAME>
     <WAYPOINT>Waypoint Reached</WAYPOINT>
-    <RECALCULATING>Recalculating the route</RECALCULATING>
-    <LOST>Unable to route to destination</LOST>
-    <ARRIVING>Arriving at destination in </ARRIVING>
+    <RECALCULATING>Recalculating route</RECALCULATING>
+    <LOST>Unable to find route</LOST>
+    <ARRIVING>Destination in </ARRIVING>
     <DESTINATION>Destination reached</DESTINATION>
     <EMBEDDINGFAILED>Unable to terminated existing PC_Navigator. Embedding will fail</EMBEDDINGFAILED>
     <SECONDS>seconds</SECONDS>

@@ -27,6 +27,7 @@
  * 
  * Setup screen values not refreshing
  * How to detect if media is playing or not - Not required?
+ * Mute: Mutes everything, including navigator prompts
  */
 
 /* 
@@ -1200,7 +1201,7 @@ namespace Navigator
                 }
 
                 //Get/Set initial window size
-                string strWindowSize = "0,0,700,392";
+                string strWindowSize = "0,0,1024,768";
                 try
                 {
                     string tmpStr = pluginConfig.ReadField("/APPCONFIG/WINDOWSIZE");

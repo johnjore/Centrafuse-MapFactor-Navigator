@@ -265,32 +265,82 @@ namespace Navigator
                                     try
                                     {
                                         string[] rmCdata = strCommands.Split(',');
-                                        try { _currentPosition.Latitude = rmCdata[4] == "N" ? NMEAtoDecimal(rmCdata[3]) : NMEAtoDecimal(rmCdata[3]) * -1; }
-                                        catch { WriteLog("Failed to convert Latitude"); }
-                                        try { _currentPosition.Longitude = rmCdata[6] == "E" ? NMEAtoDecimal(rmCdata[5]) : NMEAtoDecimal(rmCdata[5]) * -1; }
-                                        catch { WriteLog("Failed to convert Longitude"); }
-                                        try {_currentPosition.Heading = double.Parse(rmCdata[8], CultureInfo.InvariantCulture); }
-                                        catch { WriteLog("Failed to convert Heading"); }
-                                        try {                                          
+
+                                        //Latitude
+                                        try 
+                                        { 
+                                            _currentPosition.Latitude = rmCdata[4] == "N" ? NMEAtoDecimal(rmCdata[3]) : NMEAtoDecimal(rmCdata[3]) * -1; 
+                                        }
+                                        catch { 
+                                            _currentPosition.Latitude = 0; 
+                                            WriteLog("Failed to convert Latitude"); 
+                                        }
+
+                                        //Longitude
+                                        try 
+                                        { 
+                                            _currentPosition.Longitude = rmCdata[6] == "E" ? NMEAtoDecimal(rmCdata[5]) : NMEAtoDecimal(rmCdata[5]) * -1; 
+                                        }
+                                        catch 
+                                        { 
+                                            _currentPosition.Longitude = 0; 
+                                            WriteLog("Failed to convert Longitude"); 
+                                        }
+
+                                        //Heading
+                                        try 
+                                        { 
+                                            _currentPosition.Heading = double.Parse(rmCdata[8], CultureInfo.InvariantCulture); 
+                                        }
+                                        catch 
+                                        { 
+                                            _currentPosition.Heading = 0; 
+                                            WriteLog("Failed to convert Heading"); 
+                                        }
+
+                                        //Speed
+                                        try 
+                                        {
                                             //Speed is in knots in NMEA strings
 
                                             //Convert to Metric?
                                             if (ReadCFValue("/APPCONFIG/SPEEDUNIT", "M", CFTools.AppDataPath + "\\System\\config.xml"))
                                             {
-                                                _currentPosition.Speed = double.Parse(rmCdata[7], CultureInfo.InvariantCulture) * 0.539956803456;
-                                            }
-
-                                            //Convert to Imperial?
-                                            if (ReadCFValue("/APPCONFIG/SPEEDUNIT", "I", CFTools.AppDataPath + "\\System\\config.xml"))
+                                                _currentPosition.Speed = double.Parse(rmCdata[7], CultureInfo.InvariantCulture) * 1.94384449244;
+                                            } //Convert to Imperial?
+                                            else if (ReadCFValue("/APPCONFIG/SPEEDUNIT", "I", CFTools.AppDataPath + "\\System\\config.xml"))
                                             {
                                                 _currentPosition.Speed = double.Parse(rmCdata[7], CultureInfo.InvariantCulture) * 1.1507794480136;
-                                            }                                        
+                                            } //Unknown...
+                                            else _currentPosition.Speed = 0;
                                         }
-                                        catch { WriteLog("Failed to convert Speed"); }
-                                        try { _navStats.GPSTime = rmCdata[1]; }
-                                        catch { WriteLog("Failed to convert GPS Time"); }
-                                        try { _navStats.GPSDate = rmCdata[9]; }
-                                        catch { WriteLog("Failed to convert GPS Date"); }
+                                        catch
+                                        {
+                                            _currentPosition.Speed = 0;
+                                            WriteLog("Failed to convert Speed"); 
+                                        }
+
+                                        //GPS Time
+                                        try 
+                                        { 
+                                            _navStats.GPSTime = rmCdata[1]; 
+                                        }
+                                        catch 
+                                        { 
+                                            _navStats.GPSTime = "";
+                                            WriteLog("Failed to convert GPS Time"); 
+                                        }
+
+                                        //GPS Date
+                                        try 
+                                        {
+                                            _navStats.GPSDate = rmCdata[9];
+                                        }
+                                        catch
+                                        {
+                                            _navStats.GPSDate = "";
+                                            WriteLog("Failed to convert GPS Date"); 
+                                        }
                                     }
                                     catch
                                     {
@@ -309,10 +359,28 @@ namespace Navigator
                                     try
                                     {
                                         string[] ggaData = strCommands.Split(',');
-                                        try { _currentPosition.LockedSatellites = int.Parse(ggaData[7], CultureInfo.InvariantCulture); }
-                                        catch { }; //WriteLog("Failed to convert LockedSatellites"); }
-                                        try { _currentPosition.Altitude = double.Parse(ggaData[9], CultureInfo.InvariantCulture); }
-                                        catch { }; //WriteLog("Failed to convert Altitude"); }
+
+                                        //LockedSatellites
+                                        try 
+                                        {
+                                            _currentPosition.LockedSatellites = int.Parse(ggaData[7], CultureInfo.InvariantCulture); 
+                                        }
+                                        catch 
+                                        {
+                                            _currentPosition.LockedSatellites = 0;
+                                            //WriteLog("Failed to convert LockedSatellites"); }
+                                        };
+
+                                        //Altitude
+                                        try 
+                                        {
+                                            _currentPosition.Altitude = double.Parse(ggaData[9], CultureInfo.InvariantCulture);
+                                        }
+                                        catch 
+                                        {
+                                            _currentPosition.Altitude = 0;
+                                            //WriteLog("Failed to convert Altitude");
+                                        };
                                     }
                                     catch
                                     {
