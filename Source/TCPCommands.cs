@@ -37,24 +37,34 @@ namespace Navigator
         private int intTCPPort = 4242;                      // TCP Port for communications with Mapfactor
         private string strIP = "127.0.0.1";                 // Default IP port
         Socket server = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
+        bool boolConnecting = false;                            // Are we trying to connect=
         Queue<TCPCommand> TCPCommandQueue = new Queue<TCPCommand>();        //Keeps track of which command are sent        
         # endregion
 
         /**/ //WaitForReply not implemented yet...
         private void SendCommand(string strNavigatorCommand, bool WaitForReply, TCPCommand tcpCommand)
         {
-            if (server.Connected == false)
+            //There's probably a better way of doing this... lock?!?
+            if (server.Connected == false && boolConnecting == false)
             {
+                if (boolConnecting == false)
+                {
+                    server = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
+                }
+
                 //If we dont have a connection with Navigator, try and create one
                 try
                 {
-                    //Configure the connection
+                    boolConnecting = true; // Do not re-enter here until we either have a connection or a failed connection
+
+                    //Configure the connection  
                     server.Blocking = false;
                     AsyncCallback onconnect = new AsyncCallback(OnConnect);
                     IAsyncResult serverResult = server.BeginConnect(IPAddress.Parse(strIP), intTCPPort, onconnect, server);
                     WriteLog("Trying to establish connection. BeginConnect() Started");
+
                     
-                    bool success = serverResult.AsyncWaitHandle.WaitOne(2000, true);
+                    bool success = serverResult.AsyncWaitHandle.WaitOne(500, true);
                     WriteLog("Success: " + success.ToString());
 
                     if (server.Connected)
@@ -75,9 +85,11 @@ namespace Navigator
                     else
                     {
                         WriteLog("Failed to connect.");
+                        this.CF_systemCommand(CF_Actions.SHOWINFO, this.pluginLang.ReadField("/APPLANG/NAVIGATOR/TCPFAILED"), "AUTOHIDE");
 
                         try
                         {
+                            boolConnecting = false;
                             server.Close();
                         }
                         catch { WriteLog("Failed to close socket"); }
@@ -94,7 +106,6 @@ namespace Navigator
                 WriteLog("Sending '" + strNavigatorCommand + "'");
                 server.Send(Encoding.ASCII.GetBytes(strNavigatorCommand));
                 TCPCommandQueue.Enqueue(tcpCommand);
-                //WriteLog(TCPCommandQueue.Count.ToString());
             }
             else
             {
@@ -180,15 +191,12 @@ namespace Navigator
             try
             {
                 // Socket was the passed in object
-                WriteLog("Check socket");
                 Socket sock = (Socket)ar.AsyncState;
-                WriteLog("Socket is good");
 
                 if (sock.Connected)
                 {
-                    WriteLog("sock.Connected == true");
                     int nBytesRec = sock.EndReceive(ar);
-                    WriteLog("sock.Connected == true");
+
                     if (nBytesRec > 0)
                     {
                         // Wrote the data to the List

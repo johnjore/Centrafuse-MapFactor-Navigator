@@ -19,7 +19,6 @@
  * http://static.mapfactor.com/files/Navigator_RemoteCommands_-_KB_1.pdf
  * Bug: TCP setup on Navigator? (Workaround implemented, modify settings.xml)
  * 
- * What if Navigator restarts? Disconnect from panel and re-connect?
  * Move SendCommand and receive to its own thread?
  * Parse TCP responses from Navigator... counter++ for each SendCommand. Create FIFO buffer? Create thread?
  * Remove non-used functions
@@ -82,7 +81,7 @@ namespace Navigator
         private bool boolFirstLaunch = true;                // If first launch?
         private bool boolNamedPipes = false;                // Use Louk's named pipes for mute/unmute?
         private bool boolMainScreen = true;                 // Start in main navigation screen
-        private bool boolInMutePeriod = false;               // True if already in MUTE period
+        private bool boolInMutePeriod = false;              // True if already in MUTE period
         private IntPtr mHandlePtr;                          // var for window handle number to catch
         private readonly CFControls.CFPanel _containerPanel;
         CFControls.CFPanel thepanel = null;                 // The panel to 'project' Navigator into        
@@ -186,12 +185,12 @@ namespace Navigator
                 nightTimer.Tick += new EventHandler(nightTimer_Tick);
 
                 //Timer for mute'ing CF while Navigator speaks
-                muteCFTimer.Interval = 2500; // Unpause audio after this duration
+                muteCFTimer.Interval = 2500; // Unpause audio after this duration. Named pipe will change value as it receives unmute notice
                 muteCFTimer.Enabled = false;
                 muteCFTimer.Tick += new EventHandler(muteCFTimer_Tick);
 
                 //Timer for getting Navigation Stats
-                NavStatsTimer.Interval = 1500; // Check every 1500 ms
+                NavStatsTimer.Interval = 1500; // Check every
                 NavStatsTimer.Enabled = false;
                 NavStatsTimer.Tick += new EventHandler(NavStatsTimer_Tick);                            
 
