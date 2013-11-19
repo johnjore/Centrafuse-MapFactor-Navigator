@@ -268,6 +268,12 @@ namespace Navigator
         private void SetMuteUnmuteStatus(ref object value)
         {
             this.configReader.WriteField("/APPCONFIG/MUTEUNMUTESTATUS", value.ToString());
+
+            //string boolButton = value.ToString();
+            if (bool.Parse(value.ToString()))
+            {
+                mainForm.CF_systemDisplayDialog(CF_Dialogs.OkBox, mainForm.pluginLang.ReadField("/APPLANG/SETUP/MUTEUNMUTEW7"));
+            }
         }
 
         //Enable Louk's message handler

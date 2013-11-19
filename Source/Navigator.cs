@@ -85,6 +85,7 @@ namespace Navigator
         private bool boolNamedPipes = false;                // Use Louk's named pipes for mute/unmute?
         private bool boolMainScreen = true;                 // Start in main navigation screen
         private bool boolInMutePeriod = false;              // True if already in MUTE period
+        private int intCFVolumeLevel = 0;                   // CF's volume level before "ATT"
         private IntPtr mHandlePtr;                          // var for window handle number to catch
         private readonly CFControls.CFPanel _containerPanel;
         CFControls.CFPanel thepanel = null;                 // The panel to 'project' Navigator into        
@@ -134,6 +135,14 @@ namespace Navigator
 
         [DllImport("user32.dll")]
         private static extern bool SetForegroundWindow(IntPtr hWnd);
+
+        //Audio
+        [DllImport("winmm.dll")]
+        private static extern int waveOutGetVolume(IntPtr hwo, out uint dwVolume);
+
+        [DllImport("winmm.dll")]
+        private static extern int waveOutSetVolume(IntPtr hwo, uint dwVolume);
+
 #endregion
 
 #region CFPlugin methods
@@ -314,24 +323,41 @@ namespace Navigator
             this.Invoke(new PipeServer.Server.MessageReceivedHandler(DisplayMessageReceived), new object[] { client, message });
         }
 
+        //Get current volume
+        public static int GetVolume()
+        {
+          uint CurrVol = 0;
+          waveOutGetVolume(IntPtr.Zero, out CurrVol);
+          ushort CalcVol = (ushort)(CurrVol & 0x0000ffff);
+          int volume = CalcVol / (ushort.MaxValue / 10);
+          return volume;
+        }
+
+        //Set volume
+        public static void SetVolume(int volume)
+        {
+          int NewVolume = ((ushort.MaxValue / 10) * volume);
+          uint NewVolumeAllChannels = (((uint)NewVolume & 0x0000ffff) | ((uint)NewVolume << 16));
+          waveOutSetVolume(IntPtr.Zero, NewVolumeAllChannels);
+        }
+
         //Action the message from the named pipe
         void DisplayMessageReceived(PipeServer.Server.Client client, string message)
         {
-            /**/
-            //First check if audio is playing, if not, ignore
-
             //Note: 'message' is not \0 terminated!
             WriteLog("boolInMutePeriod: " + boolInMutePeriod.ToString());
 
             if (message.Contains("Un"))
             {
                 WriteLog("Named pipe received the 'unmute' message");
-                //Lets try and unmute
 
-                //Using Pause/Play causes much longer delays than using ATT
-                //if (bool.Parse(this.pluginConfig.ReadField("/APPCONFIG/MUTEUNMUTESTATUS")) == true) muteCFTimer.Interval = 1000; else muteCFTimer.Interval = 1000;
-                muteCFTimer.Interval = 1000;
-                muteCFTimer.Enabled = true;
+                //Only unmute if we've mute'ed
+                if (boolInMutePeriod == true)
+                {
+                    //Lets try and unmute in x ms
+                    muteCFTimer.Interval = 1000;
+                    muteCFTimer.Enabled = true;
+                }
             }
             else
             {
@@ -340,9 +366,70 @@ namespace Navigator
                 //If timer is already enabled, mute has been sent. Make it stop!
                 muteCFTimer.Stop();
                 muteCFTimer.Enabled = false; //Stop the timer, Navigator spoke...
-                if (boolInMutePeriod == false) NavigatorStopCFAudio();
+                if (boolInMutePeriod == false)
+                {
+                    NavigatorStopCFAudio();
+                }
             }
         }
+
+        //Called when Navigator Speaks (Either SOUND via TCP or messages via Louk's named pipe
+        private void NavigatorStopCFAudio()
+        {
+            //We're in a MUTE period
+            this.BeginInvoke(new MethodInvoker(delegate { boolInMutePeriod = true; }));
+
+            //ATT Mute/unmute
+            if (CF_getConfigFlag(CF_ConfigFlags.GPSAttMute))
+            {
+                WriteLog("Mute (GPS ATT) CF Audio");
+                CF_systemCommand(CF_Actions.ATT);
+
+                //Can't enable timer in a non-UI thread. Only start timer if not using named pipe
+                if (!boolNamedPipes) this.BeginInvoke(new MethodInvoker(delegate { muteCFTimer.Interval = 2500; muteCFTimer.Enabled = true; }));
+            }
+            else WriteLog("CF GPS ATT not enabled");
+
+            //Mute/Unmute
+            if (bool.Parse(this.pluginConfig.ReadField("/APPCONFIG/MUTEUNMUTESTATUS")) == true)
+            {
+                WriteLog("MuteUnmute Enabled.");
+
+                //Fake "ATT" mute CF
+                //Get current CF volume level
+                intCFVolumeLevel = GetVolume();
+                WriteLog("Current CF Volume Level: " + intCFVolumeLevel.ToString());
+                //Set to ATTMuteLevel
+                SetVolume(Convert.ToInt32(Math.Round(double.Parse(CF_getConfigSetting(CF_ConfigSettings.AttMuteLevel)) / 10, MidpointRounding.AwayFromZero)));
+                WriteLog("New CF Volume Level: " + GetVolume().ToString());
+
+                //Can't enable timer in a non-UI thread. Only start timer if not using named pipe
+                if (!boolNamedPipes) this.BeginInvoke(new MethodInvoker(delegate { muteCFTimer.Interval = 2500; muteCFTimer.Enabled = true; }));
+            }
+            else WriteLog("MuteUnmute not enabled");
+        }
+
+        // Event to get CF to play audio again
+        private void muteCFTimer_Tick(object sender, EventArgs e)
+        {
+            WriteLog("Timer over. Play Audio");
+
+            //Mute/unmute
+            if (CF_getConfigFlag(CF_ConfigFlags.GPSAttMute)) CF_systemCommand(CF_Actions.UNMUTE);
+
+            //Mute/Unmute
+            if (bool.Parse(this.pluginConfig.ReadField("/APPCONFIG/MUTEUNMUTESTATUS")) == true)
+            {
+                //Restore CF volume level
+                WriteLog("Current CF Volume Level: " + GetVolume().ToString());
+                SetVolume(intCFVolumeLevel);
+                WriteLog("New CF Volume Level: " + GetVolume().ToString());
+            }
+
+            boolInMutePeriod = false; // No longer in mute phase
+            muteCFTimer.Enabled = false; //Turn off timer until next time
+        }
+
 
 		/// <summary>
 		/// This is called to setup the skin.  This will usually be called in CF_pluginInit.  It will 
@@ -379,7 +466,7 @@ namespace Navigator
             CFTools.writeLog(PluginName, "CF_localskinsetup", "Exiting");
 		}
 
-
+        
 		/// <summary>
 		/// This is called by the system when it exits or the plugin has been deleted.
 		/// </summary>
@@ -480,7 +567,6 @@ namespace Navigator
                 WriteLog("Failed to restore .NAV to settings.xml"); 
             }
 
-            WriteLog("CF_pluginClose() - End");
             base.CF_pluginClose(); // calls form Dispose() method
             WriteLog("CF_pluginClose() - End");
 		}
@@ -1520,24 +1606,6 @@ namespace Navigator
             SendCommand("$navigation_statistics\r\n", false, TCPCommand.Statistics);
         }
 
-        // Event to get CF to play audio again
-        private void muteCFTimer_Tick(object sender, EventArgs e)
-        {
-            WriteLog("Timer over. Play Audio");
-
-            //Mute/unmute
-            if (CF_getConfigFlag(CF_ConfigFlags.GPSAttMute)) CF_systemCommand(CF_Actions.UNMUTE);
-                                
-            //Play/Pause
-            /**/ //if (bool.Parse(this.pluginConfig.ReadField("/APPCONFIG/PAUSEPLAYSTATUS")) == true) CF_systemCommand(CF_Actions.PLAYPAUSE);
-
-            //Mute/Unmute
-            if (bool.Parse(this.pluginConfig.ReadField("/APPCONFIG/MUTEUNMUTESTATUS")) == true) CF_systemCommand(CF_Actions.UNMUTE);
-
-            boolInMutePeriod = false; // No longer in mute phase
-            muteCFTimer.Enabled = false; //Turn off timer until next time
-        }
-
         // Event to ask Navigator for navigation statistics
         private void NavDestinationTimer_Tick(object sender, EventArgs e)
         {
@@ -1717,7 +1785,7 @@ namespace Navigator
 
                 //Timer to update GPS Status screen
                 NavStatustimer_Tick(null, null); //Make first update now
-                NavStatustimer.Interval = 200; // Wait this long between the next updates
+                NavStatustimer.Interval = 500; // Wait this long between the next updates
                 NavStatustimer.Enabled = true;
                 NavStatustimer.Tick += new EventHandler(NavStatustimer_Tick);
 
@@ -1828,39 +1896,7 @@ namespace Navigator
             }
             catch { WriteLog("Failed to send set button's new position"); }
         }
-
-
-        //Called when Navigator Speaks (Either SOUND via TCP or messages via Louk's named pipe
-        private void NavigatorStopCFAudio()
-        {
-            //xxx
-
-            //ATT Mute/unmute
-            if (CF_getConfigFlag(CF_ConfigFlags.GPSAttMute))
-            {
-                WriteLog("Mute (GPS ATT) CF Audio");
-                CF_systemCommand(CF_Actions.ATT);
-              
-                //Can't enable timer in a non-UI thread. Only start timer if not using named pipe
-                if (!boolNamedPipes) this.BeginInvoke(new MethodInvoker(delegate { muteCFTimer.Interval = 2500;  muteCFTimer.Enabled = true; }));
-            }
-            else WriteLog("CF GPS ATT not enabled");
-
-            //Mute/Unmute
-            if (bool.Parse(this.pluginConfig.ReadField("/APPCONFIG/MUTEUNMUTESTATUS")) == true)
-            {
-                WriteLog("MuteUnmute Enabled.");
-                CF_systemCommand(CF_Actions.MUTE);
-                
-                //Can't enable timer in a non-UI thread. Only start timer if not using named pipe
-                if (!boolNamedPipes) this.BeginInvoke(new MethodInvoker(delegate { muteCFTimer.Interval = 2500; muteCFTimer.Enabled = true; }));
-            }
-            else WriteLog("MuteUnmute not enabled");
-
-            //We're in a MUTE period
-            this.BeginInvoke(new MethodInvoker(delegate { boolInMutePeriod = true; }));            
-        }
-
+        
         //Write to plugin log file
         private void WriteLog(string msg)
         {
@@ -2029,7 +2065,6 @@ namespace Navigator
             DateTime dt = convertedDate.ToLocalTime();
             return dt;
         }
-
 
 
         //Send mouse click. Used to exit Navigator

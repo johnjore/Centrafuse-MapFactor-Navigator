@@ -34,11 +34,12 @@
     <MUTE>Audio Pause on Instructions</MUTE>
     <GETGPS>Stream GPS information</GETGPS>
     <GETALERTSTATUS>Enable Navigator Alerts</GETALERTSTATUS>
-    <MUTEUNMUTESTATUS>Voice Prompt uses Mute/Unmute</MUTEUNMUTESTATUS>
+    <MUTEUNMUTESTATUS>"Fake" CF ATT Mute/Unmute</MUTEUNMUTESTATUS>
     <NAMEDPIPE>Use Named Pipe</NAMEDPIPE>
     <NOHIRES>Enable --nohires option</NOHIRES>
     <WINDOWSIZE>Startup Window Size (Affects Font size)</WINDOWSIZE>
     <PATCHNAVIGATOR>PC_Navigator.exe will be patched to support named pipe on next CF restart</PATCHNAVIGATOR>
     <UNPATCHNAVIGATOR>Patch for named pipe will be removed on next CF restart</UNPATCHNAVIGATOR>
+    <MUTEUNMUTEW7>This feature works on Windows 7 only</MUTEUNMUTEW7>
   </SETUP>
 </APPLANG>

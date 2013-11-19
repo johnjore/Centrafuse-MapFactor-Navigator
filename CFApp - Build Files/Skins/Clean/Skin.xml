@@ -39,18 +39,18 @@
         <CONTROL type="Label" id="lblInRoute" bounds="10;310;330;22" fontclass="LabelText" fontstyle="" textenable="true" text="AppLang.Navigator.lblInRoute" enabled="false"/>
         <CONTROL type="Label" id="lblGPSTime" bounds="10;340;330;22" fontclass="LabelText" fontstyle="" textenable="true" text="AppLang.Navigator.lblGPSTime" enabled="false"/>
 
-        <CONTROL type="Label" id="DataLongitude" bounds="325;10;240;22" fontclass="DataText" fontstyle="" textenable="true" text="" enabled="false"/>
-        <CONTROL type="Label" id="DataLatitude" bounds="325;40;240;22" fontclass="DataText" fontstyle="" textenable="true" text="" enabled="false"/>
-        <CONTROL type="Label" id="DataAltitude" bounds="325;70;100;22" fontclass="DataText" fontstyle="" textenable="true" text="" enabled="false"/>
-        <CONTROL type="Label" id="DataLockedSatellites" bounds="325;100;100;22" fontclass="DataText" fontstyle="" textenable="true" text="" enabled="false"/>
-	<CONTROL type="Label" id="DataSpeed" bounds="325;130;200;22" fontclass="DataText" fontstyle="" textenable="true" text="" enabled="false"/>
-        <CONTROL type="Label" id="DataDirection" bounds="325;160;100;22" fontclass="DataText" fontstyle="" textenable="true" text="" enabled="false"/>
-        <CONTROL type="Label" id="DataAzimuth" bounds="325;190;100;22" fontclass="DataText" fontstyle="" textenable="true" text="" enabled="false"/>
-        <CONTROL type="Label" id="DataETR" bounds="325;220;100;22" fontclass="DataText" fontstyle="" textenable="true" text="" enabled="false"/>
-        <CONTROL type="Label" id="DataRemainingDistance" bounds="325;250;100;22" fontclass="DataText" fontstyle="" textenable="true" text="" enabled="false"/>
-        <CONTROL type="Label" id="DataNextTurn" bounds="325;280;100;22" fontclass="DataText" fontstyle="" textenable="true" text="" enabled="false"/>
-        <CONTROL type="Label" id="DataInRoute" bounds="325;310;100;22" fontclass="DataText" fontstyle="" textenable="true" text="" enabled="false"/>
-        <CONTROL type="Label" id="DataGPSTime" bounds="325;340;320;22" fontclass="DataText" fontstyle="" textenable="true" text="" enabled="false"/>
+        <CONTROL type="Label" id="DataLongitude" bounds="335;10;240;22" fontclass="DataText" fontstyle="" textenable="true" text="" enabled="false"/>
+        <CONTROL type="Label" id="DataLatitude" bounds="335;40;240;22" fontclass="DataText" fontstyle="" textenable="true" text="" enabled="false"/>
+        <CONTROL type="Label" id="DataAltitude" bounds="335;70;100;22" fontclass="DataText" fontstyle="" textenable="true" text="" enabled="false"/>
+        <CONTROL type="Label" id="DataLockedSatellites" bounds="335;100;100;22" fontclass="DataText" fontstyle="" textenable="true" text="" enabled="false"/>
+	<CONTROL type="Label" id="DataSpeed" bounds="335;130;200;22" fontclass="DataText" fontstyle="" textenable="true" text="" enabled="false"/>
+        <CONTROL type="Label" id="DataDirection" bounds="335;160;100;22" fontclass="DataText" fontstyle="" textenable="true" text="" enabled="false"/>
+        <CONTROL type="Label" id="DataAzimuth" bounds="335;190;100;22" fontclass="DataText" fontstyle="" textenable="true" text="" enabled="false"/>
+        <CONTROL type="Label" id="DataETR" bounds="335;220;100;22" fontclass="DataText" fontstyle="" textenable="true" text="" enabled="false"/>
+        <CONTROL type="Label" id="DataRemainingDistance" bounds="335;250;100;22" fontclass="DataText" fontstyle="" textenable="true" text="" enabled="false"/>
+        <CONTROL type="Label" id="DataNextTurn" bounds="335;280;100;22" fontclass="DataText" fontstyle="" textenable="true" text="" enabled="false"/>
+        <CONTROL type="Label" id="DataInRoute" bounds="335;310;100;22" fontclass="DataText" fontstyle="" textenable="true" text="" enabled="false"/>
+        <CONTROL type="Label" id="DataGPSTime" bounds="335;340;320;22" fontclass="DataText" fontstyle="" textenable="true" text="" enabled="false"/>
 
       </CONTROLS>
     </SECTION>
