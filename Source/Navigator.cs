@@ -763,7 +763,6 @@ namespace Navigator
                 bool muteCFTimer_Status = muteCFTimer.Enabled;
                 bool NavStatsTimer_Status = NavStatsTimer.Enabled;
                 bool CallStatusTimer_Status = CallStatusTimer.Enabled;
-                bool EnableGPSTimer_Status = EnableGPSTimer.Enabled;
                 bool NavDestinationTimer_Status = NavDestinationTimer.Enabled;
 
                 //Stop all timers. Call back does not work and causes grief...
@@ -771,7 +770,6 @@ namespace Navigator
                 muteCFTimer.Enabled = false;
                 NavStatsTimer.Enabled = false;
                 CallStatusTimer.Enabled = false;
-                EnableGPSTimer.Enabled = false;
                 NavDestinationTimer.Enabled = false;
 
                 //Launch Navigator
@@ -795,7 +793,6 @@ namespace Navigator
                 muteCFTimer.Enabled = muteCFTimer_Status;
                 NavStatsTimer.Enabled = NavStatsTimer_Status;
                 CallStatusTimer.Enabled = CallStatusTimer_Status;
-                EnableGPSTimer.Enabled = EnableGPSTimer_Status;
                 NavDestinationTimer.Enabled = NavDestinationTimer_Status;
             }
         }
@@ -1541,13 +1538,6 @@ namespace Navigator
             muteCFTimer.Enabled = false; //Turn off timer until next time
         }
 
-        // Event to enable GPS in Navigator
-        private void EnableGPSTimer_Tick(object sender, EventArgs e)
-        {
-            SendCommand("$gps_receiving=start\r\n", false, TCPCommand.GPSReceiving);
-            EnableGPSTimer.Enabled = false;                     //Disable the timer
-        }
-
         // Event to ask Navigator for navigation statistics
         private void NavDestinationTimer_Tick(object sender, EventArgs e)
         {
@@ -1727,7 +1717,7 @@ namespace Navigator
 
                 //Timer to update GPS Status screen
                 NavStatustimer_Tick(null, null); //Make first update now
-                NavStatustimer.Interval = 1000; // Wait this long between the next updates
+                NavStatustimer.Interval = 200; // Wait this long between the next updates
                 NavStatustimer.Enabled = true;
                 NavStatustimer.Tick += new EventHandler(NavStatustimer_Tick);
 
