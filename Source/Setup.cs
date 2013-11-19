@@ -29,13 +29,16 @@ namespace Navigator
 {
     internal class NavSetup : ICFInterfaceSetup
     {
-        private readonly ConfigReader configReader;
-        private readonly LanguageReader langReader;
-        private readonly Navigator mainForm;
+        private ConfigReader configReader;
+        private LanguageReader langReader;
+        private Navigator mainForm;
 
         // Total configuration pages for each mode
         public int nAdvancedSetupPages { get { return 2; } }
         public int nBasicSetupPages { get { return 2; } }
+
+        public int numAdvancedSetupPages { get { return nAdvancedSetupPages; } }
+        public int numBasicSetupPages { get { return nBasicSetupPages; } }
 
         #region Variables
         private const string PluginPath = @"plugins\Navigator\";
@@ -140,15 +143,6 @@ namespace Navigator
             this.mainForm.LoadSettings();
         }
 
-        public int numAdvancedSetupPages
-        {
-            get { return nAdvancedSetupPages; }
-        }
-
-        public int numBasicSetupPages
-        {
-            get { return nBasicSetupPages; }
-        }
 
 #region User Input Events
 
@@ -170,7 +164,7 @@ namespace Navigator
                 {
                     string newPath = results.resultvalue;
                     this.configReader.WriteField("/APPCONFIG/EXEPATH", newPath);
-                    value = newPath;                    
+                    value = newPath;
                 }               
             }
             catch (Exception errmsg) { CFTools.writeError(errmsg.Message, errmsg.StackTrace); }            

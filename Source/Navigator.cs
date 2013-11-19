@@ -21,12 +21,14 @@
  * 
  * Move SendCommand and receive to its own thread?
  * Parse TCP responses from Navigator... counter++ for each SendCommand. Create FIFO buffer? Create thread?
- * Remove non-used functions
- * Switch to/from other GPS engines?
+ * 
+ * Switch to/from other GPS engines? (Start = Read <NAVENGINE> from config.xml and pluginShow(). End = ?!?)
  * 
  * Setup screen values not refreshing
  * How to detect if media is playing or not - Not required?
  * Mute: Mutes everything, including navigator prompts
+ * 
+ * Remove non-used functions
  */
 
 /* 
@@ -75,6 +77,7 @@ namespace Navigator
         private string strEXEPath = "";                     // Folder and EXE name
         private string strEXEParameters = "";               // Paramters to use
         private bool boolFullScreen = false;                // Full screen?
+        private bool boolExit = false;                      // Set True if hibernating
         private bool boolFREE = true;                       // Free edition?
         private bool boolOSMOK = false;                     // If true, supresses OSM License prompt
         private bool boolAlerts = false;                    // Show alerts if NOT active plugin?
@@ -96,7 +99,6 @@ namespace Navigator
         Timer muteCFTimer = new System.Windows.Forms.Timer();    // timer for mute'ing CF
         Timer NavStatsTimer = new System.Windows.Forms.Timer();    // timer for retrieving Navigator's Navigation Stats
         Timer CallStatusTimer = new System.Windows.Forms.Timer();    // timer for checking if a call is in progress
-        Timer EnableGPSTimer = new System.Windows.Forms.Timer();    // timer before enabling the GPS after hibernation
         Timer NavDestinationTimer = new System.Windows.Forms.Timer();    // timer for checking for destination proximity if not active plugin
         Timer NavStatustimer = new System.Windows.Forms.Timer();        //timer for updating GPS status screen
 
@@ -163,12 +165,13 @@ namespace Navigator
                 // This method is also called when the resolution or skin has changed.
                 CF_localskinsetup();
 
+                //Only used in Plugins, not CFNav's...
                 //From http://wiki.centrafuse.com/wiki/Application-Description.ashx
-                CF_params.settingsDisplayDesc = this.pluginLang.ReadField("/APPLANG/SETUP/DESCRIPTION");
+                //CF_params.settingsDisplayDesc = this.pluginLang.ReadField("/APPLANG/SETUP/DESCRIPTION");
 
                 //Get configuration settings
                 LoadSettings();
-
+                
                 //Setup the Panel used by PC_Navigator.exe
                 WriteLog("Init the panel to use for MapFactor");
                 thepanel = new CFControls.CFPanel();
@@ -198,12 +201,7 @@ namespace Navigator
                 CallStatusTimer.Interval = 2000; // Check every
                 CallStatusTimer.Enabled = true;
                 CallStatusTimer.Tick += new EventHandler(CallStatusTimer_Tick);
-
-                //Timer before enabling GPS in Navigator after hibernation
-                EnableGPSTimer.Interval = 7500; // Wait this long...
-                EnableGPSTimer.Enabled = false;
-                EnableGPSTimer.Tick += new EventHandler(EnableGPSTimer_Tick);
-                
+               
                 //Timer to use to check if arrived at destination
                 NavDestinationTimer.Interval = 5000; // Wait this long...
                 NavDestinationTimer.Enabled = true;
@@ -292,49 +290,7 @@ namespace Navigator
                 //Set correct size
                 if (boolFullScreen) SetFullScreen(); else SetNonFullScreen();
 
-                //Minimize Navigator to hide it
-                SendCommand("$minimize\r\n", false, TCPCommand.Minimize);
-
-                //Act as navigation plugin
-                SendCommand("$gps_sending=start;nmea\r\n", false, TCPCommand.GPSSending);
-
-                //Set initial day/night mode
-                boolCurrentNightMode = CF_getConfigFlag(CF_ConfigFlags.NightSkinFlag);
-                if (boolCurrentNightMode) SendCommand("$set_mode=night\r\n", false, TCPCommand.DayNight); else SendCommand("$set_mode=day\r\n", false, TCPCommand.DayNight);
-
-                //Enable or disable Navigator voice prompts?
-                if (CF_getConfigFlag(CF_ConfigFlags.GPSEnableVoice) == true)
-                {
-                    //Enable alerts
-                    SendCommand("$navigation_info=sound_warning:on\r\n", false, TCPCommand.NavInfoSoundWarning);
-
-                    //Set to on
-                    SendCommand("$sound_volume=on\r\n", false, TCPCommand.SoundVolume);                    
-
-                    //Configure Navigator Audio volume
-                    if (CF_getConfigFlag(CF_ConfigFlags.GPSSetNavSoundLevel) == true)
-                    {
-                        SendCommand("$sound_volume=" + CF_getConfigSetting(CF_ConfigSettings.GPSNavSoundLevel).ToString() + "\r\n", false, TCPCommand.SoundVolume);
-                    }
-                }
-                else
-                {
-                    SendCommand("$navigation_info=sound_warning:off\r\n", false, TCPCommand.NavInfoSoundWarning);
-                    SendCommand("$sound_volume=0\r\n", false, TCPCommand.SoundVolume);
-                    SendCommand("$sound_volume=off\r\n", false, TCPCommand.SoundVolume);
-                }
-
-                //Do we want to know?
-                if (boolAlerts)
-                {
-                    SendCommand("$navigation_info=waypoint_info:on\r\n", false, TCPCommand.NavInfoWaypointInfo);
-                    SendCommand("$navigation_info=recalculation_warning:on\r\n", false, TCPCommand.NavInfoRecalculationWarning);
-                }
-                else
-                {
-                    SendCommand("$navigation_info=waypoint_info:off\r\n", false, TCPCommand.NavInfoWaypointInfo);
-                    SendCommand("$navigation_info=recalculation_warning:off\r\n", false, TCPCommand.NavInfoRecalculationWarning);
-                }
+                ConfigureNavigator();
 
                 //Louk's Named pipe server
                 if (!this.pipeServer.Running)
@@ -431,6 +387,9 @@ namespace Navigator
 		{
             WriteLog("CF_pluginClose() - Start");
 
+            //User really wants to exit Navigator...
+            boolExit = true;
+
             //Make sure we can connect to it...
             if (boolFirstLaunch)
             {
@@ -447,7 +406,6 @@ namespace Navigator
             muteCFTimer.Enabled = false;
             NavStatsTimer.Enabled = false;
             CallStatusTimer.Enabled = false;
-            EnableGPSTimer.Enabled = false;
             NavDestinationTimer.Enabled = false;
 
             //Louk's Pipe
@@ -738,50 +696,108 @@ namespace Navigator
             }
         }
 
+
+        //Configure Navigator after launching it
+        private void ConfigureNavigator()
+        {
+            //Minimize Navigator to hide it
+            SendCommand("$minimize\r\n", false, TCPCommand.Minimize);
+
+            //Act as navigation plugin
+            SendCommand("$gps_sending=start;nmea\r\n", false, TCPCommand.GPSSending);
+
+            //Set initial day/night mode
+            boolCurrentNightMode = CF_getConfigFlag(CF_ConfigFlags.NightSkinFlag);
+            if (boolCurrentNightMode) SendCommand("$set_mode=night\r\n", false, TCPCommand.DayNight); else SendCommand("$set_mode=day\r\n", false, TCPCommand.DayNight);
+
+            //Enable or disable Navigator voice prompts?
+            if (CF_getConfigFlag(CF_ConfigFlags.GPSEnableVoice) == true)
+            {
+                //Enable alerts
+                SendCommand("$navigation_info=sound_warning:on\r\n", false, TCPCommand.NavInfoSoundWarning);
+
+                //Set to on
+                SendCommand("$sound_volume=on\r\n", false, TCPCommand.SoundVolume);
+
+                //Configure Navigator Audio volume
+                if (CF_getConfigFlag(CF_ConfigFlags.GPSSetNavSoundLevel) == true)
+                {
+                    SendCommand("$sound_volume=" + CF_getConfigSetting(CF_ConfigSettings.GPSNavSoundLevel).ToString() + "\r\n", false, TCPCommand.SoundVolume);
+                }
+            }
+            else
+            {
+                SendCommand("$navigation_info=sound_warning:off\r\n", false, TCPCommand.NavInfoSoundWarning);
+                SendCommand("$sound_volume=0\r\n", false, TCPCommand.SoundVolume);
+                SendCommand("$sound_volume=off\r\n", false, TCPCommand.SoundVolume);
+            }
+
+            //Do we want to know?
+            if (boolAlerts)
+            {
+                SendCommand("$navigation_info=waypoint_info:on\r\n", false, TCPCommand.NavInfoWaypointInfo);
+                SendCommand("$navigation_info=recalculation_warning:on\r\n", false, TCPCommand.NavInfoRecalculationWarning);
+            }
+            else
+            {
+                SendCommand("$navigation_info=waypoint_info:off\r\n", false, TCPCommand.NavInfoWaypointInfo);
+                SendCommand("$navigation_info=recalculation_warning:off\r\n", false, TCPCommand.NavInfoRecalculationWarning);
+            }
+        }
+
+
+
         // Handle Navigator Exited event
         private void pNavigator_Exited(object sender, System.EventArgs e)
         {
-            WriteLog("Navigator no longer running. Exit code: " + pNavigator.ExitCode.ToString());
+            //User really wants to exit Navigator...
+            if (!boolExit)
+            {
+                WriteLog("Navigator no longer running. Exit code: " + pNavigator.ExitCode.ToString());
 
-            //If navigator is not running, its probably half hidden behind CF. Switch to Nav screen
-            CF3_executeCMLAction("Centrafuse.CFActions.Nav");            
-            
-            //Get current timer status
-            bool nightTimer_Status = nightTimer.Enabled;
-            bool muteCFTimer_Status = muteCFTimer.Enabled;
-            bool NavStatsTimer_Status = NavStatsTimer.Enabled;
-            bool CallStatusTimer_Status = CallStatusTimer.Enabled;
-            bool EnableGPSTimer_Status = EnableGPSTimer.Enabled;
-            bool NavDestinationTimer_Status = NavDestinationTimer.Enabled;
+                //If navigator is not running, its probably half hidden behind CF. Switch to Nav screen
+                CF3_executeCMLAction("Centrafuse.CFActions.Nav");
 
-            //Stop all timers. Call back does not work and causes grief...
-            nightTimer.Enabled = false;
-            muteCFTimer.Enabled = false;
-            NavStatsTimer.Enabled = false;
-            CallStatusTimer.Enabled = false;
-            EnableGPSTimer.Enabled = false;
-            NavDestinationTimer.Enabled = false;
+                //Get current timer status
+                bool nightTimer_Status = nightTimer.Enabled;
+                bool muteCFTimer_Status = muteCFTimer.Enabled;
+                bool NavStatsTimer_Status = NavStatsTimer.Enabled;
+                bool CallStatusTimer_Status = CallStatusTimer.Enabled;
+                bool EnableGPSTimer_Status = EnableGPSTimer.Enabled;
+                bool NavDestinationTimer_Status = NavDestinationTimer.Enabled;
 
-            //Launch Navigator
-            LaunchNavigator();
+                //Stop all timers. Call back does not work and causes grief...
+                nightTimer.Enabled = false;
+                muteCFTimer.Enabled = false;
+                NavStatsTimer.Enabled = false;
+                CallStatusTimer.Enabled = false;
+                EnableGPSTimer.Enabled = false;
+                NavDestinationTimer.Enabled = false;
 
-            //Disconnect the TCP connection so it can be re-established
-            server.Disconnect(true);
+                //Launch Navigator
+                LaunchNavigator();
 
-            //Connect to panel                
-            SetParent(pNavigator.MainWindowHandle, mHandlePtr);
-            WriteLog("Connected to Panel");
+                //Disconnect the TCP connection so it can be re-established
+                server.Disconnect(true);
 
-            //Set correct size
-            if (boolFullScreen) SetFullScreen(); else SetNonFullScreen();
+                //Connect to panel                
+                SetParent(pNavigator.MainWindowHandle, mHandlePtr);
+                WriteLog("Connected to Panel");
 
-            //Set timers back the way they were
-            nightTimer.Enabled = nightTimer_Status;
-            muteCFTimer.Enabled = muteCFTimer_Status;
-            NavStatsTimer.Enabled = NavStatsTimer_Status;
-            CallStatusTimer.Enabled = CallStatusTimer_Status;
-            EnableGPSTimer.Enabled = EnableGPSTimer_Status;
-            NavDestinationTimer.Enabled = NavDestinationTimer_Status;
+                //Set correct size
+                if (boolFullScreen) SetFullScreen(); else SetNonFullScreen();
+
+                //Re-configure Navigator
+                ConfigureNavigator();
+
+                //Set timers back the way they were
+                nightTimer.Enabled = nightTimer_Status;
+                muteCFTimer.Enabled = muteCFTimer_Status;
+                NavStatsTimer.Enabled = NavStatsTimer_Status;
+                CallStatusTimer.Enabled = CallStatusTimer_Status;
+                EnableGPSTimer.Enabled = EnableGPSTimer_Status;
+                NavDestinationTimer.Enabled = NavDestinationTimer_Status;
+            }
         }
 
 
@@ -2072,15 +2088,93 @@ namespace Navigator
             //If suspending
             if (e.Mode == CFPowerModes.Suspend)
             {
-                SendCommand("$gps_receiving=stop\r\n", false, TCPCommand.GPSReceiving);
+                //User really wants to exit Navigator...
+                boolExit = true;
+
+                //Stop all timers. Call back does not work and causes grief...
+                nightTimer.Enabled = false;
+                muteCFTimer.Enabled = false;
+                NavStatsTimer.Enabled = false;
+                CallStatusTimer.Enabled = false;
+                NavDestinationTimer.Enabled = false;
+                
+                //Make sure we can connect to it...
+                if (boolFirstLaunch)
+                {
+                    //Connect to panel                
+                    SetParent(pNavigator.MainWindowHandle, mHandlePtr);
+                    WriteLog("Connected to Panel");
+
+                    //Never do this again...
+                    boolFirstLaunch = false;
+                }
+
+
+                //If navigator is not running, its probably half hidden behind CF. Switch to Nav screen
+                //Switch to Nav if not free edition
+                if (boolFREE)
+                {
+                    WriteLog("Switch to NAV and close it");
+                    CF3_executeCMLAction("Centrafuse.CFActions.Nav");
+                    System.Threading.Thread.Sleep(500);
+                    if (!boolMainScreen)
+                    {
+                        thepanel.Visible = true; // Make sure its visible, and not behind stats screen
+                        SendCommand("$maximize\r\n", false, TCPCommand.Minimize);
+                    }
+                }
+                
+                //Disconnect the TCP connection so it can be re-established
+                server.Disconnect(true);
+
+                //Close it
+                pNavigator.CloseMainWindow();
+                pNavigator.Close();
+
+                //Wait for Navigator to close
+                for (int loop = 0; loop < 100; loop++)
+                {
+                    if (TerminateOrphanedProcess(false) == false)
+                    {
+                        WriteLog("Navigator no longer running. Gracefull shutdown");
+                        break;
+                    }
+                    WriteLog("Waiting for Navigator to close");
+                    if (boolFREE) ClickOnPoint(mHandlePtr, new Point(100, 100));
+
+                    System.Threading.Thread.Sleep(20);
+                }
+
+                //Assume didn't exit. Force close if still running...
+                try
+                {
+                    TerminateOrphanedProcess(true);
+                }
+                catch { WriteLog("Failed to terminate process"); }
             }
 
             //If resuming from sleep
             if (e.Mode == CFPowerModes.Resume)
             {
-                //Timer before enabling GPS in Navigator after hibernation
-                //Use a timer to not pause execution
-                EnableGPSTimer.Enabled = true;
+                //If exit, restart Navigator
+                boolExit = false;
+
+                //Launch Navigator
+                LaunchNavigator();
+
+                //Connect to panel                
+                SetParent(pNavigator.MainWindowHandle, mHandlePtr);
+                WriteLog("Connected to Panel");
+
+                //Set correct size
+                if (boolFullScreen) SetFullScreen(); else SetNonFullScreen();
+
+                //Re-configure Navigator
+                ConfigureNavigator();
+
+                //Reset timers
+                CallStatusTimer.Enabled = true;
+                NavDestinationTimer.Enabled = true;
             }
 
             WriteLog("OnPowerModeChanged - end()");
