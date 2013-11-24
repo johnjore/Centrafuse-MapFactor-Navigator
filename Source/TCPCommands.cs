@@ -285,11 +285,11 @@ namespace Navigator
                                             //Speed is in knots in NMEA strings
 
                                             //Convert to Metric?
-                                            if (ReadCFValue("/APPCONFIG/SPEEDUNIT", "M", CFTools.AppDataPath + "\\System\\config.xml"))
+                                            if (ReadCFValue("/APPCONFIG/SPEEDUNIT", "M", configPath))
                                             {
                                                 _currentPosition.Speed = double.Parse(rmCdata[7], CultureInfo.InvariantCulture) * 1.94384449244;
                                             } //Convert to Imperial?
-                                            else if (ReadCFValue("/APPCONFIG/SPEEDUNIT", "I", CFTools.AppDataPath + "\\System\\config.xml"))
+                                            else if (ReadCFValue("/APPCONFIG/SPEEDUNIT", "I", configPath))
                                             {
                                                 _currentPosition.Speed = double.Parse(rmCdata[7], CultureInfo.InvariantCulture) * 1.1507794480136;
                                             } //Unknown...

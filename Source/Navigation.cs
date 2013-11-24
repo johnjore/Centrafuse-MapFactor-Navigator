@@ -39,8 +39,8 @@ namespace Navigator
             try { CF_updateText("DataAltitude", CF_navGetInfo(CFNavInfo.Altitude)); } catch { };
             try { CF_updateText("DataLockedSatellites", CF_navGetInfo(CFNavInfo.LockedSatellites)); } catch { };
             try {
-                if (ReadCFValue("/APPCONFIG/SPEEDUNIT", "I", CFTools.AppDataPath + "\\System\\config.xml")) CF_updateText("DataSpeed", CF_navGetInfo(CFNavInfo.Speed).Substring(0, 5) + " mph");
-                if (ReadCFValue("/APPCONFIG/SPEEDUNIT", "M", CFTools.AppDataPath + "\\System\\config.xml")) CF_updateText("DataSpeed", CF_navGetInfo(CFNavInfo.Speed).Substring(0, 5) + " km/h"); 
+                if (ReadCFValue("/APPCONFIG/SPEEDUNIT", "I", configPath)) CF_updateText("DataSpeed", CF_navGetInfo(CFNavInfo.Speed).Substring(0, 5) + " mph");
+                if (ReadCFValue("/APPCONFIG/SPEEDUNIT", "M", configPath)) CF_updateText("DataSpeed", CF_navGetInfo(CFNavInfo.Speed).Substring(0, 5) + " km/h"); 
             } 
             catch { };
             try { CF_updateText("DataDirection", CF_navGetInfo(CFNavInfo.Direction)); } catch { };
@@ -420,13 +420,6 @@ namespace Navigator
             return locations;
         }
                 
-        // Event to get CF to ask for stats
-        private void NavStatsTimer_Tick(object sender, EventArgs e)
-        {
-            WriteLog("NavStats...");
-            SendCommand("$navigation_statistics\r\n", false, TCPCommand.Statistics);
-        }
-
         // Event to ask Navigator for navigation statistics
         private void NavDestinationTimer_Tick(object sender, EventArgs e)
         {

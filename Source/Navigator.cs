@@ -94,13 +94,11 @@ namespace Navigator
 
         Timer nightTimer = new System.Windows.Forms.Timer(); // timer for switching day/night skin      
         Timer muteCFTimer = new System.Windows.Forms.Timer();    // timer for mute'ing CF
-        Timer NavStatsTimer = new System.Windows.Forms.Timer();    // timer for retrieving Navigator's Navigation Stats
         Timer CallStatusTimer = new System.Windows.Forms.Timer();    // timer for checking if a call is in progress
         Timer NavDestinationTimer = new System.Windows.Forms.Timer();    // timer for checking for destination proximity if not active plugin
         Timer NavStatustimer = new System.Windows.Forms.Timer();        //timer for updating GPS status screen
 
         //From Mark
-        /**/ //private readonly byte[] _mByBuff = new byte[0x100];
         public override event CFNavVoiceEventHandler CF_navVoiceEvent;
         private delegate void VoidDelegate();
                 
@@ -113,31 +111,29 @@ namespace Navigator
         [DllImport("user32.dll")]
         static extern bool ClientToScreen(IntPtr hWnd, ref Point lpPoint);
 
-        //Placeholders
         [DllImport("User32.dll")]
         public static extern int SendMessage(IntPtr hWnd, int uMsg, int wParam, string lParam);
 
-        [DllImport("user32.dll")]
-        static extern int SetWindowLong(IntPtr hWnd, int nIndex, int dwNewLong);
+        //Placeholders
+        //[DllImport("user32.dll")]
+        //static extern int SetWindowLong(IntPtr hWnd, int nIndex, int dwNewLong);
         
-        [DllImport("user32.dll")]
-        static extern bool MoveWindow(IntPtr Handle, int x, int y, int w, int h, bool repaint);
+        //[DllImport("user32.dll")]
+        //static extern bool MoveWindow(IntPtr Handle, int x, int y, int w, int h, bool repaint);
 
-        [DllImport("user32.dll")]
-        private static extern bool SetForegroundWindow(IntPtr hWnd);
+        //[DllImport("user32.dll")]
+        //private static extern bool SetForegroundWindow(IntPtr hWnd);
 
         //[DllImport("user32.dll")]
         //private static extern bool ShowWindow(IntPtr hWnd, int nCmdShow);
-        private enum showWindowAttribute : int { SW_HIDE = 0, SW_SHOWNORMAL = 1, SW_MAXIMIZE = 3, SW_SHOW = 5, SW_MINIMIZE = 6, SW_RESTORE = 9, SW_FORCEMINIMIZE = 11 }
-
+        
         /**/ //Remove later if not used
         ////LK, 20-nov-2013: Experimental
         //[DllImport("user32.dll")]
         //private static extern IntPtr GetForegroundWindow();
 
         //[DllImport("user32.dll")]
-        //private static extern bool ShowWindow(IntPtr hWnd, int nCmdShow);
-        //private enum showWindowAttribute : int { SW_HIDE = 0, SW_SHOWNORMAL = 1, SW_MAXIMIZE = 3, SW_SHOW = 5, SW_MINIMIZE = 6, SW_RESTORE = 9, SW_FORCEMINIMIZE = 11 }
+        //private static extern bool ShowWindow(IntPtr hWnd, int nCmdShow);        
         
 #endregion
 
@@ -201,11 +197,6 @@ namespace Navigator
                 muteCFTimer.Tick += new EventHandler(muteCFTimer_Tick);
 
                 //Timer for getting Navigation Stats
-                NavStatsTimer.Interval = 1500; // Check every
-                NavStatsTimer.Enabled = false;
-                NavStatsTimer.Tick += new EventHandler(NavStatsTimer_Tick);                            
-
-                //Timer for getting Navigation Stats
                 CallStatusTimer.Interval = 2000; // Check every
                 CallStatusTimer.Enabled = false;
                 CallStatusTimer.Tick += new EventHandler(CallStatusTimer_Tick);
@@ -231,14 +222,11 @@ namespace Navigator
                 //Modify Navigator's Settings XML file...
                 ConfigureNavigatorXML();
 
-                if (boolNamedPipes)
-                {
-                    patchNavigator();
-                }
-                else
-                {
+                //Using named pipe? 
+                if (boolNamedPipes) 
+                    patchNavigator(); 
+                else 
                     unpatchNavigator();
-                }
                 
                 /**/
                 //Force logging...
@@ -313,6 +301,7 @@ namespace Navigator
             // Set up custom button handlers for buttons without a CML action in skin.xml
             this.CF_createButtonClick("MinMax", new MouseEventHandler(btnMinMax_Click));
 
+            /**/
             //LK, 22-nov-2013: In the case of a skin change, adjust panel size.
             if (thepanel != null)   //Anytime, but the first (when called from CF_pluginInit())
             {
@@ -346,7 +335,6 @@ namespace Navigator
             //Stop all timers
             nightTimer.Enabled = false;
             muteCFTimer.Enabled = false;
-            NavStatsTimer.Enabled = false;
             CallStatusTimer.Enabled = false;
             NavDestinationTimer.Enabled = false;
 
@@ -377,7 +365,7 @@ namespace Navigator
                 }
             }
 
-            //Close the connection
+            //Close the TCP connection
             try
             {
                 server.Shutdown(SocketShutdown.Both);
@@ -400,7 +388,7 @@ namespace Navigator
                     break;
                 }
                 WriteLog("Waiting for Navigator to close");
-                if (boolFREE) ClickOnPoint(mHandlePtr, new Point(100, 100));
+                if (boolFREE) ClickOnPoint(mHandlePtr, new Point(100, 200));
 
                 System.Threading.Thread.Sleep(20);
             }
@@ -604,9 +592,6 @@ namespace Navigator
         //Configure Navigator after launching it
         private void ConfigureNavigator()
         {
-            //Minimize Navigator to hide it
-            /**/ //SendCommand("$minimize\r\n", false, TCPCommand.Minimize);
-
             //Act as navigation plugin
             SendCommand("$gps_sending=start;nmea\r\n", false, TCPCommand.GPSSending);
 
@@ -664,15 +649,13 @@ namespace Navigator
 
                 //Get current timer status
                 bool nightTimer_Status = nightTimer.Enabled;
-                bool muteCFTimer_Status = muteCFTimer.Enabled;
-                bool NavStatsTimer_Status = NavStatsTimer.Enabled;
+                bool muteCFTimer_Status = muteCFTimer.Enabled;                
                 bool CallStatusTimer_Status = CallStatusTimer.Enabled;
                 bool NavDestinationTimer_Status = NavDestinationTimer.Enabled;
 
                 //Stop all timers. Call back does not work and causes grief...
                 nightTimer.Enabled = false;
                 muteCFTimer.Enabled = false;
-                NavStatsTimer.Enabled = false;
                 CallStatusTimer.Enabled = false;
                 NavDestinationTimer.Enabled = false;
 
@@ -695,7 +678,6 @@ namespace Navigator
                 //Set timers back the way they were
                 nightTimer.Enabled = nightTimer_Status;
                 muteCFTimer.Enabled = muteCFTimer_Status;
-                NavStatsTimer.Enabled = NavStatsTimer_Status;
                 CallStatusTimer.Enabled = CallStatusTimer_Status;
                 NavDestinationTimer.Enabled = NavDestinationTimer_Status;
             }
@@ -1149,7 +1131,7 @@ namespace Navigator
             try
             {
                 //Get CF setting
-                bool boolTmp = ReadCFValue("/APPCONFIG/AUTOSWITCHSKIN", "True", CFTools.AppDataPath + "\\System\\config.xml");
+                bool boolTmp = ReadCFValue("/APPCONFIG/AUTOSWITCHSKIN", "True", configPath);
                 if (boolTmp) nightTimer.Enabled = true; else nightTimer.Enabled = false;
                 WriteLog("AUTOSWITCHSKIN: " + nightTimer.Enabled.ToString());
             }
@@ -1161,10 +1143,7 @@ namespace Navigator
         {
             try
             {
-                //WriteLog("Checking Mode");
                 bool nightMode = CF_getConfigFlag(CF_ConfigFlags.NightSkinFlag);
-                //WriteLog(boolCurrentNightMode.ToString() + " " + nightMode.ToString());
-                //WriteLog("Is Night Mode Active: " + nightMode.ToString());
                 if (boolCurrentNightMode != nightMode)
                 {
                     WriteLog("Switching mode");
@@ -1256,7 +1235,7 @@ namespace Navigator
                 NavStatustimer.Enabled = false; //Stop the updates
                 SetLabelStatus(false);
                 thepanel.Visible = true;
-                SendCommand("$maximize\r\n", false, TCPCommand.Minimize);
+                SendCommand("$maximize\r\n", false, TCPCommand.Maximize);
                 boolMainScreen = true;
             }
         }
@@ -1326,7 +1305,7 @@ namespace Navigator
             RePosbutton("VolUp", "bounds");
             RePosbutton("Exit", "bounds");
 
-            //Repos label
+            //Reposition label
             CFControls.CFLabel a = new CFControls.CFLabel();
             a = labelArray[CF_getLabelID("DateTime")];
             a.Bounds = base.CF_createRect(SkinReader.ParseBounds(SkinReader.GetControlAttribute("Navigator", "DateTime", ("bounds").ToLower(), base.pluginSkinReader)));
@@ -1400,32 +1379,6 @@ namespace Navigator
 
             return boolTerminateOrphanedProcess;
         }
-
-        //Send mouse click. Used to exit Navigator
-        private void ClickOnPoint(IntPtr wndHandle, Point clientPoint)
-        {
-            var oldPos = Cursor.Position;
-
-            /// get screen coordinates
-            ClientToScreen(wndHandle, ref clientPoint);
-
-            /// set cursor on coords, and press mouse
-            Cursor.Position = new Point(clientPoint.X, clientPoint.Y);
-
-            //Send the events
-            mouse_event(0x00000002, 0, 0, 0, UIntPtr.Zero); /// left mouse button down
-            mouse_event(0x00000004, 0, 0, 0, UIntPtr.Zero); /// left mouse button up
-            mouse_event(0x00000008, 0, 0, 0, UIntPtr.Zero); /// right mouse button down
-            mouse_event(0x00000010, 0, 0, 0, UIntPtr.Zero); /// right mouse button up
-
-            /// return mouse 
-            Cursor.Position = oldPos;
-        }
-
-#region Click Events
-
-
-#endregion
 			
 #region CF events
 
@@ -1453,7 +1406,6 @@ namespace Navigator
                 //Stop all timers. Call back does not work and causes grief...
                 nightTimer.Enabled = false;
                 muteCFTimer.Enabled = false;
-                NavStatsTimer.Enabled = false;
                 CallStatusTimer.Enabled = false;
                 NavDestinationTimer.Enabled = false;
                 
@@ -1467,7 +1419,7 @@ namespace Navigator
                     if (!boolMainScreen)
                     {
                         thepanel.Visible = true; // Make sure its visible, and not behind stats screen
-                        SendCommand("$maximize\r\n", false, TCPCommand.Minimize);
+                        SendCommand("$maximize\r\n", false, TCPCommand.Maximize);
                     }
                 }
                 

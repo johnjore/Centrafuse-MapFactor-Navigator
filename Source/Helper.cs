@@ -188,6 +188,27 @@ namespace Navigator
             return false;
         }
 
+
+        //Send mouse click. Used to exit Navigator
+        private void ClickOnPoint(IntPtr wndHandle, Point clientPoint)
+        {
+            var oldPos = Cursor.Position;
+
+            /// get screen coordinates
+            ClientToScreen(wndHandle, ref clientPoint);
+
+            /// set cursor on coords, and press mouse
+            Cursor.Position = new Point(clientPoint.X, clientPoint.Y);
+
+            //Send the events
+            mouse_event(0x00000002, 0, 0, 0, UIntPtr.Zero); /// left mouse button down
+            mouse_event(0x00000004, 0, 0, 0, UIntPtr.Zero); /// left mouse button up
+            mouse_event(0x00000008, 0, 0, 0, UIntPtr.Zero); /// right mouse button down
+            mouse_event(0x00000010, 0, 0, 0, UIntPtr.Zero); /// right mouse button up
+
+            /// return mouse 
+            Cursor.Position = oldPos;
+        }
     }
 
 
