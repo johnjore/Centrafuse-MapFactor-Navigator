@@ -208,7 +208,8 @@ namespace Navigator
 
                 // Creates new events to catch when CF is being closed, loaded or the power mode changed
 				this.KeyDown += new KeyEventHandler(Navigator_KeyDown);
-                this.CF_events.CFPowerModeChanged += new CFPowerModeChangedEventHandler(OnPowerModeChanged); //Hibernation support
+                //This is a duplicate...
+                //this.CF_events.CFPowerModeChanged += new CFPowerModeChangedEventHandler(OnPowerModeChanged); //Hibernation support
                 this.CF_events.applicationClosing += OnApplicationClosing;
                 this.CF_events.applicationLoaded += OnApplicationLoaded;
                 this.CF_events.CFPowerModeChanged += OnPowerModeChanged;
@@ -545,8 +546,11 @@ namespace Navigator
                         int lastError = Marshal.GetLastWin32Error();
                         WriteLog("Docking failed, last error = " + lastError);
                         System.Threading.Thread.Sleep(500);
-                        throw new Exception("Failed to dock Navigator");
-                    };
+                        //throw new Exception("Failed to dock Navigator");
+                        CF_systemDisplayDialog(CF_Dialogs.OkBox, pluginLang.ReadField("/APPLANG/NAVIGATOR/FAILEDTODOCK"));
+                    }
+                    else
+                        WriteLog("Connected to panel");
 
                     pNavigator.PriorityClass = ProcessPriorityClass.AboveNormal;    //LK, 24-nov-2013: Lower the priority to "normal"
                     //Form fNavigator = (Form)FromHandle(pNavigator.MainWindowHandle);
@@ -555,8 +559,7 @@ namespace Navigator
                     //    Form mainForm = (Form)thepanel.Parent;
                     //    fNavigator.Owner = mainForm;
                     //}
-                    
-                    WriteLog("Connected to panel");
+                                      
                     thepanel.Visible = false;
                     WriteLog("Panel hidden");                    
                     WriteLog("Launched");
@@ -645,7 +648,8 @@ namespace Navigator
                 WriteLog("Navigator no longer running. Exit code: " + pNavigator.ExitCode.ToString());
 
                 //If navigator is not running, its probably half hidden behind CF. Switch to Nav screen
-                CF3_executeCMLAction("Centrafuse.CFActions.Nav");
+                /**/ //Is this really required?
+                //CF3_executeCMLAction("Centrafuse.CFActions.Nav");
 
                 //Get current timer status
                 bool nightTimer_Status = nightTimer.Enabled;
@@ -664,6 +668,7 @@ namespace Navigator
 
                 //Disconnect the TCP connection so it can be re-established
                 server.Disconnect(true);
+                boolConnecting = false;
 
                 //Connect to panel                
                 SetParent(pNavigator.MainWindowHandle, mHandlePtr);
@@ -674,6 +679,10 @@ namespace Navigator
 
                 //Re-configure Navigator
                 ConfigureNavigator();
+
+                thepanel.Visible = true; // Make sure its visible, and not behind stats screen
+                thepanel.Focus(); //Give it focus
+                SendCommand("$maximize\r\n", false, TCPCommand.Maximize);
 
                 //Set timers back the way they were
                 nightTimer.Enabled = nightTimer_Status;
@@ -1400,7 +1409,7 @@ namespace Navigator
             //If suspending
             if (e.Mode == CFPowerModes.Suspend)
             {
-                //User really wants to exit Navigator...
+                //User really wants to exit Navigator. Do not restart
                 boolExit = true;
 
                 //Stop all timers. Call back does not work and causes grief...
@@ -1408,9 +1417,8 @@ namespace Navigator
                 muteCFTimer.Enabled = false;
                 CallStatusTimer.Enabled = false;
                 NavDestinationTimer.Enabled = false;
-                
-                //If navigator is not running, its probably half hidden behind CF. Switch to Nav screen
-                //Switch to Nav if not free edition
+
+                //If navigator is not running, its probably half hidden behind CF. Switch to Nav screen if not free edition
                 if (boolFREE)
                 {
                     WriteLog("Switch to NAV and close it");
@@ -1419,14 +1427,17 @@ namespace Navigator
                     if (!boolMainScreen)
                     {
                         thepanel.Visible = true; // Make sure its visible, and not behind stats screen
+                        thepanel.Focus(); //Give it focus
                         SendCommand("$maximize\r\n", false, TCPCommand.Maximize);
                     }
                 }
-                
+
                 //Disconnect the TCP connection so it can be re-established
                 server.Disconnect(true);
-
+                boolConnecting = false;
+                
                 //Close it
+                pNavigator.Exited -= new EventHandler(pNavigator_Exited);
                 pNavigator.CloseMainWindow();
                 pNavigator.Close();
 
@@ -1439,7 +1450,8 @@ namespace Navigator
                         break;
                     }
                     WriteLog("Waiting for Navigator to close");
-                    if (boolFREE) ClickOnPoint(mHandlePtr, new Point(100, 100));
+                    /**/ //Is it even possible to send mouse clicks during hibernation?!? this does not appear to be working....
+                    if (boolFREE) ClickOnPoint(mHandlePtr, new Point(100, 200));
 
                     System.Threading.Thread.Sleep(20);
                 }
@@ -1455,15 +1467,8 @@ namespace Navigator
             //If resuming from sleep
             if (e.Mode == CFPowerModes.Resume)
             {
-                //If exit, restart Navigator
-                boolExit = false;
-
                 //Launch Navigator
                 LaunchNavigator();
-
-                //Connect to panel                
-                SetParent(pNavigator.MainWindowHandle, mHandlePtr);
-                WriteLog("Connected to Panel");
 
                 //Set correct size
                 if (boolFullScreen) SetFullScreen(); else SetNonFullScreen();
@@ -1471,9 +1476,16 @@ namespace Navigator
                 //Re-configure Navigator
                 ConfigureNavigator();
 
+                thepanel.Visible = true; // Make sure its visible, and not behind stats screen
+                thepanel.Focus(); //Give it focus
+                SendCommand("$maximize\r\n", false, TCPCommand.Maximize);
+
                 //Reset timers
                 CallStatusTimer.Enabled = true;
                 NavDestinationTimer.Enabled = true;
+
+                //If exit, restart Navigator
+                boolExit = false;
             }
 
             WriteLog("OnPowerModeChanged - end()");

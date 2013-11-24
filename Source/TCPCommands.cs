@@ -166,7 +166,7 @@ namespace Navigator
 
                     if (nBytesRec > 0)
                     {
-                        // Wrote the data to the List
+                        // sMessage contains the message from navigator
                         string sMessage = Encoding.ASCII.GetString(m_byBuff, 0, nBytesRec);
 
                         // Any unhandled errors in this function causes all future messages from Navigator to be lost
@@ -181,10 +181,6 @@ namespace Navigator
                             {
                                 if (strCommands.Contains("SOUND"))
                                 {
-                                    /**/ //First check if audio is playing, if not, ignore
-                                    //calling “CF_AudioStatus CF_Main_getMainAudioStatus()” where CF_AudioStatus is a Boolean. 
-                                    WriteLog(CF_getAudioStatus(0).ToString());                                   
-
                                     //Only do this if we're not using named pipes
                                     if (!boolNamedPipes)
                                     {
