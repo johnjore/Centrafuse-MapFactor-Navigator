@@ -16,7 +16,7 @@
  */
 
 /*
- * All functions realted to communicating with Navigator
+ * All functions related to communicating with Navigator
 */
 
 namespace Navigator
@@ -111,39 +111,6 @@ namespace Navigator
             {
                 WriteLog("Not connected. Unable to communicate with Navigator");
             }
-        }
-
-        //Set terminate to true if kill process
-        public bool TerminateOrphanedProcess(bool terminate)
-        {
-            bool boolTerminateOrphanedProcess = false; //Assume no killing...
-
-            try
-            {
-                WriteLog("Listing all processes to check if PC_Navigator.exe is already running");
-                Process[] processlist = Process.GetProcesses();
-                foreach (Process theprocess in processlist)
-                {
-                    //WriteLog("Process: '" + theprocess.ProcessName + "' ID: '" + theprocess.Id + "'");
-                    if (theprocess.ProcessName.Contains("PC_Navigator"))
-                    {
-                        WriteLog("PC_Navigator is running");
-                        boolTerminateOrphanedProcess = true;
-                        if (terminate)
-                        {
-                            WriteLog("Terminating process");
-                            theprocess.Kill();
-                            System.Threading.Thread.Sleep(1000); // Allow the process time to terminate
-                        }
-                    }
-                }
-            }
-            catch
-            {
-                WriteLog("Error getting Process information");
-            }
-
-            return boolTerminateOrphanedProcess;
         }
 
         public void OnConnect(IAsyncResult ar)

@@ -16,13 +16,181 @@
  */
 
 
-// This was donated by Mark
+// Parts donated by Mark
 using System;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
+using System.Xml;
+using centrafuse.Plugins;
 
 namespace Navigator
 {
+    public partial class Navigator
+    {
+        public LatLonDms ConvertDecimalToDms(double latitude, double longitude)
+        {
+            var retvalue = new LatLonDms();
+
+            try
+            {
+                //Math.round is used to eliminate the small error caused by rounding in the computer:
+                //e.g. 0.2 is not the same as 0.20000000000284
+
+                double signlat = 1;
+                double signlon = 1;
+
+                if (latitude < 0)
+                    signlat = -1;
+
+                double latAbs = Math.Abs(Math.Round(latitude * (1000000)));
+
+                if (latAbs > (90 * 1000000))
+                    latAbs = 0;
+
+                if (longitude < 0)
+                    signlon = -1;
+
+                double lonAbs = Math.Abs(Math.Round(longitude * (1000000)));
+
+                if (lonAbs > (180 * 1000000))
+                    lonAbs = 0;
+
+                double latdegrees = Math.Floor(latAbs / (1000000)) * signlat;
+                double latminutes = Math.Floor(((latAbs / (1000000)) - Math.Floor(latAbs / (1000000))) * (60));
+                double latseconds =
+                    Math.Floor(((((latAbs / (1000000)) - Math.Floor(latAbs / (1000000))) * (60)) -
+                                Math.Floor(((latAbs / (1000000)) - Math.Floor(latAbs / (1000000))) * (60))) * (100000)) * (60) /
+                    (100000);
+
+                double londegrees = Math.Floor(lonAbs / (1000000)) * signlon;
+                double lonminutes = Math.Floor(((lonAbs / (1000000)) - Math.Floor(lonAbs / (1000000))) * (60));
+                double lonseconds =
+                    Math.Floor(((((lonAbs / (1000000)) - Math.Floor(lonAbs / (1000000))) * (60)) -
+                                Math.Floor(((lonAbs / (1000000)) - Math.Floor(lonAbs / (1000000))) * (60))) * (100000)) * (60) /
+                    (100000);
+
+                retvalue.LatitudeDegrees = latdegrees;
+                retvalue.LatitudeMinutes = latminutes;
+                retvalue.LatitudeSeconds = latseconds;
+
+                retvalue.LongitudeDegrees = londegrees;
+                retvalue.LongitudeMinutes = lonminutes;
+                retvalue.LongitudeSeconds = lonseconds;
+            }
+            catch (Exception errmsg)
+            {
+                CFTools.writeError(errmsg.Message, errmsg.StackTrace);
+            }
+
+            return retvalue;
+        }
+
+        public LatLonDecimal ConvertDmsToDecimal(double latdegrees, double latminutes, double latseconds,
+                                                 double londegrees, double lonminutes, double lonseconds)
+        {
+            var retvalue = new LatLonDecimal();
+
+            try
+            {
+                //Math.round is used to eliminate the small error caused by rounding in the computer:
+                //e.g. 0.2 is not the same as 0.20000000000284
+
+                double latsign = 1;
+                double lonsign = 1;
+
+                if (latdegrees < 0)
+                    latsign = -1;
+
+                double absdlat = Math.Abs(Math.Round(latdegrees * (1000000)));
+                //if(absdlat > (90 * 1000000))
+
+                double absmlat = Math.Abs(Math.Round(latminutes * (1000000)));
+                //if(absmlat >= (60 * 1000000))
+
+                double absslat = Math.Abs(Math.Round(latseconds * (1000000)));
+                //if(absslat > (59.99999999 * 1000000))
+
+                if (londegrees < 0)
+                    lonsign = -1;
+
+                double absdlon = Math.Abs(Math.Round(londegrees * (1000000)));
+                //if(absdlon > (180 * 1000000))
+
+                double absmlon = Math.Abs(Math.Round(lonminutes * (1000000)));
+                //if(absmlon >= (60 * 1000000))
+
+                double absslon = Math.Abs(Math.Round(lonseconds * (1000000)));
+                //if(absslon > (59.99999999 * 1000000))
+
+                double latitude = Math.Round(absdlat + (absmlat / (60)) + (absslat / (3600))) * latsign / (1000000);
+                double longitude = Math.Round(absdlon + (absmlon / (60)) + (absslon / (3600))) * lonsign / (1000000);
+
+                retvalue.Latitude = latitude;
+                retvalue.Longitude = longitude;
+            }
+            catch (Exception errmsg)
+            {
+                CFTools.writeError(errmsg.Message, errmsg.StackTrace);
+            }
+
+            return retvalue;
+        }
+
+        public int GetGmtOffset(double latitude, double longitude)
+        {
+            int retvalue = 0;
+
+            try
+            {
+                bool addneg = false;
+                LatLonDms dms = ConvertDecimalToDms(latitude, longitude);
+
+                if (dms.LongitudeDegrees < 0)
+                    addneg = true;
+
+                double dvalue = Math.Abs(dms.LongitudeDegrees) / (15);
+                string svalue = dvalue.ToString("#");
+                int gmtoffset = Int32.Parse(svalue);
+
+                if (addneg)
+                    gmtoffset = gmtoffset * -1;
+
+                retvalue = gmtoffset;
+            }
+            catch (Exception errmsg)
+            {
+                CFTools.writeError(errmsg.Message, errmsg.StackTrace);
+            }
+
+            return retvalue;
+        }
+
+
+        //Read CF settings
+        private Boolean ReadCFValue(string thenode, string pname, string strFile)
+        {
+            try
+            {
+                XmlDocument document = new XmlDocument();
+                document.Load(strFile);
+                string str = document.SelectSingleNode(thenode).InnerText;
+                if (str.Trim().ToUpper() == pname.Trim().ToUpper())
+                    return true;
+                else
+                    return false;
+            }
+
+            catch (Exception exception)
+            {
+                CFTools.writeError(exception.Message, exception.StackTrace);
+            }
+
+            return false;
+        }
+
+    }
+
+
     public static class Helper
     {        
         public enum CardinalPoints

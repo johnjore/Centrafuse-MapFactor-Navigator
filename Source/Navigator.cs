@@ -22,8 +22,6 @@
  * Move SendCommand and receive to its own thread?
  * Parse TCP responses from Navigator... counter++ for each SendCommand. Create FIFO buffer? Create thread?
  * 
- * Switch to/from other GPS engines? (Start = Read <NAVENGINE> from config.xml and pluginShow(). End = ?!?)
- * 
  * Setup screen values not refreshing
  * How to detect if media is playing or not - Not required?
  * Mute: Mutes everything, including navigator prompts
@@ -45,9 +43,8 @@ using System.Runtime.InteropServices;
 using Microsoft.Win32;
 using System.Reflection;            //Extra debug information
 using System.Globalization;
-
 using System.Drawing;
-using System.Net;
+//using System.Net;
 using System.Net.Sockets;
 using System.Text;
 using Timer = System.Windows.Forms.Timer;
@@ -72,6 +69,7 @@ namespace Navigator
 		private const string LogFile= "Navigator.log";        
         public static string LogFilePath = CFTools.AppDataPath + "\\Plugins\\" + PluginName + "\\" + LogFile;
         public static string settingsPath = CFTools.AppDataPath + "\\system\\settings.xml";
+        public static string configPath = CFTools.AppDataPath + "\\system\\config.xml";	//LK, 20-nov-2013: Needed to check if this is the current navigation app
                 
         /**/ //This should be moved to a AppConfigure class?
         private string strEXEPath = "";                     // Folder and EXE name
@@ -81,13 +79,11 @@ namespace Navigator
         private bool boolFREE = true;                       // Free edition?
         private bool boolOSMOK = false;                     // If true, supresses OSM License prompt
         private bool boolAlerts = false;                    // Show alerts if NOT active plugin?
-        private bool boolFirstLaunch = true;                // If first launch?
         private bool boolNamedPipes = false;                // Use Louk's named pipes for mute/unmute?
         private bool boolMainScreen = true;                 // Start in main navigation screen
         private bool boolInMutePeriod = false;              // True if already in MUTE period
         private int intCFVolumeLevel = 0;                   // CF's volume level before "ATT"
         private IntPtr mHandlePtr;                          // var for window handle number to catch
-        private readonly CFControls.CFPanel _containerPanel;
         CFControls.CFPanel thepanel = null;                 // The panel to 'project' Navigator into        
         Process pNavigator = null;                          // Navigator's process
         private bool boolCurrentNightMode = false;          // Are we currently in night mode? (We don't actually know this)
@@ -104,15 +100,9 @@ namespace Navigator
         Timer NavStatustimer = new System.Windows.Forms.Timer();        //timer for updating GPS status screen
 
         //From Mark
-        private readonly CfNavData _currentPosition = new CfNavData();
-        private readonly byte[] _mByBuff = new byte[0x100];
-        private Rectangle _nMapSize;
-        private Rectangle _nNavSize;
+        /**/ //private readonly byte[] _mByBuff = new byte[0x100];
         public override event CFNavVoiceEventHandler CF_navVoiceEvent;
         private delegate void VoidDelegate();
-
-        //From Louk. Used by patched Navigator for mute/unmute instructions
-        private PipeServer.Server pipeServer = new PipeServer.Server();
                 
         [DllImport("user32.dll")]
         static extern IntPtr SetParent(IntPtr hWndChild, IntPtr hWndNewParent);
@@ -136,13 +126,19 @@ namespace Navigator
         [DllImport("user32.dll")]
         private static extern bool SetForegroundWindow(IntPtr hWnd);
 
-        //Audio
-        [DllImport("winmm.dll")]
-        private static extern int waveOutGetVolume(IntPtr hwo, out uint dwVolume);
+        //[DllImport("user32.dll")]
+        //private static extern bool ShowWindow(IntPtr hWnd, int nCmdShow);
+        private enum showWindowAttribute : int { SW_HIDE = 0, SW_SHOWNORMAL = 1, SW_MAXIMIZE = 3, SW_SHOW = 5, SW_MINIMIZE = 6, SW_RESTORE = 9, SW_FORCEMINIMIZE = 11 }
 
-        [DllImport("winmm.dll")]
-        private static extern int waveOutSetVolume(IntPtr hwo, uint dwVolume);
+        /**/ //Remove later if not used
+        ////LK, 20-nov-2013: Experimental
+        //[DllImport("user32.dll")]
+        //private static extern IntPtr GetForegroundWindow();
 
+        //[DllImport("user32.dll")]
+        //private static extern bool ShowWindow(IntPtr hWnd, int nCmdShow);
+        //private enum showWindowAttribute : int { SW_HIDE = 0, SW_SHOWNORMAL = 1, SW_MAXIMIZE = 3, SW_SHOW = 5, SW_MINIMIZE = 6, SW_RESTORE = 9, SW_FORCEMINIMIZE = 11 }
+        
 #endregion
 
 #region CFPlugin methods
@@ -174,10 +170,6 @@ namespace Navigator
                 // This method is also called when the resolution or skin has changed.
                 CF_localskinsetup();
 
-                //Only used in Plugins, not CFNav's...
-                //From http://wiki.centrafuse.com/wiki/Application-Description.ashx
-                //CF_params.settingsDisplayDesc = this.pluginLang.ReadField("/APPLANG/SETUP/DESCRIPTION");
-
                 //Get configuration settings
                 LoadSettings();
                 
@@ -187,6 +179,13 @@ namespace Navigator
 
                 //Associate 'thepanel' with the panel defined in the skin.xml
                 thepanel = panelArray[CF_getPanelID("PanelNavigator")];
+
+                //LK, 18-nov-2013: Added some panel settings that might help parenting
+                thepanel.ParentForm = this;
+                thepanel.ParentFocus = true;
+                thepanel.PreRenderPreviousImage = true;
+                thepanel.BackColor = Color.Black;
+                thepanel.Name = "ThePanel";
 
                 //Get the handle so we can associate it with the process later
                 mHandlePtr = thepanel.Handle;
@@ -208,12 +207,12 @@ namespace Navigator
 
                 //Timer for getting Navigation Stats
                 CallStatusTimer.Interval = 2000; // Check every
-                CallStatusTimer.Enabled = true;
+                CallStatusTimer.Enabled = false;
                 CallStatusTimer.Tick += new EventHandler(CallStatusTimer_Tick);
                
                 //Timer to use to check if arrived at destination
                 NavDestinationTimer.Interval = 5000; // Wait this long...
-                NavDestinationTimer.Enabled = true;
+                NavDestinationTimer.Enabled = false;
                 NavDestinationTimer.Tick += new EventHandler(NavDestinationTimer_Tick);
 
                 // Creates new events to catch when CF is being closed, loaded or the power mode changed
@@ -232,203 +231,53 @@ namespace Navigator
                 //Modify Navigator's Settings XML file...
                 ConfigureNavigatorXML();
 
-                //Patch or UnPatch PC_Navigator.exe for named pipe support
-                string strPatchedFile = strEXEPath + "\\PC_Navigator.exe";
-                string strBackupFile = strEXEPath + "\\PC_Navigator.exe.orig";
-                FileInfo fiUnPatched = new FileInfo(strBackupFile);
-                FileInfo fiPatched = new FileInfo(strPatchedFile);
                 if (boolNamedPipes)
                 {
-                    WriteLog("Validating PC_Navigator.exe is patched for Named Pipe Support");
-                    
-                    if (fiUnPatched.Exists)
-                    {
-                        WriteLog("Patch already applied. Nothing to do.");
-                    }
-                    else
-                    {
-                        try { 
-                            //Create backup file first
-                            System.IO.File.Copy(strPatchedFile, strBackupFile);
-                            
-                            //Copy the extra dll
-                            System.IO.File.Copy(@PluginPath + "\\NamedPipePatch\\CF_NP.dll", strEXEPath + "\\CF_NP.dll");
-                            
-                            //Patch the Executable
-                            Process pPatch = new Process();
-                            pPatch.StartInfo.FileName = PluginPath + "\\NamedPipePatch\\binmay.exe";
-                            pPatch.StartInfo.Arguments = "-i \"" + strBackupFile + "\" -o \"" + strPatchedFile + "\" -s \"57494e4d4d\" -r \"43465f4e50\"";
-                            WriteLog(pPatch.StartInfo.FileName);
-                            WriteLog(pPatch.StartInfo.Arguments);                            
-                            pPatch.Start();
-                            pPatch.WaitForExit();
-                            if (pPatch.ExitCode != 0) WriteLog("Failed to patch PC_Navigator.exe, return code: " + pPatch.ExitCode.ToString());
-                        }
-                        catch
-                        {
-                            WriteLog("Failed to apply named pipe patch.");
-                        };
-                    }
+                    patchNavigator();
                 }
                 else
                 {
-                    WriteLog("Validating PC_Navigator.exe is not patched for Named Pipe Support");
-                    if (fiUnPatched.Exists)
-                    {
-                        //Put the exe files back...
-                        System.IO.File.Copy(strBackupFile, strPatchedFile, true);
-                        
-                        //Delete the extra dll
-                        System.IO.File.Delete(strEXEPath + "\\CF_NP.dll");
-
-                        //Delete the extra EXE
-                        System.IO.File.Delete(strBackupFile);
-                    }
+                    unpatchNavigator();
                 }
-
+                
                 /**/
                 //Force logging...
                 this.pluginConfig.WriteField("/APPCONFIG/LOGEVENTS", "True", true);
-                
-                //Launch navigator
-                LaunchNavigator();
-                
-                //Get Fullscreen information
-                boolFullScreen = CF_getConfigFlag(CF_ConfigFlags.GPSFullscreen);
 
-                //Set correct size
-                if (boolFullScreen) SetFullScreen(); else SetNonFullScreen();
-
-                ConfigureNavigator();
-
-                //Louk's Named pipe server
-                if (!this.pipeServer.Running)
+                // Active navigation engine?
+                if (ReadCFValue("/APPCONFIG/NAVENGINE", "NAVIGATOR", configPath))
                 {
-                    this.pipeServer.PipeName = @"\\.\Pipe\" + "NavigatorCF4Plugin";
-                    this.pipeServer.Start();
-                    WriteLog("Named pipe '" + pipeServer.PipeName + "' is '" + (this.pipeServer.Running).ToString() + "'");
+                    //Launch navigator
+                    LaunchNavigator();
 
-                    //Create event handler
-                    this.pipeServer.MessageReceived += new PipeServer.Server.MessageReceivedHandler(pipeServer_MessageReceived);
+                    //LK, 23-nov-2013: Start timers
+                    CallStatusTimer.Enabled = true;
+                    NavDestinationTimer.Enabled = true;
+
+                    //Louk's Named pipe server
+                    if (!this.pipeServer.Running)
+                    {
+                        this.pipeServer.PipeName = @"\\.\Pipe\" + "NavigatorCF4Plugin";
+                        this.pipeServer.Start();
+                        WriteLog("Named pipe '" + pipeServer.PipeName + "' is '" + (this.pipeServer.Running).ToString() + "'");
+
+                        //Create event handler
+                        this.pipeServer.MessageReceived += new PipeServer.Server.MessageReceivedHandler(pipeServer_MessageReceived);
                     }
-                else
-                    WriteLog("Named pipe server is already running");
+                    else
+                        WriteLog("Named pipe server is already running");
+
+                    //Get Fullscreen information
+                    boolFullScreen = CF_getConfigFlag(CF_ConfigFlags.GPSFullscreen);
+
+                    //Set correct size
+                    if (boolFullScreen) SetFullScreen(); else SetNonFullScreen();
+
+                    ConfigureNavigator();
+                }               
 			}
 			catch(Exception errmsg) { CFTools.writeError(errmsg.ToString()); }
 		}
-
-        //Louk's Named pipe received a message
-        void pipeServer_MessageReceived(PipeServer.Server.Client client, string message)
-        {
-            this.Invoke(new PipeServer.Server.MessageReceivedHandler(DisplayMessageReceived), new object[] { client, message });
-        }
-
-        //Get current volume
-        public static int GetVolume()
-        {
-          uint CurrVol = 0;
-          waveOutGetVolume(IntPtr.Zero, out CurrVol);
-          ushort CalcVol = (ushort)(CurrVol & 0x0000ffff);
-          int volume = CalcVol / (ushort.MaxValue / 10);
-          return volume;
-        }
-
-        //Set volume
-        public static void SetVolume(int volume)
-        {
-          int NewVolume = ((ushort.MaxValue / 10) * volume);
-          uint NewVolumeAllChannels = (((uint)NewVolume & 0x0000ffff) | ((uint)NewVolume << 16));
-          waveOutSetVolume(IntPtr.Zero, NewVolumeAllChannels);
-        }
-
-        //Action the message from the named pipe
-        void DisplayMessageReceived(PipeServer.Server.Client client, string message)
-        {
-            //Note: 'message' is not \0 terminated!
-            WriteLog("boolInMutePeriod: " + boolInMutePeriod.ToString());
-
-            if (message.Contains("Un"))
-            {
-                WriteLog("Named pipe received the 'unmute' message");
-
-                //Only unmute if we've mute'ed
-                if (boolInMutePeriod == true)
-                {
-                    //Lets try and unmute in x ms
-                    muteCFTimer.Interval = 1000;
-                    muteCFTimer.Enabled = true;
-                }
-            }
-            else
-            {
-                WriteLog("Named pipe received the 'mute' message");
-
-                //If timer is already enabled, mute has been sent. Make it stop!
-                muteCFTimer.Stop();
-                muteCFTimer.Enabled = false; //Stop the timer, Navigator spoke...
-                if (boolInMutePeriod == false)
-                {
-                    NavigatorStopCFAudio();
-                }
-            }
-        }
-
-        //Called when Navigator Speaks (Either SOUND via TCP or messages via Louk's named pipe
-        private void NavigatorStopCFAudio()
-        {
-            //We're in a MUTE period
-            this.BeginInvoke(new MethodInvoker(delegate { boolInMutePeriod = true; }));
-
-            //ATT Mute/unmute
-            if (CF_getConfigFlag(CF_ConfigFlags.GPSAttMute))
-            {
-                WriteLog("Mute (GPS ATT) CF Audio");
-                CF_systemCommand(CF_Actions.ATT);
-
-                //Can't enable timer in a non-UI thread. Only start timer if not using named pipe
-                if (!boolNamedPipes) this.BeginInvoke(new MethodInvoker(delegate { muteCFTimer.Interval = 2500; muteCFTimer.Enabled = true; }));
-            }
-            else WriteLog("CF GPS ATT not enabled");
-
-            //Mute/Unmute
-            if (bool.Parse(this.pluginConfig.ReadField("/APPCONFIG/MUTEUNMUTESTATUS")) == true)
-            {
-                WriteLog("MuteUnmute Enabled.");
-
-                //Fake "ATT" mute CF
-                //Get current CF volume level
-                intCFVolumeLevel = GetVolume();
-                WriteLog("Current CF Volume Level: " + intCFVolumeLevel.ToString());
-                //Set to ATTMuteLevel
-                SetVolume(Convert.ToInt32(Math.Round(double.Parse(CF_getConfigSetting(CF_ConfigSettings.AttMuteLevel)) / 10, MidpointRounding.AwayFromZero)));
-                WriteLog("New CF Volume Level: " + GetVolume().ToString());
-
-                //Can't enable timer in a non-UI thread. Only start timer if not using named pipe
-                if (!boolNamedPipes) this.BeginInvoke(new MethodInvoker(delegate { muteCFTimer.Interval = 2500; muteCFTimer.Enabled = true; }));
-            }
-            else WriteLog("MuteUnmute not enabled");
-        }
-
-        // Event to get CF to play audio again
-        private void muteCFTimer_Tick(object sender, EventArgs e)
-        {
-            WriteLog("Timer over. Play Audio");
-
-            //Mute/unmute
-            if (CF_getConfigFlag(CF_ConfigFlags.GPSAttMute)) CF_systemCommand(CF_Actions.UNMUTE);
-
-            //Mute/Unmute
-            if (bool.Parse(this.pluginConfig.ReadField("/APPCONFIG/MUTEUNMUTESTATUS")) == true)
-            {
-                //Restore CF volume level
-                WriteLog("Current CF Volume Level: " + GetVolume().ToString());
-                SetVolume(intCFVolumeLevel);
-                WriteLog("New CF Volume Level: " + GetVolume().ToString());
-            }
-
-            boolInMutePeriod = false; // No longer in mute phase
-            muteCFTimer.Enabled = false; //Turn off timer until next time
-        }
 
 
 		/// <summary>
@@ -463,6 +312,23 @@ namespace Navigator
             
             // Set up custom button handlers for buttons without a CML action in skin.xml
             this.CF_createButtonClick("MinMax", new MouseEventHandler(btnMinMax_Click));
+
+            //LK, 22-nov-2013: In the case of a skin change, adjust panel size.
+            if (thepanel != null)   //Anytime, but the first (when called from CF_pluginInit())
+            {
+                //LK, 22-nov-2013: Experimental
+                CFControls.CFPanel tmpPanel = new CFControls.CFPanel();
+                tmpPanel = panelArray[CF_getPanelID("PanelNavigator")];
+                tmpPanel.Visible = false;
+                tmpPanel.Enabled = false;
+                tmpPanel.BackColor = Color.Blue;
+
+                if (boolFullScreen)
+                    SetFullScreen();
+                else
+                    SetNonFullScreen();
+            }
+
             CFTools.writeLog(PluginName, "CF_localskinsetup", "Exiting");
 		}
 
@@ -476,17 +342,6 @@ namespace Navigator
 
             //User really wants to exit Navigator...
             boolExit = true;
-
-            //Make sure we can connect to it...
-            if (boolFirstLaunch)
-            {
-                //Connect to panel                
-                SetParent(pNavigator.MainWindowHandle, mHandlePtr);
-                WriteLog("Connected to Panel");
-
-                //Never do this again...
-                boolFirstLaunch = false;
-            }
 
             //Stop all timers
             nightTimer.Enabled = false;
@@ -514,7 +369,11 @@ namespace Navigator
                 if (!boolMainScreen)
                 {
                     thepanel.Visible = true; // Make sure its visible, and not behind stats screen
-                    SendCommand("$maximize\r\n", false, TCPCommand.Minimize);
+
+                    //LK, 19-nov-2013: Set focus to the panel
+                    thepanel.Focus();
+
+                    SendCommand("$maximize\r\n", false, TCPCommand.Maximize);
                 }
             }
 
@@ -576,20 +435,15 @@ namespace Navigator
 		/// This is called by the system when a button with this plugin action has been clicked.
 		/// </summary>
 		public override void CF_pluginShow()
-		{   
-            if (boolFirstLaunch)
-            {
-                //Connect to panel                
-                SetParent(pNavigator.MainWindowHandle, mHandlePtr);
-                WriteLog("Connected to Panel");
+		{           
+            WriteLog("Start: CF_pluginShow");
 
-                //Never do this again...
-                boolFirstLaunch = false;
-            }
-            
+            //LK, 18-nov-2013: Just make the panel visible (don't load again)
+            thepanel.Visible = true;
+
             //Configure night mode toggle option
             SetDayNightToggle();
-
+                       
             //Resume window
             SendCommand("$maximize\r\n", false, TCPCommand.Maximize);
                                                
@@ -645,141 +499,105 @@ namespace Navigator
             WriteLog("CF_pluginCommand: " + command + " " + param1 + ", " + param2);
 		}
 
-        /// <summary>
-        ///     This is a very important method for nav plugins! Centrafuse and other plugins will call
-        ///     this to get information from your plugin about various bits of navigation data. Your plugin
-        ///     should return a string with the appropriate value set. All this does is pass-through to the
-        ///     overridden function CF_navGetInfo - that way, you only need to edit in one place! You probably
-        ///     don't need to modify much, if anything, here - just edit CD_navGetInfo
-        /// </summary>
-        /// <param name="command">The command to execute.</param>
-        /// <param name="param">The parameter.</param>
-        /// <returns>Returns whatever is appropriate.</returns>
-        public override string CF_pluginData(string command, string param)
-        {
-            WriteLog("CF_pluginData: " + command + " " + param);
-            string retvalue = "";
-
-            switch (command)
-            {
-                case "ALTITUDE":
-                    retvalue = CF_navGetInfo(CFNavInfo.Altitude);
-                    break;
-                case "AZIMUTH":
-                    retvalue = CF_navGetInfo(CFNavInfo.Azimuth);
-                    break;
-                case "DIRECTION":
-                    retvalue = CF_navGetInfo(CFNavInfo.Direction);
-                    break;
-                case "ETA":
-                    retvalue = CF_navGetInfo(CFNavInfo.ETA);
-                    break;
-                case "ETR":
-                    retvalue = CF_navGetInfo(CFNavInfo.ETR);
-                    break;
-                case "HOUSENUMBER":
-                    retvalue = CF_navGetInfo(CFNavInfo.HouseNumber);
-                    break;
-                case "LATITUDE":
-                    retvalue = CF_navGetInfo(CFNavInfo.Latitude);
-                    break;
-                case "LOCKEDSATELLITES":
-                    retvalue = CF_navGetInfo(CFNavInfo.LockedSatellites);
-                    break;
-                case "LONGITUDE":
-                    retvalue = CF_navGetInfo(CFNavInfo.Longitude);
-                    break;
-                case "REMAININGDISTANCE":
-                    retvalue = CF_navGetInfo(CFNavInfo.RemainingDistance);
-                    break;
-                case "SPEED":
-                    retvalue = CF_navGetInfo(CFNavInfo.Speed);
-                    break;
-                case "STREET":
-                    retvalue = CF_navGetInfo(CFNavInfo.Street);
-                    break;
-                case "CITY":
-                    retvalue = CF_navGetInfo(CFNavInfo.City);
-                    break;
-                case "ZIP":
-                    retvalue = CF_navGetInfo(CFNavInfo.Zip);
-                    break;
-                case "DESTCITY":
-                    retvalue = CF_navGetInfo(CFNavInfo.DestCity);
-                    break;
-                case "DESTHOUSENUMBER":
-                    retvalue = CF_navGetInfo(CFNavInfo.DestHouseNumber);
-                    break;
-                case "DESTLATITUDE":
-                    retvalue = CF_navGetInfo(CFNavInfo.DestLatitude);
-                    break;
-                case "DESTLONGITUDE":
-                    retvalue = CF_navGetInfo(CFNavInfo.DestLongitude);
-                    break;
-                case "DESTSTREET":
-                    retvalue = CF_navGetInfo(CFNavInfo.DestStreet);
-                    break;
-                case "DESTZIP":
-                    retvalue = CF_navGetInfo(CFNavInfo.DestZip);
-                    break;
-                case "NEXTTURN":
-                    retvalue = CF_navGetInfo(CFNavInfo.NextTurn);
-                    break;
-                case "INROUTE":
-                    retvalue = CF_navGetInfo(CFNavInfo.InRoute);
-                    break;
-            }
-
-            return retvalue;
-        }
-
         //Launch Navigator
         private bool LaunchNavigator()
         {
             //Launch Navigator                    
             try
             {
-
-                pNavigator = new Process();
-                pNavigator.StartInfo.FileName = strEXEPath + "\\PC_Navigator.exe";
-                pNavigator.StartInfo.Arguments = "--window_border=no " + strEXEParameters + " --window_position=" + this.pluginConfig.ReadField("/APPCONFIG/WINDOWSIZE");
-                try
+                if (ReadCFValue("/APPCONFIG/NAVENGINE", "NAVIGATOR", configPath))
                 {
-                    if (bool.Parse(this.pluginConfig.ReadField("/APPCONFIG/NOHIRES")) == true)
+                    pNavigator = new Process();
+                    pNavigator.StartInfo.FileName = strEXEPath + "\\PC_Navigator.exe";
+                    pNavigator.StartInfo.Arguments = "--window_border=no " + strEXEParameters + " --window_position=" + this.pluginConfig.ReadField("/APPCONFIG/WINDOWSIZE");
+                    try
                     {
-                        pNavigator.StartInfo.Arguments = pNavigator.StartInfo.Arguments + " --nohires";
+                        if (bool.Parse(this.pluginConfig.ReadField("/APPCONFIG/NOHIRES")) == true)
+                        {
+                            pNavigator.StartInfo.Arguments = pNavigator.StartInfo.Arguments + " --nohires";
+                        }
                     }
-                }
-                catch { WriteLog("Failed to interpret NOHIRES setting"); }
-                //This does not work: "--tcpserver=127.0.0.1:" + intTCPPort.ToString(); Settings.XML modified
-                WriteLog("Launching Navigator using: '" + pNavigator.StartInfo.FileName + "'");
-                WriteLog("Parameters: '" + pNavigator.StartInfo.Arguments + "'");
-                pNavigator.EnableRaisingEvents = true;
-                pNavigator.Exited += new EventHandler(pNavigator_Exited);
-                pNavigator.Start();
-                System.Threading.Thread.Sleep(500); // Allow the process to open it's window
-                //pNavigator.WaitForInputIdle();     //Dont use this, the window location is messed up. Can't press OK                        
-                WriteLog("Launched");
+                    catch { WriteLog("Failed to interpret NOHIRES setting"); }
+                    //This does not work: "--tcpserver=127.0.0.1:" + intTCPPort.ToString(); Settings.XML modified
+                    WriteLog("Launching Navigator using: '" + pNavigator.StartInfo.FileName + "'");
+                    WriteLog("Parameters: '" + pNavigator.StartInfo.Arguments + "'");
+                    pNavigator.EnableRaisingEvents = true;
+                    pNavigator.Exited += new EventHandler(pNavigator_Exited);
+                    
+                    //LK, 18-nov-2013: Avoid flickering windows at startup
+                    pNavigator.StartInfo.WindowStyle = ProcessWindowStyle.Hidden;
 
-                //Say YES to OSM data usage, if user changed to ON
-                try
-                {
-                    if (boolOSMOK && boolFREE)
+                    pNavigator.Start();
+                    
+                    //Wait for Navigator to start
+                    TimeSpan totalProcessorTime = new TimeSpan();
+                    totalProcessorTime = pNavigator.TotalProcessorTime;
+                    pNavigator.PriorityClass = ProcessPriorityClass.High;   //LK, 24-nov-2013: Top priority while starting 
+                    System.Threading.Thread.Sleep(500); // Allow the process to open it's window
+                    pNavigator.WaitForInputIdle();     //Dont use this, the window location is messed up. Can't press OK        
+
+                    //ShowWindowAsync(pNavigator.MainWindowHandle, (int)showWindowAttribute.SW_MINIMIZE);
+                    SendMessage(pNavigator.MainWindowHandle, (int)showWindowAttribute.SW_MINIMIZE, 0, string.Empty);
+
+                    //LK, 18-nov-2013: Attach to hidden panel right away
+                    int iRetry = 0;
+
+                    WriteLog("Navigator started, waiting for process to idle");
+                    while (pNavigator.TotalProcessorTime > totalProcessorTime || pNavigator.TotalProcessorTime == TimeSpan.Zero)
                     {
-                        System.Threading.Thread.Sleep(500); // Allow the process to open it's window
-                        WriteLog("Sending ENTER");
-                        SendKeys.SendWait("{ENTER}");
-                    }
-                }
-                catch { WriteLog("Failed to send OK to OSM usage"); }
+                        totalProcessorTime = pNavigator.TotalProcessorTime;
+                        WriteLog("Waiting for Navigator to get idle... (totalProcessorTime used = " + totalProcessorTime);
+                        System.Threading.Thread.Sleep(500);
+                        if (iRetry++ > 20)
+                            break;
+                    };
 
-                return true;
+                    if (SetParent(pNavigator.MainWindowHandle, mHandlePtr) == IntPtr.Zero)
+                    {
+                        int lastError = Marshal.GetLastWin32Error();
+                        WriteLog("Docking failed, last error = " + lastError);
+                        System.Threading.Thread.Sleep(500);
+                        throw new Exception("Failed to dock Navigator");
+                    };
+
+                    pNavigator.PriorityClass = ProcessPriorityClass.AboveNormal;    //LK, 24-nov-2013: Lower the priority to "normal"
+                    //Form fNavigator = (Form)FromHandle(pNavigator.MainWindowHandle);
+                    //if (fNavigator != null)
+                    //{
+                    //    Form mainForm = (Form)thepanel.Parent;
+                    //    fNavigator.Owner = mainForm;
+                    //}
+                    
+                    WriteLog("Connected to panel");
+                    thepanel.Visible = false;
+                    WriteLog("Panel hidden");                    
+                    WriteLog("Launched");
+
+                    //Say YES to OSM data usage, if user changed to ON
+                    try
+                    {
+                        if (boolOSMOK && boolFREE)
+                        {
+                            System.Threading.Thread.Sleep(500); // Allow the process to open it's window
+                            WriteLog("Sending ENTER");
+                            SendKeys.SendWait("{ENTER}");
+                        }
+                    }
+                    catch { WriteLog("Failed to send OK to OSM usage"); }
+
+                    //Navigator should be launched and running
+                    return true;
+                }
             }
             catch (Exception ex)
             {
                 WriteLog("Failed to launch Navigator: " + ex.Message);
+                CFTools.writeError(ex.Message, ex.StackTrace);
                 return false;
             }
+
+            //Didn't launch Navigator
+            return false;
         }
 
 
@@ -787,7 +605,7 @@ namespace Navigator
         private void ConfigureNavigator()
         {
             //Minimize Navigator to hide it
-            SendCommand("$minimize\r\n", false, TCPCommand.Minimize);
+            /**/ //SendCommand("$minimize\r\n", false, TCPCommand.Minimize);
 
             //Act as navigation plugin
             SendCommand("$gps_sending=start;nmea\r\n", false, TCPCommand.GPSSending);
@@ -884,245 +702,6 @@ namespace Navigator
         }
 
 
-        // This returns the underlying data your plugin has. It is called by CF_pluginData as well as Centrafuse
-        public override string CF_navGetInfo(CFNavInfo infoType)
-        {
-            string retvalue = "";
-
-            switch (infoType)
-            {
-                case CFNavInfo.Altitude:
-                    retvalue = _currentPosition.Altitude.ToString(CultureInfo.InvariantCulture);
-                    break;
-                case CFNavInfo.Azimuth:
-                    retvalue = _currentPosition.Heading.ToString(CultureInfo.InvariantCulture);
-                    break;
-                case CFNavInfo.Direction:
-                    double temp;
-                    retvalue = double.TryParse(_currentPosition.Heading.ToString(CultureInfo.InvariantCulture), out temp) 
-                                   ? _currentPosition.Heading.ToCardinalMark().ToString()
-                                   : "";
-                    break;
-                case CFNavInfo.ETA:
-                    retvalue = "";
-                    break;
-                case CFNavInfo.ETR:
-                    retvalue = _navStats.TimeSecondsNextWaypoint.ToString();
-                    break;
-                case CFNavInfo.HouseNumber:
-                    retvalue = "";
-                    break;
-                case CFNavInfo.Latitude:
-                    retvalue = _currentPosition.Latitude.ToString("F5", CultureInfo.InvariantCulture);
-                    break;
-                case CFNavInfo.LockedSatellites:
-                    retvalue = _currentPosition.LockedSatellites.ToString(CultureInfo.InvariantCulture);
-                    break;
-                case CFNavInfo.Longitude:
-                    retvalue = _currentPosition.Longitude.ToString("F5", CultureInfo.InvariantCulture);
-                    break;
-                case CFNavInfo.RemainingDistance:
-                    retvalue = _navStats.DistanceMetersDestination.ToString();
-                    break;
-                case CFNavInfo.Speed:
-                    retvalue = _currentPosition.Speed.ToString(CultureInfo.InvariantCulture);
-                    break;
-                case CFNavInfo.Street:
-                    retvalue = "";
-                    break;
-                case CFNavInfo.City:
-                    retvalue = "";
-                    break;
-                case CFNavInfo.Zip:
-                    retvalue = "";
-                    break;
-                case CFNavInfo.DestCity:
-                    retvalue = "";
-                    break;
-                case CFNavInfo.DestHouseNumber:
-                    retvalue = "";
-                    break;
-                case CFNavInfo.DestLatitude:
-                    retvalue = "";
-                    break;
-                case CFNavInfo.DestLongitude:
-                    retvalue = "";
-                    break;
-                case CFNavInfo.DestStreet:
-                    retvalue = "";
-                    break;
-                case CFNavInfo.DestZip:
-                    retvalue = "";
-                    break;
-                case CFNavInfo.NextTurn:
-                    retvalue = _navStats.TimeSecondsNextWaypoint.ToString();
-                    break;
-                case CFNavInfo.InRoute:
-                    retvalue = _navStats.DistanceMetersNextWaypoint.ToString();
-                    break;
-            }
-
-            return retvalue;
-        }
-
-        // This returns the underlying data your plugin has. It is called by CF_pluginData as well as Centrafuse
-        public override CFNavInfoBundle CF_navGetInfoBundle()
-        {
-            var retvalue = new CFNavInfoBundle();
-
-            if (InvokeRequired)
-            {
-                CFTools.writeLog("NAV", "CF_navGetInfoBundle", "INVOKE REQUIRED!!");
-            }
-            CFTools.writeLog("NAV", "CF_navGetInfoBundle", "", CFTools.DebugLevel.FIVE);
-
-            retvalue.altitude = "";
-            retvalue.azimuth = "";
-            retvalue.direction = "";
-            retvalue.eta = "";
-            retvalue.etr = "";
-            retvalue.lockedsatellites = "";
-            retvalue.remainingdistance = "";
-            retvalue.speed = "";
-            retvalue.nextturn = "";
-            retvalue.inroute = false;
-
-            retvalue.currentlocation.house = "";
-            retvalue.currentlocation.latitude = -1;
-            retvalue.currentlocation.longitude = -1;
-            retvalue.currentlocation.street = "";
-            retvalue.currentlocation.city = "";
-            retvalue.currentlocation.zip = "";
-
-            retvalue.destlocation.city = "";
-            retvalue.destlocation.house = "";
-            retvalue.destlocation.latitude = -1;
-            retvalue.destlocation.longitude = -1;
-            retvalue.destlocation.street = "";
-            retvalue.destlocation.zip = "";
-            retvalue.destlocation.description = "";
-            retvalue.destlocation.telephone = "";
-
-            return retvalue;
-        }
-
-        // This method is called to pass a destination to your navigation engine. Read the parameters you need from the navLocation variable and act accordingly
-        public override void CF_navSetDestination(CFNavLocation navLocation)
-        {
-            WriteLog("CF_navSetDestination(1)");
-
-            //Clear current destination
-            SendCommand("$destination=clear\r\n", true, TCPCommand.Destination);
-
-            //Set new destination
-            SendCommand("$destination=" + navLocation.latitude.ToString(CultureInfo.InvariantCulture) + "," + navLocation.longitude.ToString(CultureInfo.InvariantCulture) + ";navigate;instant\r\n", true, TCPCommand.Destination);
-        }
-
-        // This method is called to pass a destination to your navigation engine. Read the parameters you need from the navLocation variable and act accordingly
-        public override void CF_navSetDestination(CFNavLocation navLocation, bool openNav, bool openFullScreen)
-        {
-            WriteLog("CF_navSetDestination(3)");
-            //Clear current destination
-            SendCommand("$destination=clear\r\n", true, TCPCommand.Destination);
-
-            //Set new destination
-            SendCommand("$destination=" + navLocation.latitude.ToString(CultureInfo.InvariantCulture) + "," + navLocation.longitude.ToString(CultureInfo.InvariantCulture) + ";navigate;instant\r\n", true, TCPCommand.Destination);
-
-            //Switch to Nav
-            CF3_executeCMLAction("Centrafuse.CFActions.Nav");
-
-            //Resize Nav screen
-            if (openFullScreen) SetFullScreen(); else SetNonFullScreen();
-        }
-
-        // Called by Centrafuse to find out what the destination is. Set the navLocation variable with as much information as is relevant
-        public override CFNavLocation CF_navGetDestination()
-        {
-            WriteLog("CF_navSetDestination()");           
-            var navLocation = new CFNavLocation();
-            return navLocation;
-        }
-
-        // Called by Centrafuse to find out what the location is. Set the navLocation variable with as much information as is relevant
-        public override CFNavLocation CF_navGetLocation()
-        {
-            WriteLog("CF_navGetLocation()");
-            var navLocation = new CFNavLocation();
-            navLocation.latitude = _currentPosition.Latitude;
-            navLocation.longitude = _currentPosition.Longitude;
-            return navLocation;
-        }
-
-        // Tells Centrafuse whether or not navigation is visible - you probably don't need to edit this
-        public override bool CF_navIsVisible()
-        {
-            WriteLog("CF_navIsvisible()");
-            return Visible;
-        }
-
-        // Called when the user wishes to cancel the current route. Call your navigation engine's appropriate methods
-        public override void CF_navCancelRoute()
-        {
-            WriteLog("CF_navCancelRoute()");
-
-            //Clear current destination
-            SendCommand("$destination=clear\r\n", true, TCPCommand.Destination);
-        }
-
-        // Called when Centrafuse is requesting the main menu for your navigation plugin.
-        public override void CF_navShowMenu()
-        {
-            WriteLog("CF_navShowMenu()");
-        }
-
-        // Called when Centrafuse is requesting the view menu for your navigation plugin.
-        public override void CF_navShowViewMenu()
-        {
-            WriteLog("CF_navShowViewMenu()");
-        }
-
-        public override void CF_navZoomIn()
-        {
-            WriteLog("CF_navZoomIn()");
-        }
-
-        public override void CF_navZoomOut()
-        {
-            WriteLog("CF_navZoomOut()");
-        }
-
-        public override CFPOICategory[] CF_navGetPOICategories()
-        {
-            var retvalue = new CFPOICategory[0];
-            return retvalue;
-        }
-
-        public override CFPOICategory[] CF_navGetPOISubCategories(int poinumber)
-        {
-            var retvalue = new CFPOICategory[0];
-            return retvalue;
-        }
-
-        public override CFNavLocation[] CF_navGetPOILocations(int poinumber, int subpoinumber)
-        {
-            var retvalue = new CFNavLocation[0];
-            return retvalue;
-        }
-
-        public override bool CF_navIsPOICategoryVisible(int poinumber)
-        {
-            return false;
-        }
-
-        public override void CF_navShowPOICategory(int poinumber, bool visible)
-        {
-        }
-
-        public override CFNavLocation[] CF_navGetHistory(int maxlocations)
-        {
-            var locations = new CFNavLocation[maxlocations];
-            return locations;
-        }
 
 
 
@@ -1158,59 +737,6 @@ namespace Navigator
         private void OnApplicationLoaded(object sender, EventArgs e)
         {
             CFTools.writeLog(PluginName, "OnApplicationLoaded", "");
-        }
-
-        // Called when Centrafuse is is going to switch between full screen mode
-        public override void CF_sectionToggleFullScreen()
-        {
-            // Handle async invocation
-            try
-            {
-                if (InvokeRequired)
-                {
-                    BeginInvoke(new VoidDelegate(CF_sectionToggleFullScreen), new object[] { });
-                    return;
-                }
-            }
-            catch { }
-
-            CFTools.writeLog(PluginName, "CF_sectionToggleFullScreen", "");
-
-            int nViewMode = 0; // View mode 0 = showing main controls, 1 = non-full-screen, 2 = full-screen
-
-            try
-            {
-                nViewMode++;
-                if (nViewMode > 2) nViewMode = 1;
-
-                if (nViewMode == 1 &&  (!CFTools.IsSecondaryDisplay(this, CF_displayHooks.displayNumber) || CF_displayHooks.rearScreen))
-                {
-                    CF_displayHooks.boundsAttributeId = "bounds";
-                    Rectangle rect = SkinReader.ParseBounds(SkinReader.GetSectionAttribute(CF_params.sectionID, CF_displayHooks.boundsAttributeId, pluginSkinReader));
-                    Bounds = CF_createRect(rect, true);
-                    rect = SkinReader.ParseBounds(SkinReader.GetControlAttribute(CF_params.sectionID, "NavContainer", CF_displayHooks.boundsAttributeId, pluginSkinReader));
-                    _containerPanel.Bounds = CF_createRect(rect);
-                }
-                else if (nViewMode == 2 && (!CFTools.IsSecondaryDisplay(this, CF_displayHooks.displayNumber) || CF_displayHooks.rearScreen))
-                {
-                    CF_displayHooks.boundsAttributeId = "fullbounds";
-                    Rectangle rect = SkinReader.ParseBounds(SkinReader.GetSectionAttribute(CF_params.sectionID, CF_displayHooks.boundsAttributeId, pluginSkinReader));
-                    Bounds = CF_createRect(rect, true);
-                    rect = SkinReader.ParseBounds(SkinReader.GetControlAttribute(CF_params.sectionID, "NavContainer", CF_displayHooks.boundsAttributeId, pluginSkinReader));
-                    _containerPanel.Bounds = CF_createRect(rect);
-                }
-                else
-                    return;
-
-                if (Handle != IntPtr.Zero) Win32.SetWindowPos(Handle, IntPtr.Zero, 0, 0, _containerPanel.Bounds.Width, _containerPanel.Bounds.Height, 0);
-
-                _nNavSize = Bounds;
-                _nMapSize = _containerPanel.Bounds;
-            }
-            catch (Exception errmsg)
-            {
-                CFTools.writeError(errmsg.Message, errmsg.StackTrace);
-            }
         }
 
 #endregion
@@ -1599,19 +1125,6 @@ namespace Navigator
             }
         }
 
-        // Event to get CF to ask for stats
-        private void NavStatsTimer_Tick(object sender, EventArgs e)
-        {
-            WriteLog("NavStats...");
-            SendCommand("$navigation_statistics\r\n", false, TCPCommand.Statistics);
-        }
-
-        // Event to ask Navigator for navigation statistics
-        private void NavDestinationTimer_Tick(object sender, EventArgs e)
-        {
-            //Ask CF for navigation statistics
-            SendCommand("$navigation_statistics\r\n", false, TCPCommand.Statistics);
-        }
 
         private void SetDayNightToggle()
         {
@@ -1701,77 +1214,6 @@ namespace Navigator
                 catch { WriteLog("Failed to change sound warning mode"); }
             }
          }
-
-        //Read CF settings
-        private Boolean ReadCFValue(string thenode, string pname, string strFile)
-        {
-            try
-            {
-                XmlDocument document = new XmlDocument();
-                document.Load(strFile);
-                string str = document.SelectSingleNode(thenode).InnerText;
-                if (str.Trim().ToUpper() == pname.Trim().ToUpper())
-                    return true;
-                else
-                    return false;
-            }
-
-            catch (Exception exception)
-            {
-                CFTools.writeError(exception.Message, exception.StackTrace);
-            }
-
-            return false;
-        }
-
-        // Event to get CF to ask for stats
-        private void NavStatustimer_Tick(object sender, EventArgs e)
-        {
-            try { CF_updateText("DataLongitude", CF_navGetInfo(CFNavInfo.Longitude)); } catch { };
-            try { CF_updateText("DataLatitude", CF_navGetInfo(CFNavInfo.Latitude)); } catch { };
-            try { CF_updateText("DataAltitude", CF_navGetInfo(CFNavInfo.Altitude)); } catch { };
-            try { CF_updateText("DataLockedSatellites", CF_navGetInfo(CFNavInfo.LockedSatellites)); } catch { };
-            try {
-                if (ReadCFValue("/APPCONFIG/SPEEDUNIT", "I", CFTools.AppDataPath + "\\System\\config.xml")) CF_updateText("DataSpeed", CF_navGetInfo(CFNavInfo.Speed).Substring(0, 5) + " mph");
-                if (ReadCFValue("/APPCONFIG/SPEEDUNIT", "M", CFTools.AppDataPath + "\\System\\config.xml")) CF_updateText("DataSpeed", CF_navGetInfo(CFNavInfo.Speed).Substring(0, 5) + " km/h"); 
-            } 
-            catch { };
-            try { CF_updateText("DataDirection", CF_navGetInfo(CFNavInfo.Direction)); } catch { };
-            try { CF_updateText("DataAzimuth", CF_navGetInfo(CFNavInfo.Azimuth)); } catch { };
-            try { CF_updateText("DataETR", CF_navGetInfo(CFNavInfo.ETR)); } catch { };
-            try { CF_updateText("DataRemainingDistance", CF_navGetInfo(CFNavInfo.RemainingDistance)); } catch { };
-            try { CF_updateText("DataNextTurn", CF_navGetInfo(CFNavInfo.NextTurn)); } catch { };
-            try { CF_updateText("DataInRoute", CF_navGetInfo(CFNavInfo.InRoute)); } catch { };
-            try { CF_updateText("DataGPSTime", _navStats.GPSTime.Substring(0, 2) + ":" + _navStats.GPSTime.Substring(2, 2) + ":" + _navStats.GPSTime.Substring(4, 2) + " Offset:" + GetGmtOffset(_currentPosition.Latitude, _currentPosition.Longitude).ToString() + "+DST"); }catch { };
-        }
-
-        private void SetLabelStatus(bool status)
-        {
-            CF_setLabelEnableFlag("DataLongitude", status);
-            CF_setLabelEnableFlag("DataLatitude", status);
-            CF_setLabelEnableFlag("DataAltitude", status);
-            CF_setLabelEnableFlag("DataLockedSatellites", status);
-            CF_setLabelEnableFlag("DataSpeed", status);
-            CF_setLabelEnableFlag("DataDirection", status);
-            CF_setLabelEnableFlag("DataAzimuth", status);
-            CF_setLabelEnableFlag("DataETR", status);
-            CF_setLabelEnableFlag("DataRemainingDistance", status);
-            CF_setLabelEnableFlag("DataNextTurn", status);
-            CF_setLabelEnableFlag("DataInRoute", status);
-            CF_setLabelEnableFlag("DataGPSTime", status);
-            CF_setLabelEnableFlag("lblLongitude", status);
-            CF_setLabelEnableFlag("lblLatitude", status);
-            CF_setLabelEnableFlag("lblAltitude", status);
-            CF_setLabelEnableFlag("lblLockedSatellites", status);
-            CF_setLabelEnableFlag("lblSpeed", status);
-            CF_setLabelEnableFlag("lblDirection", status);
-            CF_setLabelEnableFlag("lblAzimuth", status);
-            CF_setLabelEnableFlag("lblETR", status);
-            CF_setLabelEnableFlag("lblRemainingDistance", status);
-            CF_setLabelEnableFlag("lblNextTurn", status);
-            CF_setLabelEnableFlag("lblInRoute", status);
-            CF_setLabelEnableFlag("lblGPSTime", status);
-        }
 
         //Switch to status window
         private void btnSectionStatus_Click(object sender, MouseEventArgs e)
@@ -1909,163 +1351,38 @@ namespace Navigator
         }
 #endregion
 
-        //Convert NMEA string to Decimal value
-        private double NMEAtoDecimal(String Pos)
+        //Set terminate to true if kill process
+        public bool TerminateOrphanedProcess(bool terminate)
         {
-            //WriteLog("Raw NMEA value:" + Pos);
-            double PosDb = double.Parse(Pos, CultureInfo.InvariantCulture);
-            double Deg = Math.Floor(PosDb / 100);
-            double DecPos = Math.Round(Deg + ((PosDb - (Deg * 100)) / 60), 5);
-            return DecPos;
-        }
-
-        public LatLonDms ConvertDecimalToDms(double latitude, double longitude)
-        {
-            var retvalue = new LatLonDms();
+            bool boolTerminateOrphanedProcess = false; //Assume no killing...
 
             try
             {
-                //Math.round is used to eliminate the small error caused by rounding in the computer:
-                //e.g. 0.2 is not the same as 0.20000000000284
-
-                double signlat = 1;
-                double signlon = 1;
-
-                if (latitude < 0)
-                    signlat = -1;
-
-                double latAbs = Math.Abs(Math.Round(latitude * (1000000)));
-
-                if (latAbs > (90 * 1000000))
-                    latAbs = 0;
-
-                if (longitude < 0)
-                    signlon = -1;
-
-                double lonAbs = Math.Abs(Math.Round(longitude * (1000000)));
-
-                if (lonAbs > (180 * 1000000))
-                    lonAbs = 0;
-
-                double latdegrees = Math.Floor(latAbs / (1000000)) * signlat;
-                double latminutes = Math.Floor(((latAbs / (1000000)) - Math.Floor(latAbs / (1000000))) * (60));
-                double latseconds =
-                    Math.Floor(((((latAbs / (1000000)) - Math.Floor(latAbs / (1000000))) * (60)) -
-                                Math.Floor(((latAbs / (1000000)) - Math.Floor(latAbs / (1000000))) * (60))) * (100000)) * (60) /
-                    (100000);
-
-                double londegrees = Math.Floor(lonAbs / (1000000)) * signlon;
-                double lonminutes = Math.Floor(((lonAbs / (1000000)) - Math.Floor(lonAbs / (1000000))) * (60));
-                double lonseconds =
-                    Math.Floor(((((lonAbs / (1000000)) - Math.Floor(lonAbs / (1000000))) * (60)) -
-                                Math.Floor(((lonAbs / (1000000)) - Math.Floor(lonAbs / (1000000))) * (60))) * (100000)) * (60) /
-                    (100000);
-
-                retvalue.LatitudeDegrees = latdegrees;
-                retvalue.LatitudeMinutes = latminutes;
-                retvalue.LatitudeSeconds = latseconds;
-
-                retvalue.LongitudeDegrees = londegrees;
-                retvalue.LongitudeMinutes = lonminutes;
-                retvalue.LongitudeSeconds = lonseconds;
+                WriteLog("Listing all processes to check if PC_Navigator.exe is already running");
+                Process[] processlist = Process.GetProcesses();
+                foreach (Process theprocess in processlist)
+                {
+                    //WriteLog("Process: '" + theprocess.ProcessName + "' ID: '" + theprocess.Id + "'");
+                    if (theprocess.ProcessName.Contains("PC_Navigator"))
+                    {
+                        WriteLog("PC_Navigator is running");
+                        boolTerminateOrphanedProcess = true;
+                        if (terminate)
+                        {
+                            WriteLog("Terminating process");
+                            theprocess.Kill();
+                            System.Threading.Thread.Sleep(1000); // Allow the process time to terminate
+                        }
+                    }
+                }
             }
-            catch (Exception errmsg)
+            catch
             {
-                CFTools.writeError(errmsg.Message, errmsg.StackTrace);
+                WriteLog("Error getting Process information");
             }
 
-            return retvalue;
+            return boolTerminateOrphanedProcess;
         }
-
-        public LatLonDecimal ConvertDmsToDecimal(double latdegrees, double latminutes, double latseconds,
-                                                 double londegrees, double lonminutes, double lonseconds)
-        {
-            var retvalue = new LatLonDecimal();
-
-            try
-            {
-                //Math.round is used to eliminate the small error caused by rounding in the computer:
-                //e.g. 0.2 is not the same as 0.20000000000284
-
-                double latsign = 1;
-                double lonsign = 1;
-
-                if (latdegrees < 0)
-                    latsign = -1;
-
-                double absdlat = Math.Abs(Math.Round(latdegrees * (1000000)));
-                //if(absdlat > (90 * 1000000))
-
-                double absmlat = Math.Abs(Math.Round(latminutes * (1000000)));
-                //if(absmlat >= (60 * 1000000))
-
-                double absslat = Math.Abs(Math.Round(latseconds * (1000000)));
-                //if(absslat > (59.99999999 * 1000000))
-
-                if (londegrees < 0)
-                    lonsign = -1;
-
-                double absdlon = Math.Abs(Math.Round(londegrees * (1000000)));
-                //if(absdlon > (180 * 1000000))
-
-                double absmlon = Math.Abs(Math.Round(lonminutes * (1000000)));
-                //if(absmlon >= (60 * 1000000))
-
-                double absslon = Math.Abs(Math.Round(lonseconds * (1000000)));
-                //if(absslon > (59.99999999 * 1000000))
-
-                double latitude = Math.Round(absdlat + (absmlat / (60)) + (absslat / (3600))) * latsign / (1000000);
-                double longitude = Math.Round(absdlon + (absmlon / (60)) + (absslon / (3600))) * lonsign / (1000000);
-
-                retvalue.Latitude = latitude;
-                retvalue.Longitude = longitude;
-            }
-            catch (Exception errmsg)
-            {
-                CFTools.writeError(errmsg.Message, errmsg.StackTrace);
-            }
-
-            return retvalue;
-        }
-
-        public int GetGmtOffset(double latitude, double longitude)
-        {
-            int retvalue = 0;
-
-            try
-            {
-                bool addneg = false;
-                LatLonDms dms = ConvertDecimalToDms(latitude, longitude);
-
-                if (dms.LongitudeDegrees < 0)
-                    addneg = true;
-
-                double dvalue = Math.Abs(dms.LongitudeDegrees) / (15);
-                string svalue = dvalue.ToString("#");
-                int gmtoffset = Int32.Parse(svalue);
-
-                if (addneg)
-                    gmtoffset = gmtoffset * -1;
-
-                retvalue = gmtoffset;
-            }
-            catch (Exception errmsg)
-            {
-                CFTools.writeError(errmsg.Message, errmsg.StackTrace);
-            }
-
-            return retvalue;
-        }
-       
-        private DateTime parsTimeOfFix(String dateOfFix, String timeOfFix) 
-        {
-            DateTime convertedDate = DateTime.SpecifyKind(DateTime.Parse(dateOfFix + " " + timeOfFix), DateTimeKind.Utc);
-            var kind = convertedDate.Kind; // will equal DateTimeKind.Utc
-
-            DateTime dt = convertedDate.ToLocalTime();
-            return dt;
-        }
-
 
         //Send mouse click. Used to exit Navigator
         private void ClickOnPoint(IntPtr wndHandle, Point clientPoint)
@@ -2123,18 +1440,6 @@ namespace Navigator
                 CallStatusTimer.Enabled = false;
                 NavDestinationTimer.Enabled = false;
                 
-                //Make sure we can connect to it...
-                if (boolFirstLaunch)
-                {
-                    //Connect to panel                
-                    SetParent(pNavigator.MainWindowHandle, mHandlePtr);
-                    WriteLog("Connected to Panel");
-
-                    //Never do this again...
-                    boolFirstLaunch = false;
-                }
-
-
                 //If navigator is not running, its probably half hidden behind CF. Switch to Nav screen
                 //Switch to Nav if not free edition
                 if (boolFREE)
