@@ -20,7 +20,6 @@ using System.Windows.Forms;
 using System.Xml;
 using System.Web;
 using centrafuse.Plugins;
-
 using System.Collections.Generic;
 using System.Text;
 using System.Globalization;
@@ -113,7 +112,10 @@ namespace Navigator
                 else if (page == 2)
                 {
                     // TEXT BUTTONS (1-4)
-                    ButtonHandler[i] = null; ButtonText[i] = ""; ButtonValue[i++] = "";
+                    ButtonHandler[i] = new CFSetupHandler(SetAudioDelayAfterMute);
+                    ButtonText[i] = this.langReader.ReadField("/APPLANG/SETUP/AUDIODELAYAFTERMUTE");
+                    ButtonValue[i++] = this.configReader.ReadField("/APPCONFIG/AUDIODELAYAFTERMUTE");
+                                        
                     ButtonHandler[i] = null; ButtonText[i] = ""; ButtonValue[i++] = "";
                     ButtonHandler[i] = null; ButtonText[i] = ""; ButtonValue[i++] = "";
                     ButtonHandler[i] = null; ButtonText[i] = ""; ButtonValue[i++] = "";
@@ -191,7 +193,7 @@ namespace Navigator
             }
             catch (Exception errmsg) { CFTools.writeError(errmsg.Message, errmsg.StackTrace); }
         }
-
+        
         //Port to use for communications with Navigator
         private void SetTCPPort(ref object value)
         {
@@ -262,6 +264,31 @@ namespace Navigator
         private void SetAlertStatus(ref object value)
         {
             this.configReader.WriteField("/APPCONFIG/ALERTSENABLED", value.ToString());
+        }
+
+
+        //How long to wait before audio resumes after mute
+        private void SetAudioDelayAfterMute(ref object value)
+        {
+            try
+            {
+                string resultvalue, resulttext;
+
+                if (mainForm.CF_systemDisplayDialog(CF_Dialogs.NumberPad, this.langReader.ReadField("/APPLANG/SETUP/AUDIODELAYAFTERMUTE"), out resultvalue, out resulttext) == DialogResult.OK)
+                {
+                    //Parse the value
+                    int intTemp = int.Parse(resultvalue);
+
+                    //Sanity check it and set to its extremes.
+                    if (intTemp > 10000) intTemp = 1000;
+                    if (intTemp < 0) intTemp = 0;
+
+                    //Value is scrubbed, write it
+                    this.configReader.WriteField("/APPCONFIG/AUDIODELAYAFTERMUTE", intTemp.ToString());
+                    value = intTemp.ToString();
+                }
+            }
+            catch (Exception errmsg) { CFTools.writeError(errmsg.Message, errmsg.StackTrace); }
         }
 
         //Enable Sending Mute/Unmute on Sound alert?

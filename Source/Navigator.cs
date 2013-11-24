@@ -955,6 +955,23 @@ namespace Navigator
                     this.pluginConfig.WriteField("/APPCONFIG/NOHIRES", "False", true);
                 }
 
+
+                // Delay after Unmute
+                int intDelay = 0;
+                try
+                {
+                    intDelay = int.Parse(this.pluginConfig.ReadField("/APPCONFIG/AUDIODELAYAFTERMUTE"));
+                }
+                catch
+                {
+                    intDelay = 1000;
+                    this.pluginConfig.WriteField("/APPCONFIG/AUDIODELAYAFTERMUTE", intDelay.ToString(), true);
+                }
+                finally
+                {
+                    WriteLog("intDelay: " + intDelay.ToString());
+                }
+
                 // CF Settings
                 try
                 {

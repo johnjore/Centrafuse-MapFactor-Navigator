@@ -41,5 +41,6 @@
     <PATCHNAVIGATOR>PC_Navigator.exe will be patched to support named pipe on next CF restart</PATCHNAVIGATOR>
     <UNPATCHNAVIGATOR>Patch for named pipe will be removed on next CF restart</UNPATCHNAVIGATOR>
     <MUTEUNMUTEW7>This feature works on Windows 7 only</MUTEUNMUTEW7>
+    <AUDIODELAYAFTERMUTE>Unmute after (ms)</AUDIODELAYAFTERMUTE>
   </SETUP>
 </APPLANG>

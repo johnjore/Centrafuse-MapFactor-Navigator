@@ -49,8 +49,8 @@ namespace Navigator
                 //Only unmute if we've mute'ed
                 if (boolInMutePeriod == true)
                 {
-                    //Lets try and unmute in x ms
-                    muteCFTimer.Interval = 1000;
+                    //Use user selectable unmute delay
+                    muteCFTimer.Interval = int.Parse(this.pluginConfig.ReadField("/APPCONFIG/AUDIODELAYAFTERMUTE"));
                     muteCFTimer.Enabled = true;
                 }
             }
