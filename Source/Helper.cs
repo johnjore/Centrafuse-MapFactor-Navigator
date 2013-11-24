@@ -22,6 +22,8 @@ using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using System.Xml;
 using centrafuse.Plugins;
+using System.Drawing;
+using System.Windows.Forms;
 
 namespace Navigator
 {
