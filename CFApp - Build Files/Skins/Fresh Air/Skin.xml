@@ -1,0 +1,71 @@
+<SKIN id="Fresh Air" width="800" height="480" comment="Plugin for Mapfactor Navigator">
+  <FONTCLASSES>
+    <FONTCLASS id="LabelText" font="HelveticaNeueLT Std" case="Initial" color="#FFFFFF" color2="#333333" size="16" style="" align="Right" wrap="False" xoffset="0" yoffset="0" />
+    <FONTCLASS id="DataText" font="HelveticaNeueLT Std" case="Initial" color="#FFFFFF" color2="#333333" size="16" style="" align="Left" wrap="False" xoffset="0" yoffset="0" />
+  </FONTCLASSES>
+  <BUTTONIMAGES>
+    <BUTTONIMAGE id="gps" path="buttonimages/gps.png" />
+    <BUTTONIMAGE id="voldown_off" path="buttonimages/voldown_off.png" />
+    <BUTTONIMAGE id="voldown_down" path="buttonimages/voldown_down.png" />
+    <BUTTONIMAGE id="volup_off" path="buttonimages/volup_off.png" />
+    <BUTTONIMAGE id="volup_down" path="buttonimages/volup_down.png" />
+    <BUTTONIMAGE id="PlayOff" path="buttonimages/btn_play_off.png" />
+    <BUTTONIMAGE id="PlayDown" path="buttonimages/btn_play_down.png" />
+    <BUTTONIMAGE id="RewindOff" path="buttonimages/btn_previoustrack_off.png" />
+    <BUTTONIMAGE id="RewindDown" path="buttonimages/btn_previoustrack_down.png" />
+    <BUTTONIMAGE id="FastForwardOff" path="buttonimages/btn_nexttrack_off.png" />
+    <BUTTONIMAGE id="FastForwardDown" path="buttonimages/btn_nexttrack_down.png" />
+    <BUTTONIMAGE id="NowPlayingOff" path="buttonimages/btn_nowplaying_off.png" />
+    <BUTTONIMAGE id="NowPlayingDown" path="buttonimages/btn_nowplaying_down.png" />
+    <BUTTONIMAGE id="MainBackOff" path="buttonimages/btn_back_off.png" />
+    <BUTTONIMAGE id="MainBackDown" path="buttonimages/btn_back_down.png" />
+    <BUTTONIMAGE id="resize_off" path="buttonimages/resize_off.png" />
+    <BUTTONIMAGE id="resize_down" path="buttonimages/resize_down.png" />
+  </BUTTONIMAGES>
+  <IMAGES>
+    <IMAGE id="background" path="screen/background.png" />
+  </IMAGES>
+  <SECTIONS>
+    <SECTION id="Navigator" effect="ToApp" bounds="0;88;800;392" fullbounds="0;0;800;480" off="background" down="background">
+      <CONTROLS>
+        <CONTROL type="Panel" 	  id="PanelNavigator" bounds="000;000;800;304" fullbounds="000;000;800;392" enabled="true" fontclass="" fontstyle="" />
+
+        <CONTROL type="DynButton" id="GPSStatus"   bounds="020;316;080;58" fullbounds="020;404;080;58" tabindex="1" enabled="true" fontclass="Standard12" text="AppLang.Buttons.Section" visible="true" off="gps" down="gps" action="GotoStatus" />
+        <CONTROL type="DynButton" id="VolDown"     bounds="096;316;085;64" fullbounds="096;404;085;64" tabindex="2" enabled="true" cmlaction="Centrafuse.Main.VolumeDown" forcemouseup="true" off="voldown_Off" down="voldown_down" />
+        <CONTROL type="DynButton" id="VolUp"       bounds="181;316;085;64" fullbounds="181;404;085;64" tabindex="3" enabled="true" cmlaction="Centrafuse.Main.VolumeUp" forcemouseup="true" off="volup_Off" down="volUp_down" />
+        <CONTROL type="DynButton" id="PlayPause"   bounds="266;316;085;64" fullbounds="266;404;085;64" tabindex="4" enabled="true" cmlaction="Centrafuse.Main.PlayPause" off="PlayOff" down="PlayDown" />
+        <CONTROL type="DynButton" id="Rewind"      bounds="351;316;085;64" fullbounds="351;404;085;64" tabindex="5" enabled="true" cmlaction="Centrafuse.Main.Rewind" off="RewindOff" down="RewindDown" />
+        <CONTROL type="DynButton" id="FastForward" bounds="436;316;085;64" fullbounds="436;404;085;64" tabindex="6" enabled="true" cmlaction="Centrafuse.Main.FastForward" off="FastForwardOff" down="FastForwardDown" />
+        <CONTROL type="DynButton" id="MinMax"      bounds="521;316;085;64" fullbounds="521;404;085;60" tabindex="7" enabled="true" fontclass="Standard12" text="AppLang.Buttons.MinMax" visible="true" off="resize_off" down="resize_down" />
+        <CONTROL type="DynButton" id="NowPlaying"  bounds="606;316;085;64" fullbounds="606;404;085;64" tabindex="8" enabled="true" cmlaction="Centrafuse.Main.NowPlaying" iconyoffset="-5" off="NowPlayingOff" down="NowPlayingDown" />
+        <CONTROL type="DynButton" id="Exit" 	   bounds="708;316;064;64" fullbounds="708;404;064;64" tabindex="9" enabled="true" cmlaction="Centrafuse.Main.MainMenu" off="MainBackOff" down="MainBackDown" fontclass="Button20" />
+
+        <CONTROL type="Label" id="lblLongitude" bounds="0;10;270;22" fontclass="LabelText" fontstyle="" textenable="true" text="AppLang.Navigator.lblLongitude" enabled="false"/>
+        <CONTROL type="Label" id="DataLongitude" bounds="280;10;150;22" fontclass="DataText" fontstyle="" textenable="true" text="" enabled="false"/>
+        <CONTROL type="Label" id="lblLatitude" bounds="300;10;280;22" fontclass="LabelText" fontstyle="" textenable="true" text="AppLang.Navigator.lblLatitude" enabled="false"/>
+        <CONTROL type="Label" id="DataLatitude" bounds="590;10;150;22" fontclass="DataText" fontstyle="" textenable="true" text="" enabled="false"/>
+        <CONTROL type="Label" id="lblAltitude" bounds="0;40;270;22" fontclass="LabelText" fontstyle="" textenable="true" text="AppLang.Navigator.lblAltitude" enabled="false"/>
+        <CONTROL type="Label" id="DataAltitude" bounds="280;40;150;22" fontclass="DataText" fontstyle="" textenable="true" text="" enabled="false"/>
+        <CONTROL type="Label" id="lblSpeed" bounds="300;40;280;22" fontclass="LabelText" fontstyle="" textenable="true" text="AppLang.Navigator.lblSpeed" enabled="false"/>
+	<CONTROL type="Label" id="DataSpeed" bounds="590;40;150;22" fontclass="DataText" fontstyle="" textenable="true" text="" enabled="false"/>
+        <CONTROL type="Label" id="lblDirection" bounds="0;70;270;22" fontclass="LabelText" fontstyle="" textenable="true" text="AppLang.Navigator.lblDirection" enabled="false"/>
+        <CONTROL type="Label" id="DataDirection" bounds="280;70;100;22" fontclass="DataText" fontstyle="" textenable="true" text="" enabled="false"/>
+        <CONTROL type="Label" id="lblAzimuth" bounds="300;70;280;22" fontclass="LabelText" fontstyle="" textenable="true" text="AppLang.Navigator.lblAzimuth" enabled="false"/>
+        <CONTROL type="Label" id="DataAzimuth" bounds="590;70;100;22" fontclass="DataText" fontstyle="" textenable="true" text="" enabled="false"/>
+        <CONTROL type="Label" id="lblETR" bounds="0;100;270;22" fontclass="LabelText" fontstyle="" textenable="true" text="AppLang.Navigator.lblETR" enabled="false"/>
+        <CONTROL type="Label" id="DataETR" bounds="280;100;100;22" fontclass="DataText" fontstyle="" textenable="true" text="" enabled="false"/>
+        <CONTROL type="Label" id="lblNextTurn" bounds="300;100;280;22" fontclass="LabelText" fontstyle="" textenable="true" text="AppLang.Navigator.lblNextTurn" enabled="false"/>
+        <CONTROL type="Label" id="DataNextTurn" bounds="590;100;100;22" fontclass="DataText" fontstyle="" textenable="true" text="" enabled="false"/>
+        <CONTROL type="Label" id="lblRemainingDistance" bounds="0;130;270;22" fontclass="LabelText" fontstyle="" textenable="true" text="AppLang.Navigator.lblRemainingDistance" enabled="false"/>
+        <CONTROL type="Label" id="DataRemainingDistance" bounds="280;130;100;22" fontclass="DataText" fontstyle="" textenable="true" text="" enabled="false"/>
+        <CONTROL type="Label" id="lblInRoute" bounds="300;130;280;22" fontclass="LabelText" fontstyle="" textenable="true" text="AppLang.Navigator.lblInRoute" enabled="false"/>
+        <CONTROL type="Label" id="DataInRoute" bounds="590;130;100;22" fontclass="DataText" fontstyle="" textenable="true" text="" enabled="false"/>
+        <CONTROL type="Label" id="lblLockedSatellites" bounds="0;160;270;22" fontclass="LabelText" fontstyle="" textenable="true" text="AppLang.Navigator.lblLockedSatellites" enabled="false"/>
+        <CONTROL type="Label" id="DataLockedSatellites" bounds="280;160;100;22" fontclass="DataText" fontstyle="" textenable="true" text="" enabled="false"/>
+        <CONTROL type="Label" id="lblGPSTime" bounds="0;190;270;22" fontclass="LabelText" fontstyle="" textenable="true" text="AppLang.Navigator.lblGPSTime" enabled="false"/>
+        <CONTROL type="Label" id="DataGPSTime" bounds="280;190;320;22" fontclass="DataText" fontstyle="" textenable="true" text="" enabled="false"/>
+      </CONTROLS>
+    </SECTION>
+
+  </SECTIONS>
+</SKIN>

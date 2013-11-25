@@ -1281,12 +1281,21 @@ namespace Navigator
             RePosbutton("GPSStatus", "fullbounds");
             RePosbutton("VolDown", "fullbounds");
             RePosbutton("VolUp", "fullbounds");
+            RePosbutton("PlayPause", "fullbounds");
+            RePosbutton("Rewind", "fullbounds");
+            RePosbutton("FastForward", "fullbounds");
+            RePosbutton("MinMax", "fullbounds");
+            RePosbutton("NowPlaying", "fullbounds");
             RePosbutton("Exit", "fullbounds");
 
             //Repos label
-            CFControls.CFLabel a = new CFControls.CFLabel();
-            a = labelArray[CF_getLabelID("DateTime")];
-            a.Bounds = base.CF_createRect(SkinReader.ParseBounds(SkinReader.GetControlAttribute("Navigator", "DateTime", ("fullbounds").ToLower(), base.pluginSkinReader)));
+            try
+            {
+                CFControls.CFLabel a = new CFControls.CFLabel();
+                a = labelArray[CF_getLabelID("DateTime")];
+                a.Bounds = base.CF_createRect(SkinReader.ParseBounds(SkinReader.GetControlAttribute("Navigator", "DateTime", ("fullbounds").ToLower(), base.pluginSkinReader)));
+            }
+            catch { WriteLog("Not in skin"); }
 
             //Configure screen size. Use the panel size
             SendCommand("$window=" + thepanel.Bounds.Left.ToString() + "," + thepanel.Bounds.Top.ToString() + "," + thepanel.Bounds.Right.ToString() + "," + thepanel.Bounds.Bottom.ToString() + ",noborder\r\n", false, TCPCommand.Window);
@@ -1312,12 +1321,21 @@ namespace Navigator
             RePosbutton("GPSStatus", "bounds");
             RePosbutton("VolDown", "bounds");
             RePosbutton("VolUp", "bounds");
+            RePosbutton("PlayPause", "bounds");
+            RePosbutton("Rewind", "bounds");
+            RePosbutton("FastForward", "bounds");
+            RePosbutton("MinMax", "bounds");
+            RePosbutton("NowPlaying", "bounds");
             RePosbutton("Exit", "bounds");
 
             //Reposition label
-            CFControls.CFLabel a = new CFControls.CFLabel();
-            a = labelArray[CF_getLabelID("DateTime")];
-            a.Bounds = base.CF_createRect(SkinReader.ParseBounds(SkinReader.GetControlAttribute("Navigator", "DateTime", ("bounds").ToLower(), base.pluginSkinReader)));
+            try
+            {
+                CFControls.CFLabel a = new CFControls.CFLabel();
+                a = labelArray[CF_getLabelID("DateTime")];
+                a.Bounds = base.CF_createRect(SkinReader.ParseBounds(SkinReader.GetControlAttribute("Navigator", "DateTime", ("bounds").ToLower(), base.pluginSkinReader)));
+            }
+            catch { WriteLog("Not in skin"); }
 
             //Configure screen size. Use the panel size
             SendCommand("$window=" + thepanel.Bounds.Left.ToString() + "," + thepanel.Bounds.Top.ToString() + "," + thepanel.Bounds.Right.ToString() + "," + thepanel.Bounds.Bottom.ToString() + ",noborder\r\n", false, TCPCommand.Window);
@@ -1341,7 +1359,7 @@ namespace Navigator
                 a = buttonArray[CF_getButtonID(strID)];
                 a.Bounds = base.CF_createRect(SkinReader.ParseBounds(SkinReader.GetControlAttribute("Navigator", strID, (strSize).ToLower(), base.pluginSkinReader)));
             }
-            catch { WriteLog("Failed to send set button's new position"); }
+            catch { WriteLog("Failed to set button's new position"); }
         }
         
         //Write to plugin log file
