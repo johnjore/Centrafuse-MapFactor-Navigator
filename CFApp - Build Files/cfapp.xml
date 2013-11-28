@@ -5,7 +5,7 @@
     <APPLOCATION>[CFAPPDIR]\Plugins\Navigator</APPLOCATION>
     <APPTYPE>PLUGIN</APPTYPE>
     <VERSION>2.0.0.3</VERSION>
-    <REQUIRESRESTART>True</REQUIRESRESTART>
+    <REQUIRESRESTART>False</REQUIRESRESTART>
   </APPDATA>
   <APPFILES>
     <FILENAME register="false" overwrite="true" source="Navigator.dll" destination="[CFAPPDIR]\Plugins\Navigator\Navigator.dll" />
@@ -22,6 +22,27 @@
     <FILENAME register="false" overwrite="true" source="Skins\Clean\buttonimages\gps.png" destination="[CFAPPDIR]\Plugins\Navigator\Skins\Clean\buttonimages\gps.png" />
     <FILENAME register="false" overwrite="true" source="Skins\Clean\Extra\Navigator Icon Large.png" destination="[CFAPPDIR]\Plugins\Navigator\Skins\Clean\Extra\Navigator Icon Large.png" />
     <FILENAME register="false" overwrite="true" source="Skins\Clean\Extra\New_Icon.png" destination="[CFAPPDIR]\Plugins\Navigator\Skins\Clean\Extra\New_Icon.png" />
+    <FILENAME register="false" overwrite="true" source="Skins\Fresh Air\buttonimages\btn_back_down.png" destination="[CFAPPDIR]\Plugins\Navigator\Skins\Fresh Air\buttonimages\btn_back_down.png" />
+    <FILENAME register="false" overwrite="true" source="Skins\Fresh Air\buttonimages\btn_back_off.png" destination="[CFAPPDIR]\Plugins\Navigator\Skins\Fresh Air\buttonimages\btn_back_off.png" />
+    <FILENAME register="false" overwrite="true" source="Skins\Fresh Air\buttonimages\btn_nexttrack_down.png" destination="[CFAPPDIR]\Plugins\Navigator\Skins\Fresh Air\buttonimages\btn_nexttrack_down.png" />
+    <FILENAME register="false" overwrite="true" source="Skins\Fresh Air\buttonimages\btn_nexttrack_off.png" destination="[CFAPPDIR]\Plugins\Navigator\Skins\Fresh Air\buttonimages\btn_nexttrack_off.png" />
+    <FILENAME register="false" overwrite="true" source="Skins\Fresh Air\buttonimages\btn_nowplaying_down.png" destination="[CFAPPDIR]\Plugins\Navigator\Skins\Fresh Air\buttonimages\btn_nowplaying_down.png" />
+    <FILENAME register="false" overwrite="true" source="Skins\Fresh Air\buttonimages\btn_nowplaying_off.png" destination="[CFAPPDIR]\Plugins\Navigator\Skins\Fresh Air\buttonimages\btn_nowplaying_off.png" />
+    <FILENAME register="false" overwrite="true" source="Skins\Fresh Air\buttonimages\btn_play_down.png" destination="[CFAPPDIR]\Plugins\Navigator\Skins\Fresh Air\buttonimages\btn_play_down.png" />
+    <FILENAME register="false" overwrite="true" source="Skins\Fresh Air\buttonimages\btn_play_off.png" destination="[CFAPPDIR]\Plugins\Navigator\Skins\Fresh Air\buttonimages\btn_play_off.png" />
+    <FILENAME register="false" overwrite="true" source="Skins\Fresh Air\buttonimages\btn_previoustrack_down.png" destination="[CFAPPDIR]\Plugins\Navigator\Skins\Fresh Air\buttonimages\btn_previoustrack_down.png" />
+    <FILENAME register="false" overwrite="true" source="Skins\Fresh Air\buttonimages\btn_previoustrack_off.png" destination="[CFAPPDIR]\Plugins\Navigator\Skins\Fresh Air\buttonimages\btn_previoustrack_off.png" />
+    <FILENAME register="false" overwrite="true" source="Skins\Fresh Air\buttonimages\resize_down.png" destination="[CFAPPDIR]\Plugins\Navigator\Skins\Fresh Air\buttonimages\resize_down.png" />
+    <FILENAME register="false" overwrite="true" source="Skins\Fresh Air\buttonimages\resize_off.png" destination="[CFAPPDIR]\Plugins\Navigator\Skins\Fresh Air\buttonimages\resize_off.png" />
+    <FILENAME register="false" overwrite="true" source="Skins\Fresh Air\buttonimages\voldown_down.png" destination="[CFAPPDIR]\Plugins\Navigator\Skins\Fresh Air\buttonimages\voldown_down.png" />
+    <FILENAME register="false" overwrite="true" source="Skins\Fresh Air\buttonimages\voldown_off.png" destination="[CFAPPDIR]\Plugins\Navigator\Skins\Fresh Air\buttonimages\voldown_off.png" />
+    <FILENAME register="false" overwrite="true" source="Skins\Fresh Air\buttonimages\volup_down.png" destination="[CFAPPDIR]\Plugins\Navigator\Skins\Fresh Air\buttonimages\volup_down.png" />
+    <FILENAME register="false" overwrite="true" source="Skins\Fresh Air\buttonimages\volup_off.png" destination="[CFAPPDIR]\Plugins\Navigator\Skins\Fresh Air\buttonimages\volup_off.png" />
+    <FILENAME register="false" overwrite="true" source="Skins\Fresh Air\buttonimages\gps.png" destination="[CFAPPDIR]\Plugins\Navigator\Skins\Fresh Air\buttonimages\gps.png" />
+    <FILENAME register="false" overwrite="true" source="Skins\Fresh Air\icons\media_nowplaying.png" destination="[CFAPPDIR]\Plugins\Navigator\Skins\Fresh Air\icons\media_nowplaying.png" />
+    <FILENAME register="false" overwrite="true" source="Skins\Fresh Air\icons\media_nowplaying_down.png" destination="[CFAPPDIR]\Plugins\Navigator\Skins\Fresh Air\icons\media_nowplaying_down.png" />
+    <FILENAME register="false" overwrite="true" source="Skins\Fresh Air\screen\background.png" destination="[CFAPPDIR]\Plugins\Navigator\Skins\Fresh Air\screen\background.png" />
+    <FILENAME register="false" overwrite="true" source="Skins\Fresh Air\skin.xml" destination="[CFAPPDIR]\Plugins\Navigator\Skins\Fresh Air\skin.xml" />
     <FILENAME register="false" overwrite="true" source="NamedPipePatch\binmay.exe" destination="[CFAPPDIR]\Plugins\Navigator\NamedPipePatch\binmay.exe" />
     <FILENAME register="false" overwrite="true" source="NamedPipePatch\CF_NP.dll" destination="[CFAPPDIR]\Plugins\Navigator\NamedPipePatch\CF_NP.dll" />
     <FILENAME register="false" overwrite="true" source="NamedPipePatch\Readme_CF_NP.txt" destination="[CFAPPDIR]\Plugins\Navigator\NamedPipePatch\Readme_CF_NP.txt" />

@@ -21,6 +21,7 @@
     <LBLINROUTE>IN ROUTE:</LBLINROUTE>
     <LBLGPSTIME>GPS TIME:</LBLGPSTIME>
     <TCPFAILED>Navigator: TCP Connection Failed</TCPFAILED>
+    <FAILEDTODOCK>Failed to dock Navigator</FAILEDTODOCK>
   </NAVIGATOR>
   <SETUP>
     <DESCRIPTION>Configure Mapfactor Navigator Plugin</DESCRIPTION>

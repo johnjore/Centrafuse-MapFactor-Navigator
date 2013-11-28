@@ -20,17 +20,16 @@ using System.Windows.Forms;
 using System.Xml;
 using System.Web;
 using centrafuse.Plugins;
-using System.Collections.Generic;
-using System.Text;
-using System.Globalization;
 
 namespace Navigator
 {
     internal class NavSetup : ICFInterfaceSetup
-    {
-        private ConfigReader configReader;
-        private LanguageReader langReader;
-        private Navigator mainForm;
+    {        
+        #region Variables and consts
+        //LK, 25-nov-2013: Changed to read only: Savety first
+        private readonly ConfigReader configReader;
+        private readonly LanguageReader langReader;
+        private readonly Navigator mainForm;
 
         // Total configuration pages for each mode
         public int nAdvancedSetupPages { get { return 2; } }
@@ -39,15 +38,10 @@ namespace Navigator
         public int numAdvancedSetupPages { get { return nAdvancedSetupPages; } }
         public int numBasicSetupPages { get { return nBasicSetupPages; } }
 
-        #region Variables
         private const string PluginPath = @"plugins\Navigator\";
-        private const string PluginPathLanguages = PluginPath + @"Languages\";
-        private const string ConfigurationFile = "config.xml";
-        private const string ConfigSection = "/APPCONFIG/";
-        private const string LanguageSection = "/APPLANG/SETUP/";
-        private const string LanguageControlSection = "/APPLANG/NAVIGATOR/";
         #endregion
-                
+
+        #region CF functions
         public NavSetup(Navigator mForm, ConfigReader config, LanguageReader lang)
         {
             mainForm = mForm;
@@ -67,6 +61,13 @@ namespace Navigator
                 configReader.Reload();
         }
 
+        public void CF_setupReloadSharedSettings()
+        {
+            this.mainForm.LoadSettings();
+        }
+        #endregion
+        
+        #region Setup items
         public void CF_setupReadSettings(int page, bool advanced, CFSetupHandler[] ButtonHandler, string[] ButtonText, string[] ButtonValue)
         {
             try
@@ -135,85 +136,138 @@ namespace Navigator
 
                     ButtonHandler[i] = null; ButtonText[i] = ""; ButtonValue[i++] = "";
                 }
-
             }
             catch (Exception errmsg) { CFTools.writeError(errmsg.Message, errmsg.StackTrace); }
         }
+        #endregion
 
-        public void CF_setupReloadSharedSettings()
-        {
-            this.mainForm.LoadSettings();
-        }
-
-
-#region User Input Events
+        #region User Input Events
 
         //Folder with exe
         private void SetExePath(ref object value)
         {
             try
             {
-                string location = this.configReader.ReadField("/APPCONFIG/EXEPATH");
-                if (string.IsNullOrEmpty(location)) location = PluginPath;
-
-                CFDialogParams dialogParams = new CFDialogParams(this.langReader.ReadField("/APPLANG/SETUP/EXEPATH"), location);
-                dialogParams.browseable = true;
-                dialogParams.enablesubactions = true;
-                dialogParams.showfiles = false;
-
-                CFDialogResults results = new CFDialogResults();
-                if (mainForm.CF_displayDialog(CF_Dialogs.FileBrowser, dialogParams, results) == DialogResult.OK)
+                //LK, 27-nov-2013: Implement InternalHandler to update the screen and button values
+                //TODO: LK, 25-nov-2013: Needs to (re-)start the applicaton here or in LoadSettings()
+                if (value.GetType().Equals(typeof(CFSetupHandlerParams)))
                 {
-                    string newPath = results.resultvalue;
-                    this.configReader.WriteField("/APPCONFIG/EXEPATH", newPath);
-                    value = newPath;
-                }               
+                    string location = this.configReader.ReadField("/APPCONFIG/EXEPATH");
+                    if (string.IsNullOrEmpty(location)) location = PluginPath;
+
+                    CFDialogParams dialogParams = new CFDialogParams(this.langReader.ReadField("/APPLANG/SETUP/EXEPATH"), location);
+                    dialogParams.browseable = true;
+                    dialogParams.enablesubactions = true;
+                    dialogParams.showfiles = false;
+
+                    CFDialogResults results = new CFDialogResults();
+                    if (mainForm.CF_displayDialog(CF_Dialogs.FileBrowser, dialogParams, results) == DialogResult.OK)
+                    {
+                        ((CFSetupHandlerParams)value).result.ok = true;
+                        ((CFSetupHandlerParams)value).result.pobject = results.resultobject;
+                        ((CFSetupHandlerParams)value).result.text = results.resulttext;
+                        ((CFSetupHandlerParams)value).result.value = results.resultvalue;
+                        this.configReader.WriteField("/APPCONFIG/EXEPATH", results.resultvalue);
+                    }
+
+                    ((CFSetupHandlerParams)value).requesttype = CFSetupHandlerRequest.None; //Get out of loop
+                    return;
+                }
+
+                CFSetupHandlerParams internalhandler = new CFSetupHandlerParams();
+                internalhandler.requesttype = CFSetupHandlerRequest.None;
+                internalhandler.button = (int)value;
+                internalhandler.dialogtype = CF_Dialogs.OkBox;
+                internalhandler.listviewitems = null;
+                internalhandler.writebutton = true;
+                internalhandler.writebuttonwithvalue = true;
+                internalhandler.title = this.langReader.ReadField("APPLANG/SETUP/EXEPATH");
+                internalhandler.listheader = this.configReader.ReadField("/APPCONFIG/EXEPATH");
+                value = internalhandler;
+
             }
             catch (Exception errmsg) { CFTools.writeError(errmsg.Message, errmsg.StackTrace); }            
         }
 
+        /**/
         //Extra parameters
+        //TODO: LK, 25-nov-2013: Needs to (re-)start the applicaton here or in LoadSettings()
         private void SetExeParameters(ref object value)
         {
             try
             {
-                // Display OSK for user to type display name
-                CFDialogParams dialogParams = new CFDialogParams(this.langReader.ReadField("/APPLANG/SETUP/EXEPARAMETERS"), this.configReader.ReadField("/APPCONFIG/EXEPARAMETERS"));
-                dialogParams.browseable = false;
-                dialogParams.enablesubactions = false;
-                dialogParams.showfiles = false;
-
-                CFDialogResults results = new CFDialogResults();
-                if (mainForm.CF_displayDialog(CF_Dialogs.OSK, dialogParams, results) == DialogResult.OK)
+                //LK, 27-nov-2013: Implement InternalHandler to update the screen and button values
+                if (value.GetType().Equals(typeof(CFSetupHandlerParams)))
                 {
-                    string newParameters = results.resultvalue;
-                    this.configReader.WriteField("/APPCONFIG/EXEPARAMETERS", newParameters);                  
-                    value = newParameters;
+                    if (((CFSetupHandlerParams)value).result.ok)
+                        this.configReader.WriteField("/APPCONFIG/EXEPARAMETERS", ((CFSetupHandlerParams)value).result.value);
+
+                    ((CFSetupHandlerParams)value).requesttype = CFSetupHandlerRequest.None; //Get out of loop
+                    return;
                 }
+
+                CFSetupHandlerParams internalhandler = new CFSetupHandlerParams();
+                internalhandler.requesttype = CFSetupHandlerRequest.ShowDialog;
+                internalhandler.button = (int)value;
+                internalhandler.dialogtype = CF_Dialogs.OSK;
+                internalhandler.listviewitems = null;
+                internalhandler.writebutton = true;
+                internalhandler.writebuttonwithvalue = true;
+                internalhandler.title = this.langReader.ReadField("APPLANG/SETUP/EXEPARAMETERS");
+                internalhandler.listheader = this.configReader.ReadField("/APPCONFIG/EXEPARAMETERS");
+                value = internalhandler;
+
             }
             catch (Exception errmsg) { CFTools.writeError(errmsg.Message, errmsg.StackTrace); }
         }
         
+        /**/
         //Port to use for communications with Navigator
+        //TODO: LK, 25-nov-2013: Needs to (re-)open the connection here or in LoadSettings()
         private void SetTCPPort(ref object value)
         {
             try
             {
-                string resultvalue, resulttext;
-
-                if (mainForm.CF_systemDisplayDialog(CF_Dialogs.NumberPad, this.langReader.ReadField("/APPLANG/SETUP/TCPPORT"), out resultvalue, out resulttext) == DialogResult.OK)
+                //LK, 27-nov-2013: Implement InternalHandler to update the screen and button values
+                int button;
+                if (value.GetType().Equals(typeof(CFSetupHandlerParams)))
                 {
-                    //Parse the value
-                    int intTemp = int.Parse(resultvalue);
+                    button = ((CFSetupHandlerParams)value).button;
+                    if (((CFSetupHandlerParams)value).result.ok)
+                    {
+                        int iTemp = 0;
+                        try { iTemp = Int32.Parse(((CFSetupHandlerParams)value).result.value); }
+                        catch { iTemp = -1; }
 
-                    //Sanity check it and set to its extremes.
-                    if (intTemp > 65536) intTemp = 0;
-                    if (intTemp < 0) intTemp = 0;
-
-                    //Value is scrubbed, write it
-                    this.configReader.WriteField("/APPCONFIG/TCPPORT", intTemp.ToString());
-                    value = intTemp.ToString();
+                        //Sanity check it and set to its extremes.
+                        if (iTemp <= 65536 && iTemp >= 0)
+                        {
+                            ((CFSetupHandlerParams)value).requesttype = CFSetupHandlerRequest.None; //Get out of loop
+                            this.configReader.WriteField("/APPCONFIG/TCPPORT", iTemp.ToString());
+                            return;
+                        }
+                    }
+                    else
+                    {
+                        //+++???((CFSetupHandlerParams)value).result.text = this.configReader.ReadField("/APPCONFIG/TCPPORT");
+                        ((CFSetupHandlerParams)value).requesttype = CFSetupHandlerRequest.None; //Get out of loop
+                        return;
+                    }
                 }
+                else
+                    button = (int)value;
+
+                CFSetupHandlerParams internalhandler = new CFSetupHandlerParams();
+                internalhandler.requesttype = CFSetupHandlerRequest.ShowDialog;
+                internalhandler.button = button;
+                internalhandler.dialogtype = CF_Dialogs.NumberPad;
+                internalhandler.listviewitems = null;
+                internalhandler.writebutton = true;
+                internalhandler.writebuttonwithvalue = false;
+                internalhandler.title = this.langReader.ReadField("APPLANG/SETUP/TCPPORT");
+                internalhandler.listheader = "";
+                value = internalhandler;
+
             }
             catch (Exception errmsg) { CFTools.writeError(errmsg.Message, errmsg.StackTrace); }
         }
@@ -223,25 +277,31 @@ namespace Navigator
         {
             try
             {
-                // Display OSK for user to type display name
-                CFDialogParams dialogParams = new CFDialogParams(this.langReader.ReadField("/APPLANG/SETUP/WINDOWSIZE"), this.configReader.ReadField("/APPCONFIG/WINDOWSIZE"));
-                dialogParams.browseable = false;
-                dialogParams.enablesubactions = false;
-                dialogParams.showfiles = false;
-
-                CFDialogResults results = new CFDialogResults();
-                if (mainForm.CF_displayDialog(CF_Dialogs.OSK, dialogParams, results) == DialogResult.OK)
+                //LK, 27-nov-2013: Implement InternalHandler to update the screen and button values
+                if (value.GetType().Equals(typeof(CFSetupHandlerParams)))
                 {
-                    string newParameters = results.resultvalue;
-                    this.configReader.WriteField("/APPCONFIG/WINDOWSIZE", newParameters);
-                    value = newParameters;
+                    if (((CFSetupHandlerParams)value).result.ok)
+                        this.configReader.WriteField("/APPCONFIG/WINDOWSIZE", ((CFSetupHandlerParams)value).result.value);
+
+                    ((CFSetupHandlerParams)value).requesttype = CFSetupHandlerRequest.None; //Get out of loop
+                    return;
                 }
+
+                CFSetupHandlerParams internalhandler = new CFSetupHandlerParams();
+                internalhandler.requesttype = CFSetupHandlerRequest.ShowDialog;
+                internalhandler.button = (int)value;
+                internalhandler.dialogtype = CF_Dialogs.OSK;
+                internalhandler.listviewitems = null;
+                internalhandler.writebutton = true;
+                internalhandler.writebuttonwithvalue = true;
+                internalhandler.title = this.langReader.ReadField("APPLANG/SETUP/WINDOWSIZE");
+                internalhandler.listheader = this.configReader.ReadField("/APPCONFIG/WINDOWSIZE");
+                value = internalhandler;
+
             }
             catch (Exception errmsg) { CFTools.writeError(errmsg.Message, errmsg.StackTrace); }
-            mainForm.Invalidate();
         }
-
-
+        
         //Log to file during run-time
         private void SetLogEvents(ref object value)
         {
