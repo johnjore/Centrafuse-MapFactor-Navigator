@@ -15,6 +15,12 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+/*
+ * CF Bugs:
+ *  If ExeParameters is blank, screen is not refreshed with empty string. Old value shown, but correct value (empty string) written to disk.
+ *  Requires CF to fix the issue
+ */
+
 using System;
 using System.Windows.Forms;
 using System.Xml;
@@ -54,8 +60,28 @@ namespace Navigator
         {
             if (save)
             {
+                //Save and get configuration settings
                 configReader.Save();
                 mainForm.LoadSettings();
+
+                //Ask if restart of Navigator is desired?
+                if (mainForm.CF_systemDisplayDialog(CF_Dialogs.YesNo, this.langReader.ReadField("/APPLANG/NAVIGATOR/RESTARTNAVIGATOR")) == DialogResult.OK)
+                {
+                    //Close Navigator
+                    mainForm.CloseNavigator();
+
+                    //User does not really want to exit Navigator anymore
+                    mainForm.boolExit = false;
+
+                    //Modify Navigator's Settings XML file to match new configuration
+                    mainForm.ConfigureNavigatorXML();
+
+                    //Start Nnavigator
+                    mainForm.StartNavigator();
+
+                    //Need this to get back to the correct window
+                    mainForm.CF3_executeCMLAction("Centrafuse.CFActions.MainMenu");
+                }
             }
             else
                 configReader.Reload();
@@ -149,7 +175,6 @@ namespace Navigator
             try
             {
                 //LK, 27-nov-2013: Implement InternalHandler to update the screen and button values
-                //TODO: LK, 25-nov-2013: Needs to (re-)start the applicaton here or in LoadSettings()
                 if (value.GetType().Equals(typeof(CFSetupHandlerParams)))
                 {
                     string location = this.configReader.ReadField("/APPCONFIG/EXEPATH");
@@ -184,14 +209,11 @@ namespace Navigator
                 internalhandler.title = this.langReader.ReadField("APPLANG/SETUP/EXEPATH");
                 internalhandler.listheader = this.configReader.ReadField("/APPCONFIG/EXEPATH");
                 value = internalhandler;
-
             }
             catch (Exception errmsg) { CFTools.writeError(errmsg.Message, errmsg.StackTrace); }            
         }
 
-        /**/
         //Extra parameters
-        //TODO: LK, 25-nov-2013: Needs to (re-)start the applicaton here or in LoadSettings()
         private void SetExeParameters(ref object value)
         {
             try
@@ -216,14 +238,11 @@ namespace Navigator
                 internalhandler.title = this.langReader.ReadField("APPLANG/SETUP/EXEPARAMETERS");
                 internalhandler.listheader = this.configReader.ReadField("/APPCONFIG/EXEPARAMETERS");
                 value = internalhandler;
-
             }
             catch (Exception errmsg) { CFTools.writeError(errmsg.Message, errmsg.StackTrace); }
         }
         
-        /**/
         //Port to use for communications with Navigator
-        //TODO: LK, 25-nov-2013: Needs to (re-)open the connection here or in LoadSettings()
         private void SetTCPPort(ref object value)
         {
             try
@@ -249,7 +268,6 @@ namespace Navigator
                     }
                     else
                     {
-                        //+++???((CFSetupHandlerParams)value).result.text = this.configReader.ReadField("/APPCONFIG/TCPPORT");
                         ((CFSetupHandlerParams)value).requesttype = CFSetupHandlerRequest.None; //Get out of loop
                         return;
                     }
@@ -325,30 +343,53 @@ namespace Navigator
         {
             this.configReader.WriteField("/APPCONFIG/ALERTSENABLED", value.ToString());
         }
-
-
+        
         //How long to wait before audio resumes after mute
         private void SetAudioDelayAfterMute(ref object value)
         {
             try
             {
-                string resultvalue, resulttext;
-
-                if (mainForm.CF_systemDisplayDialog(CF_Dialogs.NumberPad, this.langReader.ReadField("/APPLANG/SETUP/AUDIODELAYAFTERMUTE"), out resultvalue, out resulttext) == DialogResult.OK)
+                //LK, 27-nov-2013: Implement InternalHandler to update the screen and button values
+                int button;
+                if (value.GetType().Equals(typeof(CFSetupHandlerParams)))
                 {
-                    //Parse the value
-                    int intTemp = int.Parse(resultvalue);
+                    button = ((CFSetupHandlerParams)value).button;
+                    if (((CFSetupHandlerParams)value).result.ok)
+                    {
+                        int iTemp = 0;
+                        try { iTemp = Int32.Parse(((CFSetupHandlerParams)value).result.value); }
+                        catch { iTemp = -1; }
 
-                    //Sanity check it and set to its extremes.
-                    if (intTemp > 10000) intTemp = 1000;
-                    if (intTemp < 0) intTemp = 0;
-
-                    //Value is scrubbed, write it
-                    this.configReader.WriteField("/APPCONFIG/AUDIODELAYAFTERMUTE", intTemp.ToString());
-                    value = intTemp.ToString();
+                        //Sanity check it and set to its extremes.
+                        if (iTemp <= 10000 && iTemp >= 0)
+                        {
+                            ((CFSetupHandlerParams)value).requesttype = CFSetupHandlerRequest.None; //Get out of loop
+                            this.configReader.WriteField("/APPCONFIG/AUDIODELAYAFTERMUTE", iTemp.ToString());
+                            return;
+                        }
+                    }
+                    else
+                    {
+                        ((CFSetupHandlerParams)value).requesttype = CFSetupHandlerRequest.None; //Get out of loop
+                        return;
+                    }
                 }
+                else
+                    button = (int)value;
+
+                CFSetupHandlerParams internalhandler = new CFSetupHandlerParams();
+                internalhandler.requesttype = CFSetupHandlerRequest.ShowDialog;
+                internalhandler.button = button;
+                internalhandler.dialogtype = CF_Dialogs.NumberPad;
+                internalhandler.listviewitems = null;
+                internalhandler.writebutton = true;
+                internalhandler.writebuttonwithvalue = false;
+                internalhandler.title = this.langReader.ReadField("APPLANG/SETUP/AUDIODELAYAFTERMUTE");
+                internalhandler.listheader = "";
+                value = internalhandler;
+
             }
-            catch (Exception errmsg) { CFTools.writeError(errmsg.Message, errmsg.StackTrace); }
+            catch (Exception errmsg) { CFTools.writeError(errmsg.Message, errmsg.StackTrace); }                
         }
 
         //Enable Sending Mute/Unmute on Sound alert?
@@ -363,7 +404,7 @@ namespace Navigator
             }
         }
 
-        //Enable Louk's message handler
+        //Enable Louk's message handler?
         private void SetNamedPipeStatus(ref object value)
         {
             this.configReader.WriteField("/APPCONFIG/NAMEDPIPE", value.ToString());

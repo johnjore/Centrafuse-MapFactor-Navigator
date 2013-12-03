@@ -16,7 +16,7 @@
  */
 
 /*
- * Classes used for variables
+ * Strucs and enums
 */
 
 namespace Navigator
@@ -26,14 +26,14 @@ namespace Navigator
     using System.Collections.Generic;
 
     [Serializable]
-    // Structure for holding lat/lon values (used by helper methods, can be removed if you don't use them)
+    // Structure for holding lat/lon values
     public struct LatLonDecimal
     {
         public double Latitude;
         public double Longitude;
     }
 
-    // Structure for holding degree-minute-second values (used by helper methods, can be removed if you don't use them)
+    // Structure for holding degree-minute-second values
     public struct LatLonDms
     {
         public double LatitudeDegrees;
@@ -55,7 +55,7 @@ namespace Navigator
         public string GPSTime;
     }
 
-    public enum TCPCommand
+    public enum TCPCommand : int
     {
         Protocol = 1,
         SoftwareVersion = 2,
@@ -70,7 +70,9 @@ namespace Navigator
         DayNight = 11,
         Window = 12,
         Destination = 13,
-        Statistics = 14
+        Statistics = 14,
+        Exit = 15,       //LK, 29-nov-2013: Added exit command
+        NearestStreets = 16 //JJ: Added undocumented TCP command
     }
 
     public enum showWindowAttribute : int 
@@ -82,5 +84,51 @@ namespace Navigator
         SW_MINIMIZE = 6,
         SW_RESTORE = 9,
         SW_FORCEMINIMIZE = 11 
+    }
+
+    //LK, 29-nov-2013: Added Mouse Click Events
+    public enum WindowManagerEvents : int
+    {
+        WM_KEYDOWN = 0x001,
+        WM_KEYUP = 0X002,
+        WM_CHAR = 0x102,
+        WM_COMMAND = 0x112,
+
+        WM_LBUTTONDOWN = 0x201,
+        WM_LBUTTONUP = 0x202,
+        WM_LBUTTONDBLCLK = 0x203,
+        WM_RBUTTONDOWN = 0x204,
+        WM_RBUTTONUP = 0x205,
+        WM_RBUTTONDBLCLK = 0x206,
+        WM_MBUTTONDOWN = 0x207,
+        WM_MBUTTONUP = 0x208,
+        WM_MBUTTONDBLCLK = 0x209
+    }
+
+    public enum SC : int
+    {
+        SC_CLOSE = 0xF060,
+        SC_CONTEXTHELP = 0xF180,
+        SC_DEFAULT = 0xF160,
+        SC_HOTKEY = 0xF150,
+        SC_HSCROLL = 0xF080,
+        SC_KEYMENU = 0xF100,
+        SC_MAXIMIZE = 0xF030,
+        SC_MINIMIZE = 0xF020,
+        SC_MONITORPOWER = 0xF170,
+        SC_MOUSEMENU = 0xF090,
+        SC_MOVE = 0xF010,
+        SC_NEXTWINDOW = 0xF040,
+        SC_PREVWINDOW = 0xF050,
+        SC_RESTORE = 0xF120,
+        SC_SCREENSAVE = 0xF140,
+        SC_SIZE = 0xF000,
+        SC_TASKLIST = 0xF130,
+        SC_VSCROLL = 0xF070,
+    }
+
+    public enum VK : int
+    {
+        VK_RETURN = 0x00d
     }
 }

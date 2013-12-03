@@ -34,60 +34,131 @@ namespace Navigator
         // Event to get CF to ask for stats
         private void NavStatustimer_Tick(object sender, EventArgs e)
         {
-            try { CF_updateText("DataLongitude", CF_navGetInfo(CFNavInfo.Longitude)); } catch { };
-            try { CF_updateText("DataLatitude", CF_navGetInfo(CFNavInfo.Latitude)); } catch { };
-            try { CF_updateText("DataAltitude", CF_navGetInfo(CFNavInfo.Altitude)); } catch { };
-            try { CF_updateText("DataLockedSatellites", CF_navGetInfo(CFNavInfo.LockedSatellites)); } catch { };
-            try {
-                if (ReadCFValue("/APPCONFIG/SPEEDUNIT", "I", configPath)) CF_updateText("DataSpeed", CF_navGetInfo(CFNavInfo.Speed).Substring(0, 5) + " mph");
-                if (ReadCFValue("/APPCONFIG/SPEEDUNIT", "M", configPath)) CF_updateText("DataSpeed", CF_navGetInfo(CFNavInfo.Speed).Substring(0, 5) + " km/h"); 
-            } 
-            catch { };
-            try { CF_updateText("DataDirection", CF_navGetInfo(CFNavInfo.Direction)); } catch { };
-            try { CF_updateText("DataAzimuth", CF_navGetInfo(CFNavInfo.Azimuth)); } catch { };
-            try { CF_updateText("DataETR", CF_navGetInfo(CFNavInfo.ETR)); } catch { };
-            try { CF_updateText("DataRemainingDistance", CF_navGetInfo(CFNavInfo.RemainingDistance)); } catch { };
-            try { CF_updateText("DataNextTurn", CF_navGetInfo(CFNavInfo.NextTurn)); } catch { };
-            try { CF_updateText("DataInRoute", CF_navGetInfo(CFNavInfo.InRoute)); } catch { };
-            try { CF_updateText("DataGPSTime", _navStats.GPSTime.Substring(0, 2) + ":" + _navStats.GPSTime.Substring(2, 2) + ":" + _navStats.GPSTime.Substring(4, 2) + " Offset:" + GetGmtOffset(_currentPosition.Latitude, _currentPosition.Longitude).ToString() + "+DST"); }catch { };
+            try 
+            { 
+                CF_updateText("DataLongitude", CF_navGetInfo(CFNavInfo.Longitude)); 
+            }
+            catch 
+            {
+                CF_updateText("DataLongitude", ""); 
+            }
+
+            try 
+            {
+                CF_updateText("DataLatitude", CF_navGetInfo(CFNavInfo.Latitude));
+            }
+            catch 
+            {
+                CF_updateText("DataLatitude", "");
+            }
+
+            try
+            {
+                CF_updateText("DataAltitude", CF_navGetInfo(CFNavInfo.Altitude));
+            }
+            catch
+            {
+                CF_updateText("DataAltitude", "");
+            }
+
+            try 
+            {
+                CF_updateText("DataLockedSatellites", CF_navGetInfo(CFNavInfo.LockedSatellites));
+            }
+            catch 
+            {
+                CF_updateText("DataLockedSatellites", "");
+            }
+
+            try 
+            {
+                try
+                {
+                    if (ReadCFValue("/APPCONFIG/SPEEDUNIT", "I", configPath)) CF_updateText("DataSpeed", CF_navGetInfo(CFNavInfo.Speed).Substring(0, 5) + " mph");
+                }
+                catch { CF_updateText("DataSpeed", " mph"); }
+
+                try
+                {
+                    if (ReadCFValue("/APPCONFIG/SPEEDUNIT", "M", configPath)) CF_updateText("DataSpeed", CF_navGetInfo(CFNavInfo.Speed).Substring(0, 5) + " km/h");
+                }
+                catch { CF_updateText("DataSpeed", " km/h"); }
+            }
+            catch 
+            {
+                CF_updateText("DataSpeed", "");
+            }
+
+            try 
+            {
+                CF_updateText("DataDirection", CF_navGetInfo(CFNavInfo.Direction));
+            }
+            catch 
+            {
+                CF_updateText("DataDirection", "");
+            }
+
+            try
+            {
+                CF_updateText("DataAzimuth", CF_navGetInfo(CFNavInfo.Azimuth));
+            }
+            catch 
+            {
+                CF_updateText("DataAzimuth", "");
+            }
+
+            try 
+            {
+                CF_updateText("DataETR", CF_navGetInfo(CFNavInfo.ETR));
+            }
+            catch 
+            {
+                CF_updateText("DataETR", "");
+            }
+
+            try 
+            {
+                CF_updateText("DataRemainingDistance", CF_navGetInfo(CFNavInfo.RemainingDistance));
+            }
+            catch 
+            {
+                CF_updateText("DataRemainingDistance", "");
+            }
+
+            try 
+            {
+                CF_updateText("DataNextTurn", CF_navGetInfo(CFNavInfo.NextTurn));
+            }
+            catch 
+            {
+                CF_updateText("DataNextTurn", "");
+            }
+
+            try
+            {
+                CF_updateText("DataInRoute", CF_navGetInfo(CFNavInfo.InRoute));
+            }
+            catch 
+            {
+                CF_updateText("DataInRoute", "");
+            }
+
+            try 
+            {
+                //Updated to incorporate DST
+                CF_updateText("DataGPSTime", parsTimeOfFix(_navStats.GPSDate.ToString(), _navStats.GPSTime.ToString()).ToString());
+            }
+            catch 
+            {
+                CF_updateText("DataGPSTime", ""); 
+            }
         }
 
-        //Hide / Unhide the fields
-        /**/ //This should move to a 2nd section later
-        private void SetLabelStatus(bool status)
-        {
-            CF_setLabelEnableFlag("DataLongitude", status);
-            CF_setLabelEnableFlag("DataLatitude", status);
-            CF_setLabelEnableFlag("DataAltitude", status);
-            CF_setLabelEnableFlag("DataLockedSatellites", status);
-            CF_setLabelEnableFlag("DataSpeed", status);
-            CF_setLabelEnableFlag("DataDirection", status);
-            CF_setLabelEnableFlag("DataAzimuth", status);
-            CF_setLabelEnableFlag("DataETR", status);
-            CF_setLabelEnableFlag("DataRemainingDistance", status);
-            CF_setLabelEnableFlag("DataNextTurn", status);
-            CF_setLabelEnableFlag("DataInRoute", status);
-            CF_setLabelEnableFlag("DataGPSTime", status);
-            CF_setLabelEnableFlag("lblLongitude", status);
-            CF_setLabelEnableFlag("lblLatitude", status);
-            CF_setLabelEnableFlag("lblAltitude", status);
-            CF_setLabelEnableFlag("lblLockedSatellites", status);
-            CF_setLabelEnableFlag("lblSpeed", status);
-            CF_setLabelEnableFlag("lblDirection", status);
-            CF_setLabelEnableFlag("lblAzimuth", status);
-            CF_setLabelEnableFlag("lblETR", status);
-            CF_setLabelEnableFlag("lblRemainingDistance", status);
-            CF_setLabelEnableFlag("lblNextTurn", status);
-            CF_setLabelEnableFlag("lblInRoute", status);
-            CF_setLabelEnableFlag("lblGPSTime", status);
-        }
 
         /// <summary>
-        ///     This is a very important method for nav plugins! Centrafuse and other plugins will call
-        ///     this to get information from your plugin about various bits of navigation data. Your plugin
-        ///     should return a string with the appropriate value set. All this does is pass-through to the
-        ///     overridden function CF_navGetInfo - that way, you only need to edit in one place! You probably
-        ///     don't need to modify much, if anything, here - just edit CD_navGetInfo
+        ///     Centrafuse and other plugins will call this to get information from plugin about various bits of navigation data. 
+        ///     Plugin should return a string with the appropriate value set. All this does is pass-through to the
+        ///     overridden function CF_navGetInfo(...)
         /// </summary>
         /// <param name="command">The command to execute.</param>
         /// <param name="param">The parameter.</param>
@@ -251,7 +322,9 @@ namespace Navigator
             return retvalue;
         }
 
+        /**/
         // This returns the underlying data your plugin has. It is called by CF_pluginData as well as Centrafuse
+        //This is a usless function? Can it's purpose be explained as it looks like a duplicate of CF_navGetInfo(...) ?
         public override CFNavInfoBundle CF_navGetInfoBundle()
         {
             var retvalue = new CFNavInfoBundle();
@@ -349,7 +422,7 @@ namespace Navigator
             return navLocation;
         }
 
-        // Tells Centrafuse whether or not navigation is visible - you probably don't need to edit this
+        // Tells Centrafuse whether or not navigation is visible
         public override bool CF_navIsVisible()
         {
             WriteLog("CF_navIsvisible()");
@@ -423,19 +496,25 @@ namespace Navigator
         // Event to ask Navigator for navigation statistics
         private void NavDestinationTimer_Tick(object sender, EventArgs e)
         {
-            //Ask CF for navigation statistics
+            //Ask Navigator for navigation statistics
             SendCommand("$navigation_statistics\r\n", false, TCPCommand.Statistics);
+            
+            //This is not documented in the API and returns "Error". Probably issing
+            //SendCommand("$nearest_streets\r\n", false, TCPCommand.NearestStreets);
         }
-
+        
+        //Called by GPS Status screen to parse GPS Date/Time into local date/time
         private DateTime parsTimeOfFix(String dateOfFix, String timeOfFix)
         {
-            DateTime convertedDate = DateTime.SpecifyKind(DateTime.Parse(dateOfFix + " " + timeOfFix), DateTimeKind.Utc);
-            var kind = convertedDate.Kind; // will equal DateTimeKind.Utc
+            WriteLog("Dateoffix: " + dateOfFix);
+            WriteLog("timeoffix: " + timeOfFix);
+
+            string[] formats= { "dd/MM/yy HH:mm:ss" };
+            DateTime convertedDate = DateTime.SpecifyKind(DateTime.ParseExact(dateOfFix.Substring(0, 2) + "/" + dateOfFix.Substring(2, 2) + "/" + dateOfFix.Substring(4, 2) + " " + timeOfFix.Substring(0, 2) + ":" + timeOfFix.Substring(2, 2) + ":" + timeOfFix.Substring(4, 2), formats, new CultureInfo("en-US"), DateTimeStyles.None), DateTimeKind.Utc);
 
             DateTime dt = convertedDate.ToLocalTime();
             return dt;
         }
-
     }
 
 }

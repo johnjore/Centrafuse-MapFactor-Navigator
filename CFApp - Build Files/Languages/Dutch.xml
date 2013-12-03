@@ -1,0 +1,54 @@
+<APPLANG>
+  <NAVIGATOR>
+    <DISPLAYNAME>Navigator</DISPLAYNAME>
+    <WAYPOINT>Tussenpunt bereikt</WAYPOINT>
+    <RECALCULATING>Herberekenen route</RECALCULATING>
+    <LOST>Kan geen route vinden</LOST>
+    <ARRIVING>Bestemming over </ARRIVING>
+    <DESTINATION>Bestemming bereikt</DESTINATION>
+    <EMBEDDINGFAILED>Kan de nog actieve versie van PC_navigator niet afsluiten. Insluiten zal mislukken</EMBEDDINGFAILED>
+    <SECONDS>seconden</SECONDS>
+    <LBLLONGITUDE>Lengtegraad:</LBLLONGITUDE>
+    <LBLLATITUDE>Breedtegraad:</LBLLATITUDE>
+    <LBLALTITUDE>Hoogte:</LBLALTITUDE>
+    <LBLLOCKEDSATELLITES>Aantal satellieten:</LBLLOCKEDSATELLITES>
+    <LBLSPEED>Snelheid:</LBLSPEED>
+    <LBLDIRECTION>Richting:</LBLDIRECTION>
+    <LBLAZIMUTH>Koers:</LBLAZIMUTH>
+    <LBLETR>Resterende tijd:</LBLETR>
+    <LBLREMAININGDISTANCE>Resterende afstand:</LBLREMAININGDISTANCE>
+    <LBLNEXTTURN>Volgende afslag:</LBLNEXTTURN>
+    <LBLINROUTE>Op de route:</LBLINROUTE>
+    <LBLGPSTIME>GPS-tijd:</LBLGPSTIME>
+    <TCPFAILED>Navigator: TCP-verbinding mislukt</TCPFAILED>
+    <FAILEDTODOCK>Dokken van PC_Navigator is mislukt</FAILEDTODOCK>
+    <RESTARTNAVIGATOR>Herstart mapFactor Navigator?</RESTARTNAVIGATOR>
+    <EXELOCATION>Please specify location of </EXELOCATION>
+    <UNABLE>Unable to locate </UNABLE>
+    <USESETUP>Use Setup to reconfigure Navigator plugin</USESETUP>
+    <BUSY>Navigator too busy to perform request. Try again</BUSY>
+    <ERROR>Navigator can't perform requested task</ERROR>
+  </NAVIGATOR>
+  <SETUP>
+    <DESCRIPTION>Configuren Mapfactor Navigator Plugin</DESCRIPTION>
+    <DISPLAYNAME>Schermnaam</DISPLAYNAME>
+    <LOGEVENTS>Gebeurtenissen vastleggen</LOGEVENTS>
+    <EXEPATH>Pad naar PC_Navigator.exe</EXEPATH>
+    <EXEPARAMETERS>Extra Parameters</EXEPARAMETERS>
+    <TCPPORT>TCP Poort</TCPPORT>
+    <FREEEDITION>OSM Editie?</FREEEDITION>
+    <OSMOK>OSM-Licentie geaccepteerd</OSMOK>
+    <MUTE>Audio Pauzeren bij instructies</MUTE>
+    <GETGPS>Stream GPS-informatie</GETGPS>
+    <GETALERTSTATUS>Navigator Alarmen</GETALERTSTATUS>
+    <MUTEUNMUTESTATUS>"Fake" CF ATT Mute/Unmute</MUTEUNMUTESTATUS>
+    <NAMEDPIPE>Gebruik Named Pipe</NAMEDPIPE>
+    <NOHIRES>Gebruik --nohires optie</NOHIRES>
+    <WINDOWSIZE>Windowomvang bij opstarten (heeft effect op lettergrootte)</WINDOWSIZE>
+    <PATCHNAVIGATOR>PC_Navigator.exe wordt gepatched voor de ondersteuning van named pipes bij de volgende herstart van CF</PATCHNAVIGATOR>
+    <UNPATCHNAVIGATOR>Patch voor ondersteuning van named pipes wordt bij de volgende herstart van CF verwijderd</UNPATCHNAVIGATOR>
+    <MUTEUNMUTEW7>This feature werkt alleen met Windows 7</MUTEUNMUTEW7>
+    <AUDIODELAYAFTERMUTE>Automatische Unmute na Mute in ms</AUDIODELAYAFTERMUTE>
+  </SETUP>
+</APPLANG>
+

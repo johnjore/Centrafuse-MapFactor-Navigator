@@ -16,7 +16,7 @@
  */
 
 
-// Parts donated by Mark
+// Parts donated by Mark @ CF
 using System;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
@@ -61,15 +61,12 @@ namespace Navigator
                 double latminutes = Math.Floor(((latAbs / (1000000)) - Math.Floor(latAbs / (1000000))) * (60));
                 double latseconds =
                     Math.Floor(((((latAbs / (1000000)) - Math.Floor(latAbs / (1000000))) * (60)) -
-                                Math.Floor(((latAbs / (1000000)) - Math.Floor(latAbs / (1000000))) * (60))) * (100000)) * (60) /
-                    (100000);
-
+                                Math.Floor(((latAbs / (1000000)) - Math.Floor(latAbs / (1000000))) * (60))) * (100000)) * (60) / (100000);
                 double londegrees = Math.Floor(lonAbs / (1000000)) * signlon;
                 double lonminutes = Math.Floor(((lonAbs / (1000000)) - Math.Floor(lonAbs / (1000000))) * (60));
                 double lonseconds =
                     Math.Floor(((((lonAbs / (1000000)) - Math.Floor(lonAbs / (1000000))) * (60)) -
-                                Math.Floor(((lonAbs / (1000000)) - Math.Floor(lonAbs / (1000000))) * (60))) * (100000)) * (60) /
-                    (100000);
+                                Math.Floor(((lonAbs / (1000000)) - Math.Floor(lonAbs / (1000000))) * (60))) * (100000)) * (60) / (100000);
 
                 retvalue.LatitudeDegrees = latdegrees;
                 retvalue.LatitudeMinutes = latminutes;
@@ -190,26 +187,13 @@ namespace Navigator
             return false;
         }
 
-
         //Send mouse click. Used to exit Navigator
         private void ClickOnPoint(IntPtr wndHandle, Point clientPoint)
         {
-            var oldPos = Cursor.Position;
-
-            /// get screen coordinates
-            ClientToScreen(wndHandle, ref clientPoint);
-
-            /// set cursor on coords, and press mouse
-            Cursor.Position = new Point(clientPoint.X, clientPoint.Y);
-
-            //Send the events
-            mouse_event(0x00000002, 0, 0, 0, UIntPtr.Zero); /// left mouse button down
-            mouse_event(0x00000004, 0, 0, 0, UIntPtr.Zero); /// left mouse button up
-            mouse_event(0x00000008, 0, 0, 0, UIntPtr.Zero); /// right mouse button down
-            mouse_event(0x00000010, 0, 0, 0, UIntPtr.Zero); /// right mouse button up
-
-            /// return mouse 
-            Cursor.Position = oldPos;
+            WriteLog("Sending left mouse click to window with handle 0x" + wndHandle.ToString("X"));
+            int istat1 = PostMessage(wndHandle, (int)WindowManagerEvents.WM_LBUTTONDOWN, 1, (clientPoint.Y << 16) + clientPoint.X);  //
+            int istat2 = PostMessage(wndHandle, (int)WindowManagerEvents.WM_LBUTTONUP, 0, (clientPoint.Y << 16) + clientPoint.X);  //
+            WriteLog("Mouse click sent to wintdow with handle 0x" + wndHandle.ToString("X") + ", iStat1 = " + istat1 + ", iStat2 = " + istat2);
         }
     }
 
@@ -403,11 +387,13 @@ public class Coordinate
             if (value > 180.0)
             {
                 //throw new ArgumentOutOfRangeException("value", "Longitude value cannot be greater than 180.");
+                //JJ: Do not throw exceptions while driving a car...
                 value = 0;
             }
             if (value < -180.0)
             {
                 //throw new ArgumentOutOfRangeException("value", "Longitude value cannot be less than -180.");
+                //JJ: Do not throw exceptions while driving a car...
                 value = 0;
             }
             _longitude = value;

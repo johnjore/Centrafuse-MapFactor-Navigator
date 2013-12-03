@@ -27,11 +27,41 @@ using Microsoft.Win32.SafeHandles;
 using System.Threading;
 using System.IO;
 using System.Diagnostics;
+using centrafuse.Plugins;
 
 namespace Navigator
 {
     public partial class Navigator
     {
+        //Configure and enable named pipe, if enabled by user
+        public void SetupNamedPipe()
+        {
+            //Using named pipe? 
+            if (boolNamedPipes)
+            {
+                patchNavigator();
+
+                //Louk's Named pipe server
+                try
+                {
+                    if (!this.pipeServer.Running)
+                    {
+                        this.pipeServer.PipeName = @"\\.\Pipe\" + "NavigatorCF4Plugin";
+                        this.pipeServer.Start();
+                        WriteLog("Named pipe '" + pipeServer.PipeName + "' is '" + (this.pipeServer.Running).ToString() + "'");
+
+                        //Create event handler
+                        this.pipeServer.MessageReceived += new PipeServer.Server.MessageReceivedHandler(pipeServer_MessageReceived);
+                    }
+                    else
+                        WriteLog("Named pipe server is already running");
+                }
+                catch (Exception errMsg) { WriteLog("Failed to check pipeServer: " + errMsg.Message); }
+            }
+            else
+                unpatchNavigator();
+        }
+
         //From Louk. Used by patched Navigator for mute/unmute instructions
         private PipeServer.Server pipeServer = new PipeServer.Server();
 
@@ -44,11 +74,11 @@ namespace Navigator
         //Patch navigator to support named pipe
         private void patchNavigator()
         {
-            WriteLog("Validating PC_Navigator.exe is patched for Named Pipe Support");
+            WriteLog("Checking whether " + EXEName + " is patched for Named Pipe Support or not. Desired state: Patched");
 
             //Patch or UnPatch PC_Navigator.exe for named pipe support
-            string strPatchedFile = strEXEPath + "\\PC_Navigator.exe";
-            string strBackupFile = strEXEPath + "\\PC_Navigator.exe.orig";
+            string strPatchedFile = strEXEPath + "\\" + EXEName;
+            string strBackupFile = strEXEPath + "\\" + EXEName + ".orig";
             FileInfo fiUnPatched = new FileInfo(strBackupFile);
             FileInfo fiPatched = new FileInfo(strPatchedFile);
 
@@ -74,7 +104,7 @@ namespace Navigator
                     WriteLog(pPatch.StartInfo.Arguments);
                     pPatch.Start();
                     pPatch.WaitForExit();
-                    if (pPatch.ExitCode != 0) WriteLog("Failed to patch PC_Navigator.exe, return code: " + pPatch.ExitCode.ToString());
+                    if (pPatch.ExitCode != 0) WriteLog("Failed to patch " + EXEName + ", return code: " + pPatch.ExitCode.ToString());
                 }
                 catch (Exception errMsg)
                 {
@@ -83,33 +113,35 @@ namespace Navigator
             }
         }
 
-
         //UnPatch navigator and remove name pipe support
         private void unpatchNavigator()
         {
-            WriteLog("Validating PC_Navigator.exe is not patched for Named Pipe Support");
+            WriteLog("Checking whether " + EXEName + " is patched for Named Pipe Support or not. Desired state: UnPatched");
 
             //Patch or UnPatch PC_Navigator.exe for named pipe support
-            string strPatchedFile = strEXEPath + "\\PC_Navigator.exe";
-            string strBackupFile = strEXEPath + "\\PC_Navigator.exe.orig";
+            string strPatchedFile = strEXEPath + "\\" + EXEName;
+            string strBackupFile = strEXEPath + "\\" + EXEName + ".orig";
             FileInfo fiUnPatched = new FileInfo(strBackupFile);
-            //FileInfo fiPatched = new FileInfo(strPatchedFile);
 
             if (fiUnPatched.Exists)
             {
                 //Put the exe files back...
                 try { System.IO.File.Copy(strBackupFile, strPatchedFile, true); }
-                catch (Exception errMsg) { WriteLog("Failed to undo named pipe patch (on restore): " + errMsg.Message); }
+                catch (Exception errMsg) { WriteLog("Failed to undo named pipe patch (on restore original exe): " + errMsg.Message); }
 
                 //Delete the extra dll
                 try { System.IO.File.Delete(strEXEPath + "\\CF_NP.dll"); }
-                catch (Exception errMsg) { WriteLog("Failed to undo named pipe patch (on delete): " + errMsg.Message); }
+                catch (Exception errMsg) { WriteLog("Failed to undo named pipe patch (on delete helper DLL): " + errMsg.Message); }
 
                 //Delete the extra EXE
                 try { System.IO.File.Delete(strBackupFile); }
-                catch (Exception errMsg) { WriteLog("Failed to undo named pipe patch (on delete): " + errMsg.Message); }
+                catch (Exception errMsg) { WriteLog("Failed to undo named pipe patch (on delete backup file): " + errMsg.Message); }
             }
-        }        
+            else
+            {
+                WriteLog(EXEName + " is not patched, so nothing to do");
+            }
+        }
     }
 }
 
@@ -247,7 +279,7 @@ namespace PipeServer
                     readThread.Start(client);
                 }
             }
-            catch { }
+            catch (Exception errMsg) { CFTools.writeLog("Unable to listen for clients: " + errMsg.Message); }
         }
 
         /// <summary>
@@ -292,7 +324,7 @@ namespace PipeServer
                 lock (this.clients)
                     this.clients.Remove(client);
             }
-            catch { };
+            catch (Exception errMsg) { CFTools.writeLog("Unable to read message: " + errMsg.Message); }
         }
 
         /// <summary>
@@ -317,7 +349,7 @@ namespace PipeServer
                     }
                 }
             }
-            catch { }
+            catch (Exception errMsg) { CFTools.writeLog("Unable to SendMessage: " + errMsg.Message); }
         }
     }
 }

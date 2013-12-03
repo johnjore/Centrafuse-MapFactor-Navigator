@@ -16,6 +16,12 @@
  */
 
 /*
+ * Navigator Bug:
+ *  Unable to use command line parameters for IP and port for TCP communications. Workaround modifies XML file directly
+ *  Requires Navigator to fix bug
+*/
+
+/*
  * All functions related to communicating with Navigator
 */
 
@@ -37,14 +43,14 @@ namespace Navigator
         private int intTCPPort = 4242;                      // TCP Port for communications with Mapfactor
         private string strIP = "127.0.0.1";                 // Default IP port
         Socket server = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
-        bool boolConnecting = false;                            // Are we trying to connect=
-        Queue<TCPCommand> TCPCommandQueue = new Queue<TCPCommand>();        //Keeps track of which command are sent        
+        bool boolConnecting = false;                        // Are we trying to connect?
+        Queue<TCPCommand> TCPCommandQueue = new Queue<TCPCommand>();        //Keeps track of which command are sent. Not fully implemented yet
         # endregion
 
         /**/ //WaitForReply not implemented yet...
         private void SendCommand(string strNavigatorCommand, bool WaitForReply, TCPCommand tcpCommand)
         {
-            //There's probably a better way of doing this... lock?!?
+            //There's probably a better way of doing this...
             if (server.Connected == false && boolConnecting == false)
             {
                 if (boolConnecting == false)
@@ -62,8 +68,7 @@ namespace Navigator
                     AsyncCallback onconnect = new AsyncCallback(OnConnect);
                     IAsyncResult serverResult = server.BeginConnect(IPAddress.Parse(strIP), intTCPPort, onconnect, server);
                     WriteLog("Trying to establish connection. BeginConnect() Started");
-
-                    
+                                        
                     bool success = serverResult.AsyncWaitHandle.WaitOne(500, true);
                     WriteLog("Success: " + success.ToString());
 
@@ -105,7 +110,8 @@ namespace Navigator
             {
                 WriteLog("Sending '" + strNavigatorCommand + "'");
                 server.Send(Encoding.ASCII.GetBytes(strNavigatorCommand));
-                TCPCommandQueue.Enqueue(tcpCommand);
+                /**/ //Not used yet
+                //TCPCommandQueue.Enqueue(tcpCommand);
             }
             else
             {
@@ -248,7 +254,8 @@ namespace Navigator
                                         { 
                                             _currentPosition.Latitude = rmCdata[4] == "N" ? NMEAtoDecimal(rmCdata[3]) : NMEAtoDecimal(rmCdata[3]) * -1; 
                                         }
-                                        catch { 
+                                        catch
+                                        { 
                                             _currentPosition.Latitude = 0; 
                                             WriteLog("Failed to convert Latitude"); 
                                         }
@@ -372,7 +379,20 @@ namespace Navigator
                                 }
                                 else if (strCommands.Contains("OK"))
                                 {
+                                    //strCommands will always be 'OK'
                                     WriteLog("Ack message... for which command is not known....");
+                                }
+                                else if (strCommands.Contains("BUSY"))
+                                {
+                                    //strCommands will always be 'BUSY'
+                                    WriteLog("Failed to ask Navigator to do something... for which command is not known....");
+                                    this.CF_systemCommand(CF_Actions.SHOWINFO, this.pluginLang.ReadField("/APPLANG/NAVIGATOR/BUSY"), "AUTOHIDE");
+                                }
+                                else if (strCommands.Contains("ERROR"))
+                                {
+                                    //strCommands will always be 'ERROR'
+                                    WriteLog("Asked Navigator to do something it can't do... which command is not known....");
+                                    this.CF_systemCommand(CF_Actions.SHOWINFO, this.pluginLang.ReadField("/APPLANG/NAVIGATOR/ERROR"), "AUTOHIDE");
                                 }
                                 else if (strCommands.Contains("NOTNAVIGATING"))
                                 {
@@ -385,13 +405,13 @@ namespace Navigator
                                 else if (strCommands.Split(',').Length == 4)
                                 {
                                     try { _navStats.DistanceMetersNextWaypoint = int.Parse(strCommands.Split(',')[0]); }
-                                    catch { };
+                                    catch (Exception errMsg) { WriteLog("Unable to parse DistanceMetersNextWaypoint: " + errMsg.Message); }
                                     try { _navStats.TimeSecondsNextWaypoint = int.Parse(strCommands.Split(',')[1]); }
-                                    catch { };
+                                    catch (Exception errMsg) { WriteLog("Unable to parse TimeSecondsNextWaypoint: " + errMsg.Message); }
                                     try { _navStats.DistanceMetersDestination = int.Parse(strCommands.Split(',')[2]); }
-                                    catch { };                                    
+                                    catch (Exception errMsg) { WriteLog("Unable to parse DistanceMetersDestination: " + errMsg.Message); }
                                     try { _navStats.TimeSecondsDestination = int.Parse(strCommands.Split(',')[3]); }
-                                    catch { };
+                                    catch (Exception errMsg) { WriteLog("Unable to parse TimeSecondsDestination: " + errMsg.Message); }
                                     
                                     if (this.Visible == true)
                                     {
@@ -411,8 +431,9 @@ namespace Navigator
                                     WriteLog("Not handled: '" + strCommands + "'");
                                 }
                             }
-                        }
-                        catch { WriteLog("Error in OnAddMessage"); }
+                        }                       
+                        //LK, 30-nov-2013: Added reason for exception
+                        catch (Exception errMsg) { WriteLog("Error in OnAddMessage: " + errMsg.Message); }
 
                         // If the connection is still usable restablish the callback
                         SetupRecieveCallback(sock);
@@ -420,16 +441,14 @@ namespace Navigator
                     else
                     {
                         // If no data was recieved then the connection is probably dead
-                        WriteLog("Client {0}, disconnected " + sock.RemoteEndPoint);
+                        WriteLog("Client disconnected: " + sock.RemoteEndPoint.ToString());
                         sock.Shutdown(SocketShutdown.Both);
                         sock.Close();
                     }
                 }
             }
-            catch
-            {
-                WriteLog("Unusual error during recieve!");
-            }
+            //LK, 30-nov-2013: Added reason for exception
+            catch (Exception errMsg) { WriteLog("Unusual error during recieve: " + errMsg.Message); }
         }
     }
 }

@@ -22,6 +22,12 @@
     <LBLGPSTIME>GPS TIME:</LBLGPSTIME>
     <TCPFAILED>Navigator: TCP Connection Failed</TCPFAILED>
     <FAILEDTODOCK>Failed to dock Navigator</FAILEDTODOCK>
+    <RESTARTNAVIGATOR>Restart mapfactor Navigator?</RESTARTNAVIGATOR>
+    <EXELOCATION>Please specify location of </EXELOCATION>
+    <UNABLE>Unable to locate </UNABLE>
+    <USESETUP>Use Setup to reconfigure Navigator plugin</USESETUP>
+    <BUSY>Navigator too busy to perform request. Try again</BUSY>
+    <ERROR>Navigator can't perform requested task</ERROR>
   </NAVIGATOR>
   <SETUP>
     <DESCRIPTION>Configure Mapfactor Navigator Plugin</DESCRIPTION>

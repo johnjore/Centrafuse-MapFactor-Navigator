@@ -73,16 +73,27 @@ namespace Navigator
         {
             WriteLog("Timer over. Play Audio");
 
-            //Mute/unmute
-            if (CF_getConfigFlag(CF_ConfigFlags.GPSAttMute)) CF_systemCommand(CF_Actions.UNMUTE);
-
-            //Mute/Unmute
-            if (bool.Parse(this.pluginConfig.ReadField("/APPCONFIG/MUTEUNMUTESTATUS")) == true)
+            if (bool.Parse(this.pluginConfig.ReadField("/APPCONFIG/MUTEUNMUTESTATUS")) == false)    //LK, 30-nov-2013: Distinguish between real and simulated mutes
             {
-                //Restore CF volume level
-                WriteLog("Current CF Volume Level: " + GetVolume().ToString());
-                SetVolume(intCFVolumeLevel);
-                WriteLog("New CF Volume Level: " + GetVolume().ToString());
+                //Mute/unmute
+                //LK, 24-nov-2013: Added UnMuteAudio if ATT mode is not enabled
+                //JJ: This prevents users from configuring "No action" if Navigator speaks while music plays...
+                /**/
+                if (CF_getConfigFlag(CF_ConfigFlags.GPSAttMute))
+                    CF_systemCommand(CF_Actions.DISABLEATT);
+                else
+                    CF_systemCommand(CF_Actions.UNMUTEAUDIO);
+            }
+            else
+            {
+                //Mute/Unmute
+                if (bool.Parse(this.pluginConfig.ReadField("/APPCONFIG/MUTEUNMUTESTATUS")) == true)
+                {
+                    //Restore CF volume level
+                    WriteLog("Current CF Volume Level: " + GetVolume().ToString());
+                    SetVolume(intCFVolumeLevel);
+                    WriteLog("New CF Volume Level: " + GetVolume().ToString());
+                }
             }
 
             boolInMutePeriod = false; // No longer in mute phase
@@ -96,34 +107,52 @@ namespace Navigator
             //We're in a MUTE period
             this.BeginInvoke(new MethodInvoker(delegate { boolInMutePeriod = true; }));
 
-            //ATT Mute/unmute
-            if (CF_getConfigFlag(CF_ConfigFlags.GPSAttMute))
+            if (bool.Parse(this.pluginConfig.ReadField("/APPCONFIG/MUTEUNMUTESTATUS")) == false)    //LK, 30-nov-2013: Distinguish between real and simulated mutes
             {
-                WriteLog("Mute (GPS ATT) CF Audio");
-                CF_systemCommand(CF_Actions.ATT);
+                //ATT Mute/unmute
+                if (CF_getConfigFlag(CF_ConfigFlags.GPSAttMute))
+                {
+                    WriteLog("Mute (GPS ATT) CF Audio");
+                    CF_systemCommand(CF_Actions.ATT);
 
+                }
+                else
+                {
+                    WriteLog("CF GPS ATT not enabled");
+                    //LK, 24-nov-2013: If not in AttMode, use MuteAudio to stop the audio source
+                    //JJ: This prevents users from configuring "No action" if Navigator speaks while music plays...
+                    /**/
+                    CF_systemCommand(CF_Actions.MUTEAUDIO);
+                }
+
+                //When not in named pipe mode, use an estimated fixed time to mute the audio source
                 //Can't enable timer in a non-UI thread. Only start timer if not using named pipe
-                if (!boolNamedPipes) this.BeginInvoke(new MethodInvoker(delegate { muteCFTimer.Interval = 2500; muteCFTimer.Enabled = true; }));
+                if (!boolNamedPipes) this.BeginInvoke(new MethodInvoker(delegate { muteCFTimer.Interval = muteCFTimerInterval; muteCFTimer.Enabled = true; })); //LK,30-nov-2013: Timer interval cached in LoadSettings()
             }
-            else WriteLog("CF GPS ATT not enabled");
-
-            //Mute/Unmute
-            if (bool.Parse(this.pluginConfig.ReadField("/APPCONFIG/MUTEUNMUTESTATUS")) == true)
+            else
             {
-                WriteLog("MuteUnmute Enabled.");
-
-                //Fake "ATT" mute CF
+                // Use simulated (ATT) mutes to be used when an audio source does not support proper (ATT) mute functions
+                WriteLog("CF Fake MuteUnmute Enabled.");
+                
                 //Get current CF volume level
                 intCFVolumeLevel = GetVolume();
                 WriteLog("Current CF Volume Level: " + intCFVolumeLevel.ToString());
-                //Set to ATTMuteLevel
-                SetVolume(Convert.ToInt32(Math.Round(double.Parse(CF_getConfigSetting(CF_ConfigSettings.AttMuteLevel)) / 10, MidpointRounding.AwayFromZero)));
-                WriteLog("New CF Volume Level: " + GetVolume().ToString());
 
+                //Set to ATTMuteLevel   //LK, 30-nov-2013: select ATT mute / normal mute
+                //JJ: This prevents users from configuring "No action" if Navigator speaks while music plays...
+                /**/
+                if (CF_getConfigFlag(CF_ConfigFlags.GPSAttMute))
+                {
+                    SetVolume(Convert.ToInt32(Math.Round(double.Parse(CF_getConfigSetting(CF_ConfigSettings.AttMuteLevel)) / 10, MidpointRounding.AwayFromZero)));
+                    WriteLog("New CF Volume Level: " + GetVolume().ToString());
+                }
+                else
+                    CF_systemCommand(CF_Actions.MUTEAUDIO);
+
+                //When not in named pipe mode, use an estimated fixed time to mute the audio source
                 //Can't enable timer in a non-UI thread. Only start timer if not using named pipe
-                if (!boolNamedPipes) this.BeginInvoke(new MethodInvoker(delegate { muteCFTimer.Interval = 2500; muteCFTimer.Enabled = true; }));
+                if (!boolNamedPipes) this.BeginInvoke(new MethodInvoker(delegate { muteCFTimer.Interval = muteCFTimerInterval; muteCFTimer.Enabled = true; })); //LK, 30-nov-2013: Timer interval cached in LoadSettings()
             }
-            else WriteLog("MuteUnmute not enabled");
         }
 
 

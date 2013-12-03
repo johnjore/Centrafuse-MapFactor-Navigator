@@ -17,18 +17,13 @@
 
 /*
  * http://static.mapfactor.com/files/Navigator_RemoteCommands_-_KB_1.pdf
- * Bug: TCP setup on Navigator? (Workaround implemented, modify settings.xml)
  * 
  * Move SendCommand and receive to its own thread?
  * Parse TCP responses from Navigator... counter++ for each SendCommand. Create FIFO buffer? Create thread?
  * 
- * Setup screen values not refreshing
- * How to detect if media is playing or not - Not required?
- * Mute: Mutes everything, including navigator prompts
- * 
  * Remove non-used functions
- */
-
+ * Resolve all /**/
+ 
 /* 
  * This is the main CS file
  */
@@ -44,7 +39,6 @@ using Microsoft.Win32;
 using System.Reflection;            //Extra debug information
 using System.Globalization;
 using System.Drawing;
-//using System.Net;
 using System.Net.Sockets;
 using System.Text;
 using Timer = System.Windows.Forms.Timer;
@@ -60,28 +54,31 @@ namespace Navigator
 
 #region Variables
 		private const string PluginName = "Navigator";
-        public static string PluginXmlElement = "Navigator";
+        private const string EXEName = "PC_Navigator.exe";
+        private const string REGNavigator = "SOFTWARE\\MapFactor\\set\\pcnavigator_12";
+        //public static string PluginXmlElement = "Navigator";
         private const string PluginPath = @"plugins\" + PluginName + @"\";
-		private const string PluginPathSkins = PluginPath + @"Skins\";
-		private const string PluginPathLanguages = PluginPath + @"Languages\";
-		private const string PluginPathIcons = PluginPath + @"Icons\";
+		//private const string PluginPathSkins = PluginPath + @"Skins\";
+		//private const string PluginPathLanguages = PluginPath + @"Languages\";
+		//private const string PluginPathIcons = PluginPath + @"Icons\";
         private const string ConfigurationFile = "config.xml";
 		private const string LogFile= "Navigator.log";        
         public static string LogFilePath = CFTools.AppDataPath + "\\Plugins\\" + PluginName + "\\" + LogFile;
         public static string settingsPath = CFTools.AppDataPath + "\\system\\settings.xml";
         public static string configPath = CFTools.AppDataPath + "\\system\\config.xml";	//LK, 20-nov-2013: Needed to check if this is the current navigation app
                 
-        /**/ //This should be moved to a AppConfigure class?
+        /**/ //This should be moved to a AppConfiguration class?
         private string strEXEPath = "";                     // Folder and EXE name
         private string strEXEParameters = "";               // Paramters to use
         private bool boolFullScreen = false;                // Full screen?
-        private bool boolExit = false;                      // Set True if hibernating
+        public bool boolExit = false;                       // Set True if hibernating
         private bool boolFREE = true;                       // Free edition?
         private bool boolOSMOK = false;                     // If true, supresses OSM License prompt
         private bool boolAlerts = false;                    // Show alerts if NOT active plugin?
         private bool boolNamedPipes = false;                // Use Louk's named pipes for mute/unmute?
         private bool boolMainScreen = true;                 // Start in main navigation screen
         private bool boolInMutePeriod = false;              // True if already in MUTE period
+        private int muteCFTimerInterval = 1800;             //LK, 30-nov-2013: Cache MuteCfTimer Interval (JJ: Value in milliseconds)
         private int intCFVolumeLevel = 0;                   // CF's volume level before "ATT"
         private IntPtr mHandlePtr;                          // var for window handle number to catch
         CFControls.CFPanel thepanel = null;                 // The panel to 'project' Navigator into        
@@ -92,6 +89,7 @@ namespace Navigator
         private CFNavLocation navCurrentLocation = new CFNavLocation();       // Navigator's current location
         private NavStats _navStats = new NavStats();         // Navigation statistics
 
+        //Timers
         Timer nightTimer = new System.Windows.Forms.Timer(); // timer for switching day/night skin      
         Timer muteCFTimer = new System.Windows.Forms.Timer();    // timer for mute'ing CF
         Timer CallStatusTimer = new System.Windows.Forms.Timer();    // timer for checking if a call is in progress
@@ -112,7 +110,13 @@ namespace Navigator
         static extern bool ClientToScreen(IntPtr hWnd, ref Point lpPoint);
 
         [DllImport("User32.dll")]
-        public static extern int SendMessage(IntPtr hWnd, int uMsg, int wParam, string lParam);
+        public static extern int SendMessage(IntPtr hWnd, int uMsg, Int16 wParam, int lParam);
+
+        [DllImport("User32.dll")]
+        public static extern int PostMessage(IntPtr hWnd, int uMsg, Int16 wParam, int lParam);
+
+        [DllImport("user32.dll")]
+        private static extern bool ShowWindow(IntPtr hWnd, int nCmdShow);
 
         //Placeholders
         //[DllImport("user32.dll")]
@@ -123,18 +127,11 @@ namespace Navigator
 
         //[DllImport("user32.dll")]
         //private static extern bool SetForegroundWindow(IntPtr hWnd);
-
-        //[DllImport("user32.dll")]
-        //private static extern bool ShowWindow(IntPtr hWnd, int nCmdShow);
         
         /**/ //Remove later if not used
         ////LK, 20-nov-2013: Experimental
         //[DllImport("user32.dll")]
-        //private static extern IntPtr GetForegroundWindow();
-
-        //[DllImport("user32.dll")]
-        //private static extern bool ShowWindow(IntPtr hWnd, int nCmdShow);        
-        
+        //private static extern IntPtr GetForegroundWindow();        
 #endregion
 
 #region CFPlugin methods
@@ -152,8 +149,8 @@ namespace Navigator
                 WriteLog("CF_pluginInit");
 
                 // CF3_initPlugin() Will configure pluginConfig and pluginLang automatically
-                // All plugins must call this method once
                 CF3_initPlugin(PluginName, true);
+
                 ICFSetup = new NavSetup(this, pluginConfig, pluginLang);
 
                 //Clear old values from log file
@@ -170,21 +167,8 @@ namespace Navigator
                 LoadSettings();
                 
                 //Setup the Panel used by PC_Navigator.exe
-                WriteLog("Init the panel to use for MapFactor");
+                WriteLog("Create the panel to use for mapFactor Navigator");
                 thepanel = new CFControls.CFPanel();
-
-                //Associate 'thepanel' with the panel defined in the skin.xml
-                thepanel = panelArray[CF_getPanelID("PanelNavigator")];
-
-                //LK, 18-nov-2013: Added some panel settings that might help parenting
-                thepanel.ParentForm = this;
-                thepanel.ParentFocus = true;
-                thepanel.PreRenderPreviousImage = true;
-                thepanel.BackColor = Color.Black;
-                thepanel.Name = "ThePanel";
-
-                //Get the handle so we can associate it with the process later
-                mHandlePtr = thepanel.Handle;
 
                 //Timer for day/night skin swap                
                 nightTimer.Interval = 2500; // Check every 2.5 seconds for a change
@@ -192,7 +176,7 @@ namespace Navigator
                 nightTimer.Tick += new EventHandler(nightTimer_Tick);
 
                 //Timer for mute'ing CF while Navigator speaks
-                muteCFTimer.Interval = 2500; // Unpause audio after this duration. Named pipe will change value as it receives unmute notice
+                muteCFTimer.Interval = muteCFTimerInterval; // Unpause audio after this duration
                 muteCFTimer.Enabled = false;
                 muteCFTimer.Tick += new EventHandler(muteCFTimer_Tick);
 
@@ -201,17 +185,18 @@ namespace Navigator
                 CallStatusTimer.Enabled = false;
                 CallStatusTimer.Tick += new EventHandler(CallStatusTimer_Tick);
                
-                //Timer to use to check if arrived at destination
+                //Timer to use to check if arriving at destination
                 NavDestinationTimer.Interval = 5000; // Wait this long...
                 NavDestinationTimer.Enabled = false;
                 NavDestinationTimer.Tick += new EventHandler(NavDestinationTimer_Tick);
 
-                // Creates new events to catch when CF is being closed, loaded or the power mode changed
-				this.KeyDown += new KeyEventHandler(Navigator_KeyDown);
-                //This is a duplicate...
-                //this.CF_events.CFPowerModeChanged += new CFPowerModeChangedEventHandler(OnPowerModeChanged); //Hibernation support
-                this.CF_events.applicationClosing += OnApplicationClosing;
-                this.CF_events.applicationLoaded += OnApplicationLoaded;
+                //LK, 30-nov-2013: Moved from Navigation.cs
+                //Timer to update GPS Status screen
+                NavStatustimer.Interval = 500; // Wait this long between the next updates
+                NavStatustimer.Enabled = false;
+                NavStatustimer.Tick += new EventHandler(NavStatustimer_Tick);
+
+                // Creates new events to catch power mode change
                 this.CF_events.CFPowerModeChanged += OnPowerModeChanged;
 
                 //Check if already running
@@ -220,15 +205,6 @@ namespace Navigator
                     if (TerminateOrphanedProcess(true)) this.CF_systemCommand(CF_Actions.SHOWINFO, this.pluginLang.ReadField("/APPLANG/NAVIGATOR/EMBEDDINGFAILED"), "AUTOHIDE");
                 }
 
-                //Modify Navigator's Settings XML file...
-                ConfigureNavigatorXML();
-
-                //Using named pipe? 
-                if (boolNamedPipes) 
-                    patchNavigator(); 
-                else 
-                    unpatchNavigator();
-                
                 /**/
                 //Force logging...
                 this.pluginConfig.WriteField("/APPCONFIG/LOGEVENTS", "True", true);
@@ -236,38 +212,16 @@ namespace Navigator
                 // Active navigation engine?
                 if (ReadCFValue("/APPCONFIG/NAVENGINE", "NAVIGATOR", configPath))
                 {
+                    //Modify Navigator's Settings XML file...
+                    ConfigureNavigatorXML();
+                                   
                     //Launch navigator
-                    LaunchNavigator();
-
-                    //LK, 23-nov-2013: Start timers
-                    CallStatusTimer.Enabled = true;
-                    NavDestinationTimer.Enabled = true;
-
-                    //Louk's Named pipe server
-                    if (!this.pipeServer.Running)
-                    {
-                        this.pipeServer.PipeName = @"\\.\Pipe\" + "NavigatorCF4Plugin";
-                        this.pipeServer.Start();
-                        WriteLog("Named pipe '" + pipeServer.PipeName + "' is '" + (this.pipeServer.Running).ToString() + "'");
-
-                        //Create event handler
-                        this.pipeServer.MessageReceived += new PipeServer.Server.MessageReceivedHandler(pipeServer_MessageReceived);
-                    }
-                    else
-                        WriteLog("Named pipe server is already running");
-
-                    //Get Fullscreen information
-                    boolFullScreen = CF_getConfigFlag(CF_ConfigFlags.GPSFullscreen);
-
-                    //Set correct size
-                    if (boolFullScreen) SetFullScreen(); else SetNonFullScreen();
-
-                    ConfigureNavigator();
+                    //LK, 30-nov-2013: Moved common code to new method  
+                    StartNavigator();
                 }               
 			}
 			catch(Exception errmsg) { CFTools.writeError(errmsg.ToString()); }
 		}
-
 
 		/// <summary>
 		/// This is called to setup the skin.  This will usually be called in CF_pluginInit.  It will 
@@ -275,7 +229,7 @@ namespace Navigator
 		/// </summary>
 		public override void CF_localskinsetup()
 		{
-            WriteLog("CF_localskinsetup");
+            WriteLog("CF_localskinsetup() - start");
 
             // Handle async invocation
             try
@@ -288,38 +242,84 @@ namespace Navigator
             }
             catch (Exception ex)
             {
-                WriteLog("skin setup: '" + ex.Message);
+                WriteLog("skin setup failed: '" + ex.Message); //LK, 28-nov-2013: Text adjusted
             }
 
-            // Read the skin file, controls from the skin will be automatically created
-            // CF_localskinsetup() should always call CF3_initSection() first, with the exception of setting any
-            // CF_displayHooks flags, which affect the behaviour of the CF3_initSection() call.
-            CF3_initSection(PluginName);
-                        
-            // Set display hook so that future CF3_initSection() calls will not clear the panels array
-            CF_displayHooks.clearControl.panels = false;
-            
-            // Set up custom button handlers for buttons without a CML action in skin.xml
-            this.CF_createButtonClick("MinMax", new MouseEventHandler(btnMinMax_Click));
 
-            /**/
-            //LK, 22-nov-2013: In the case of a skin change, adjust panel size.
-            if (thepanel != null)   //Anytime, but the first (when called from CF_pluginInit())
+            //LK, 28-nov-2013: Catch any errors (a lot can go wrong here)
+            try
             {
-                //LK, 22-nov-2013: Experimental
-                CFControls.CFPanel tmpPanel = new CFControls.CFPanel();
-                tmpPanel = panelArray[CF_getPanelID("PanelNavigator")];
-                tmpPanel.Visible = false;
-                tmpPanel.Enabled = false;
-                tmpPanel.BackColor = Color.Blue;
+                // Read the skin file, controls from the skin will be automatically created
+                // CF_localskinsetup() should always call CF3_initSection() first, with the exception of setting any
+                // CF_displayHooks flags, which affect the behaviour of the CF3_initSection() call.
 
-                if (boolFullScreen)
-                    SetFullScreen();
+                if (boolMainScreen)//LK, 30-nov-2013: Allow alternative sections to be loaded
+                {
+                    WriteLog("Configure for Navigator (Not GPSStatus)");
+                    CF3_initSection("Navigator");
+                    // Set display hook so that future CF3_initSection() calls will not clear the panels array
+                    //+++ CF_displayHooks.clearControl.panels = false;
+
+                    WriteLog("Create and configure Panel");
+                    //Associate 'thepanel' with the panel defined in the skin.xml
+                    thepanel = panelArray[CF_getPanelID("PanelNavigator")];
+
+                    //LK, 18-nov-2013: Added some panel settings that might help parenting
+                    thepanel.ParentForm = this;
+                    thepanel.ParentFocus = true;
+                    thepanel.PreRenderPreviousImage = true;
+                    thepanel.BackColor = Color.DarkGray;
+                    thepanel.Enabled = true;
+                    thepanel.Visible = true;
+                    thepanel.Name = "ThePanel";
+
+                    //Get the handle so we can associate it with the process later
+                    mHandlePtr = thepanel.Handle;
+
+                    //LK, 22-nov-2013: In the case of a skin change, adjust panel size.
+                    if (thepanel != null)   //Anytime, but the first (when called from CF_pluginInit())
+                    {
+                        WriteLog("Panel configured. Configure screen-size");
+                        //JJ: Moved here, else never called...
+                        if (boolFullScreen)
+                            SetFullScreen();
+                        else
+                            SetNonFullScreen();
+
+                        ////LK, 22-nov-2013: Experimental
+                        //CFControls.CFPanel tmpPanel = new CFControls.CFPanel();
+                        //tmpPanel = panelArray[CF_getPanelID("PanelNavigator")];
+                        //tmpPanel.Visible = false;
+                        //tmpPanel.Enabled = false;
+                        //tmpPanel.ForeColor = Color.Blue;
+
+                        //LK, 30-nov-2013: Instead of keeping the old panels (leeds to trouble when changing sections), dock again
+                        //JJ: This is never called and is the cause of the panel size error
+                        //The string "Connected to new panel again" never appears in the log file
+                        if (pNavigator != null)
+                        {
+                            SetParent(pNavigator.MainWindowHandle, mHandlePtr);
+                            WriteLog("Connected to new panel again");
+
+                            if (boolFullScreen)
+                                SetFullScreen();
+                            else
+                                SetNonFullScreen();
+                        }
+                    }
+                }
                 else
-                    SetNonFullScreen();
-            }
+                {
+                    WriteLog("Configure for GPSStatus (Not Navigator)");
+                    CF3_initSection("GPSStatus");
+                }
 
-            CFTools.writeLog(PluginName, "CF_localskinsetup", "Exiting");
+                //Refresh screen
+                this.Invalidate();
+
+                WriteLog("CF_localskinsetup() - end");
+            }
+            catch (Exception errMsg) { CFTools.writeError(errMsg.Message, errMsg.StackTrace); }
 		}
 
         
@@ -329,114 +329,83 @@ namespace Navigator
 		public override void CF_pluginClose()
 		{
             WriteLog("CF_pluginClose() - Start");
-
-            //User really wants to exit Navigator...
-            boolExit = true;
-
-            //Stop all timers
-            nightTimer.Enabled = false;
-            muteCFTimer.Enabled = false;
-            CallStatusTimer.Enabled = false;
-            NavDestinationTimer.Enabled = false;
-
-            //Louk's Pipe
-            if (this.pipeServer.Running)
-            {
-                WriteLog("Closing Louk's pipe");
-                this.pipeServer.Stop();
-                this.pipeServer.MessageReceived -= new PipeServer.Server.MessageReceivedHandler(pipeServer_MessageReceived);
-                this.pipeServer = null;
-            }
-            else WriteLog("Can't stop a non-running pipe-server");
-
-            //Switch to Nav if not free edition
-            if (boolFREE)
-            {
-                WriteLog("Switch to NAV and close it");
-                CF3_executeCMLAction("Centrafuse.CFActions.Nav");
-                System.Threading.Thread.Sleep(500);
-                if (!boolMainScreen)
-                {
-                    thepanel.Visible = true; // Make sure its visible, and not behind stats screen
-
-                    //LK, 19-nov-2013: Set focus to the panel
-                    thepanel.Focus();
-
-                    SendCommand("$maximize\r\n", false, TCPCommand.Maximize);
-                }
-            }
-
-            //Close the TCP connection
+            
+            //By closing the connection before closing Navigator, no TCP communication errors are logged
             try
             {
+                WriteLog("Shutdown TCP connection");
                 server.Shutdown(SocketShutdown.Both);
-                server.Disconnect(false);
-                server.Close();
-                WriteLog("Closed Connection");
             }
-            catch { WriteLog("Failed to close connection."); }
+            catch (Exception errMsg) { WriteLog("Failed to close connection: " + errMsg.Message); } //LK, 29-nov-2013: Add reason to message
+            
+            //Handles all things related to Navigator
+            CloseNavigator();
+            
+            //We can discard the pipeServer here, but not in CloseNavigator() as CloseNavigator() is re-used to restart Navigator
+            this.pipeServer = null;
 
-            //Close it
-            pNavigator.CloseMainWindow();
-            pNavigator.Close();                     
-
-            //Wait for Navigator to close before swapping XML files around
-            for (int loop=0; loop<100; loop++)
-            {                
-                if (TerminateOrphanedProcess(false) == false)
-                {
-                    WriteLog("Navigator no longer running. Gracefull shutdown");
-                    break;
-                }
-                WriteLog("Waiting for Navigator to close");
-                if (boolFREE) ClickOnPoint(mHandlePtr, new Point(100, 200));
-
-                System.Threading.Thread.Sleep(20);
-            }
-
-            //Assume didn't exit. Force close if still running...
+            //We can discard of the TCP server connection here
             try
             {
-                TerminateOrphanedProcess(true);
+                server.Close();
+                WriteLog("TCP connection closed ");
             }
-            catch { WriteLog("Failed to terminate process"); }
+            catch (Exception errMsg) { WriteLog("Failed to dispose of TCP connection: " + errMsg.Message); }
+            
             
             //Put the configuration files back again
-            try { 
-                System.IO.File.Move(strAppDataPath + "\\settings.xml", strAppDataPath + "\\settings.xml.CF"); 
+            try
+            {
+                System.IO.File.Move(strAppDataPath + "\\settings.xml", strAppDataPath + "\\settings.xml.CF");  //LK,28-nov-2013: Add reason to message
             }
-            catch {
-                WriteLog("Failed to restore settings.xml to .CF"); 
+            catch (Exception errMsg)
+            {
+                WriteLog("Failed to restore settings.xml to .CF: " + errMsg.Message);
             }
-            try {
-                System.IO.File.Move(strAppDataPath + "\\settings.xml.NAV", strAppDataPath + "\\settings.xml");
+
+            try
+            {
+                System.IO.File.Move(strAppDataPath + "\\settings.xml.NAV", strAppDataPath + "\\settings.xml");  //LK,28-nov-2013: Add reason to message
             }
-            catch { 
-                WriteLog("Failed to restore .NAV to settings.xml"); 
+            catch (Exception errMsg)
+            {
+                WriteLog("Failed to restore .NAV to settings.xml: " + errMsg.Message);
             }
 
             base.CF_pluginClose(); // calls form Dispose() method
+            //This works on W7?!?
             WriteLog("CF_pluginClose() - End");
-		}
+        }
 		
 
 		/// <summary>
 		/// This is called by the system when a button with this plugin action has been clicked.
 		/// </summary>
 		public override void CF_pluginShow()
-		{           
-            WriteLog("Start: CF_pluginShow");
+		{
+            try
+            {
+                WriteLog("Start: CF_pluginShow");
 
-            //LK, 18-nov-2013: Just make the panel visible (don't load again)
-            thepanel.Visible = true;
+                //LK, 30-nov-2013: When we became the new navigation app and PC_Navigator isn't loaded yet, load it now
+                if (ReadCFValue("/APPCONFIG/NAVENGINE", "NAVIGATOR", configPath) && pNavigator == null)
+                    StartNavigator();
 
-            //Configure night mode toggle option
-            SetDayNightToggle();
-                       
-            //Resume window
-            SendCommand("$maximize\r\n", false, TCPCommand.Maximize);
-                                               
-            base.CF_pluginShow(); // sets form Visible property
+                if (boolMainScreen) //LK, 30-nov-2013: Aonly do this when in the main screen (not the status screen)
+                {
+                    //LK, 18-nov-2013: Just make the panel visible (don't load again)
+                    //Note: PC_navigator will unhide itself; don't try fight that...
+                    thepanel.Visible = true;
+
+                    //Configure night mode toggle option
+                    SetDayNightToggle();
+
+                    //Resume window
+                    SendCommand("$maximize\r\n", false, TCPCommand.Maximize);
+                }
+                base.CF_pluginShow(); // sets form Visible property
+            }
+            catch (Exception errMsg) { WriteLog("Failed to show navigation window: " + errMsg.Message); }  //30-nov-2013: Added reason for exception
 		}
 
         /// <summary>
@@ -446,13 +415,21 @@ namespace Navigator
         {
             try
             {
-                //Make sure its not ontop of CF
-                SendCommand("$minimize\r\n", false, TCPCommand.Minimize);
+                WriteLog("Start: CF_pluginHide");
+
+                if (boolMainScreen) //LK, 30-nov-2013: Only do this when in the main screen (not the status screen)
+                {
+                    //LK, 18-nov-2013: Just make the panel invisible
+                    thepanel.Visible = false;
+
+                    //Make sure its not ontop of CF
+                    SendCommand("$minimize\r\n", false, TCPCommand.Minimize);
+                }
 
                 //Don't check for skin change. Plugin not visible => no update required
                 nightTimer.Enabled = false;
             }
-            catch { WriteLog("Failed to send minimize command"); }
+            catch (Exception errMsg) { WriteLog("Failed to close navigation window: " + errMsg.Message); }  //30-nov-2013: Added reason for exception
 
             base.CF_pluginHide(); // sets form !Visible property
         }
@@ -488,6 +465,40 @@ namespace Navigator
             WriteLog("CF_pluginCommand: " + command + " " + param1 + ", " + param2);
 		}
 
+
+        //LK, 30-nov-2013: New method to start PC_navigator, including pipes
+        //JJ: Replaced my new StartNavigator :)
+        public bool StartNavigator()
+        {
+            try
+            {
+                if (LaunchNavigator())
+                {
+                    //LK, 23-nov-2013: Start timers
+                    CallStatusTimer.Enabled = true;
+                    NavDestinationTimer.Enabled = true;
+
+                    //Configure named pipe
+                    SetupNamedPipe();
+
+                    //Get Fullscreen information
+                    boolFullScreen = CF_getConfigFlag(CF_ConfigFlags.GPSFullscreen);
+
+                    //Set correct size
+                    if (boolFullScreen) SetFullScreen(); else SetNonFullScreen();
+
+                    //Configure navigator using TCP commands
+                    ConfigureNavigator();
+
+                    //All went OK
+                    return true;
+                }
+                else
+                    return false;
+            }
+            catch (Exception errMsg) { WriteLog("Failed to start " + EXEName + " :" + errMsg.Message); return false; }
+        }
+
         //Launch Navigator
         private bool LaunchNavigator()
         {
@@ -497,7 +508,7 @@ namespace Navigator
                 if (ReadCFValue("/APPCONFIG/NAVENGINE", "NAVIGATOR", configPath))
                 {
                     pNavigator = new Process();
-                    pNavigator.StartInfo.FileName = strEXEPath + "\\PC_Navigator.exe";
+                    pNavigator.StartInfo.FileName = strEXEPath + "\\" + EXEName;
                     pNavigator.StartInfo.Arguments = "--window_border=no " + strEXEParameters + " --window_position=" + this.pluginConfig.ReadField("/APPCONFIG/WINDOWSIZE");
                     try
                     {
@@ -507,15 +518,17 @@ namespace Navigator
                         }
                     }
                     catch { WriteLog("Failed to interpret NOHIRES setting"); }
-                    //This does not work: "--tcpserver=127.0.0.1:" + intTCPPort.ToString(); Settings.XML modified
+                    //This does not work: "--tcpserver=127.0.0.1:" + intTCPPort.ToString(); Settings.XML modified instead
                     WriteLog("Launching Navigator using: '" + pNavigator.StartInfo.FileName + "'");
                     WriteLog("Parameters: '" + pNavigator.StartInfo.Arguments + "'");
                     pNavigator.EnableRaisingEvents = true;
+                    //Ensure Navigator is restarted if it crashes, or user manages to close it. No Navigator => no Nav data in CF
                     pNavigator.Exited += new EventHandler(pNavigator_Exited);
                     
                     //LK, 18-nov-2013: Avoid flickering windows at startup
                     pNavigator.StartInfo.WindowStyle = ProcessWindowStyle.Hidden;
 
+                    //Start the EXE
                     pNavigator.Start();
                     
                     //Wait for Navigator to start
@@ -525,9 +538,6 @@ namespace Navigator
                     System.Threading.Thread.Sleep(500); // Allow the process to open it's window
                     pNavigator.WaitForInputIdle();     //Dont use this, the window location is messed up. Can't press OK        
 
-                    //ShowWindowAsync(pNavigator.MainWindowHandle, (int)showWindowAttribute.SW_MINIMIZE);
-                    SendMessage(pNavigator.MainWindowHandle, (int)showWindowAttribute.SW_MINIMIZE, 0, string.Empty);
-
                     //LK, 18-nov-2013: Attach to hidden panel right away
                     int iRetry = 0;
 
@@ -536,33 +546,34 @@ namespace Navigator
                     {
                         totalProcessorTime = pNavigator.TotalProcessorTime;
                         WriteLog("Waiting for Navigator to get idle... (totalProcessorTime used = " + totalProcessorTime);
-                        System.Threading.Thread.Sleep(500);
+
                         if (iRetry++ > 20)
                             break;
+
+                        System.Threading.Thread.Sleep(500);
+                        pNavigator.WaitForInputIdle();
                     };
+
+                    WriteLog("MainWindowHandle before parenting = 0x" + pNavigator.MainWindowHandle.ToString("X"));
 
                     if (SetParent(pNavigator.MainWindowHandle, mHandlePtr) == IntPtr.Zero)
                     {
                         int lastError = Marshal.GetLastWin32Error();
-                        WriteLog("Docking failed, last error = " + lastError);
+                        WriteLog("Docking failed, last error = 0x" + lastError.ToString("X"));  //LK, 29-nov-2013: Display Hex value
                         System.Threading.Thread.Sleep(500);
-                        //throw new Exception("Failed to dock Navigator");
                         CF_systemDisplayDialog(CF_Dialogs.OkBox, pluginLang.ReadField("/APPLANG/NAVIGATOR/FAILEDTODOCK"));
                     }
                     else
                         WriteLog("Connected to panel");
 
+                    WriteLog("MainWindowHandle after parenting = 0x" + pNavigator.MainWindowHandle.ToString("X"));
+
+                    //JJ: Why is this set to AboveNormal and not Normal?!?
                     pNavigator.PriorityClass = ProcessPriorityClass.AboveNormal;    //LK, 24-nov-2013: Lower the priority to "normal"
-                    //Form fNavigator = (Form)FromHandle(pNavigator.MainWindowHandle);
-                    //if (fNavigator != null)
-                    //{
-                    //    Form mainForm = (Form)thepanel.Parent;
-                    //    fNavigator.Owner = mainForm;
-                    //}
-                                      
+                    
+                    //Hide panel                                      
                     thepanel.Visible = false;
-                    WriteLog("Panel hidden");                    
-                    WriteLog("Launched");
+                    WriteLog("Panel hidden");
 
                     //Say YES to OSM data usage, if user changed to ON
                     try
@@ -571,10 +582,36 @@ namespace Navigator
                         {
                             System.Threading.Thread.Sleep(500); // Allow the process to open it's window
                             WriteLog("Sending ENTER");
+
+                            /**/ //TBD...
+                            //LK, 29-nov-2013: Under construction...
+                            //PostMessage(pNavigator.MainWindowHandle, (int)WindowManagerEvents.WM_KEYDOWN, (short)VK.VK_RETURN, 1); //LK,29-nov-2013: Send 1 Return (0x13)
+                            //PostMessage(pNavigator.MainWindowHandle, (int)WindowManagerEvents.WM_KEYUP, (short)VK.VK_RETURN, 1); //LK,29-nov-2013: Send 1 Return (0x13)
+                            ////PostMessage(pNavigator.MainWindowHandle, (int)WindowManagerEvents.WM_CHAR, 0x13, 1); //LK,29-nov-2013: Send 1 Return (0x13)
+                            //LK, 29-nov-2013: This command will send the key to the top window, not always to PC_Navigator:
+                            //---thepanel.Focus(); //Give it focus
+
+                            //IntPtr toplevelWindow = FindWindow("MPFCWindow", "");
+                            //JJ: Hm.. somehow i deleted FindWindow...
+                            /*if (toplevelWindow != null)
+                            {
+                                WriteLog("Got a handle...");
+                            }*/
+
+                            //JJ: Just send 'Enter' until the message system works...
                             SendKeys.SendWait("{ENTER}");
                         }
                     }
                     catch { WriteLog("Failed to send OK to OSM usage"); }
+
+                    //JJ: Re-run now, else panels not resized correctly
+                    CF_localskinsetup();
+
+                    WriteLog("Sending minimize command to window with handle 0x" + pNavigator.MainWindowHandle.ToString("X"));
+                    //ShowWindowAsync(pNavigator.MainWindowHandle, (int)showWindowAttribute.SW_MINIMIZE);
+                    //LK, 29-nov-2013: Last parameter of SendMessage and PostMessage is LWord (int), not string
+                    //PostMessage(pNavigator.MainWindowHandle, (int)WindowManagerEvents.WM_COMMAND, unchecked((short)SC.SC_MINIMIZE), 0);
+                    ShowWindow(pNavigator.MainWindowHandle, (int)showWindowAttribute.SW_MINIMIZE);
 
                     //Navigator should be launched and running
                     return true;
@@ -584,6 +621,7 @@ namespace Navigator
             {
                 WriteLog("Failed to launch Navigator: " + ex.Message);
                 CFTools.writeError(ex.Message, ex.StackTrace);
+
                 return false;
             }
 
@@ -598,9 +636,12 @@ namespace Navigator
             //Act as navigation plugin
             SendCommand("$gps_sending=start;nmea\r\n", false, TCPCommand.GPSSending);
 
-            //Set initial day/night mode
-            boolCurrentNightMode = CF_getConfigFlag(CF_ConfigFlags.NightSkinFlag);
-            if (boolCurrentNightMode) SendCommand("$set_mode=night\r\n", false, TCPCommand.DayNight); else SendCommand("$set_mode=day\r\n", false, TCPCommand.DayNight);
+            //Set initial day/night mode, if user has enabled this in CF
+            if (ReadCFValue("/APPCONFIG/AUTOSWITCHSKIN", "True", configPath))
+            {
+                boolCurrentNightMode = CF_getConfigFlag(CF_ConfigFlags.NightSkinFlag);
+                if (boolCurrentNightMode) SendCommand("$set_mode=night\r\n", false, TCPCommand.DayNight); else SendCommand("$set_mode=day\r\n", false, TCPCommand.DayNight);
+            }
 
             //Enable or disable Navigator voice prompts?
             if (CF_getConfigFlag(CF_ConfigFlags.GPSEnableVoice) == true)
@@ -637,8 +678,6 @@ namespace Navigator
             }
         }
 
-
-
         // Handle Navigator Exited event
         private void pNavigator_Exited(object sender, System.EventArgs e)
         {
@@ -647,15 +686,9 @@ namespace Navigator
             {
                 WriteLog("Navigator no longer running. Exit code: " + pNavigator.ExitCode.ToString());
 
-                //If navigator is not running, its probably half hidden behind CF. Switch to Nav screen
-                /**/ //Is this really required?
-                //CF3_executeCMLAction("Centrafuse.CFActions.Nav");
-
                 //Get current timer status
                 bool nightTimer_Status = nightTimer.Enabled;
                 bool muteCFTimer_Status = muteCFTimer.Enabled;                
-                bool CallStatusTimer_Status = CallStatusTimer.Enabled;
-                bool NavDestinationTimer_Status = NavDestinationTimer.Enabled;
 
                 //Stop all timers. Call back does not work and causes grief...
                 nightTimer.Enabled = false;
@@ -663,39 +696,31 @@ namespace Navigator
                 CallStatusTimer.Enabled = false;
                 NavDestinationTimer.Enabled = false;
 
-                //Launch Navigator
-                LaunchNavigator();
-
                 //Disconnect the TCP connection so it can be re-established
                 server.Disconnect(true);
                 boolConnecting = false;
 
-                //Connect to panel                
-                SetParent(pNavigator.MainWindowHandle, mHandlePtr);
-                WriteLog("Connected to Panel");
+                //Modify Navigator's Settings XML file...
+                ConfigureNavigatorXML();
 
-                //Set correct size
-                if (boolFullScreen) SetFullScreen(); else SetNonFullScreen();
+                //Start  Navigator
+                StartNavigator();
 
-                //Re-configure Navigator
-                ConfigureNavigator();
-
-                thepanel.Visible = true; // Make sure its visible, and not behind stats screen
-                thepanel.Focus(); //Give it focus
-                SendCommand("$maximize\r\n", false, TCPCommand.Maximize);
-
+                //If user exited Navigator manually, then plugin is visible
+                if (this.Visible == true)
+                {
+                    thepanel.Visible = true; // Make sure its visible, and not behind stats screen
+                    thepanel.Focus(); //Give it focus
+                    SendCommand("$maximize\r\n", false, TCPCommand.Maximize);
+                }
+               
                 //Set timers back the way they were
                 nightTimer.Enabled = nightTimer_Status;
                 muteCFTimer.Enabled = muteCFTimer_Status;
-                CallStatusTimer.Enabled = CallStatusTimer_Status;
-                NavDestinationTimer.Enabled = NavDestinationTimer_Status;
             }
         }
 
-
-
-
-
+        
         /// <summary>
         /// Called on control clicks, down events, etc, if the control has a defined CML action parameter in the skin xml.
         /// </summary>
@@ -715,19 +740,12 @@ namespace Navigator
                 case "GOTOSTATUS": //Flip Status / Navigation
                     btnSectionStatus_Click(null, null);
                     return true;
+                case "TOGGLEMINMAX": //Flip full screen / Normal screen
+                    btnMinMax_Click(null, null);
+                    return true;
             }
 
             return false;
-        }
-
-        private void OnApplicationClosing(object sender, EventArgs e)
-        {
-            CFTools.writeLog(PluginName, "OnApplicationClosing", "");
-        }
-        
-        private void OnApplicationLoaded(object sender, EventArgs e)
-        {
-            CFTools.writeLog(PluginName, "OnApplicationLoaded", "");
         }
 
 #endregion
@@ -740,13 +758,16 @@ namespace Navigator
             // the plugin.  This sets the display name from the configuration file.
             this.CF_params.displayName = this.pluginLang.ReadField("/APPLANG/NAVIGATOR/DISPLAYNAME");
             CFTools.writeLog("Navigator", "New display name = " + this.CF_params.displayName);
-            
+
+            //LK, 25-nov-2013: Actualize input stream
+            this.pluginConfig.Reload();
+
             //Get Navigator Configuration
             try
             {
                 WriteLog("App Load Config File");
 
-                // Mute/Unmute prompt?
+                // Fakce CF Mute/Unmute?
                 try
                 {
                     bool.Parse(this.pluginConfig.ReadField("/APPCONFIG/MUTEUNMUTESTATUS"));
@@ -790,23 +811,63 @@ namespace Navigator
                 try
                 {
                     strEXEPath = this.pluginConfig.ReadField("/APPCONFIG/EXEPATH");
+                    string strEXE = "\\Navigator12\\PC_Navigator";
+                    FileInfo fi0 = new FileInfo(strEXEPath + "\\" + EXEName);
 
                     //Set some sane default value
-                    if (strEXEPath == "")
-                    {
-                        string strEXE = "\\Navigator12\\PC_Navigator";
+                    if (strEXEPath == "" || !fi0.Exists)
+                    {                        
                         string strTest = "C:\\Program Files (x86)" + strEXE;
-                        FileInfo fi1 = new FileInfo(strTest + "\\PC_Navigator.exe");
-                        if (fi1.Exists) {
+                        FileInfo fi1 = new FileInfo(strTest + "\\" + EXEName);
+                        if (fi1.Exists)
+                        {
                             this.pluginConfig.WriteField("/APPCONFIG/EXEPATH", strTest, true);
                             strEXEPath = strTest;
-                        };
-                        strTest = "C:\\Program Files" + strEXE;
-                        FileInfo fi2 = new FileInfo(strTest + "\\PC_Navigator.exe");
-                        if (fi2.Exists) { 
-                            this.pluginConfig.WriteField("/APPCONFIG/EXEPATH", "C:\\Program Files" + strEXE, true);
-                            strEXEPath = strTest;
-                        };
+                        }
+                        else
+                        {
+                            strTest = "C:\\Program Files" + strEXE;
+                            FileInfo fi2 = new FileInfo(strTest + "\\" + EXEName);
+                            if (fi2.Exists)
+                            {
+                                this.pluginConfig.WriteField("/APPCONFIG/EXEPATH", "C:\\Program Files" + strEXE, true);
+                                strEXEPath = strTest;
+                            }
+                            else
+                            {                                
+                                //Still not found PC_Navigator.exe. Ask user where it is?
+                                try
+                                {
+                                    CF_systemDisplayDialog(CF_Dialogs.OkBox, this.pluginLang.ReadField("/APPLANG/NAVIGATOR/EXELOCATION") + EXEName);
+
+                                    string location = this.pluginConfig.ReadField("/APPCONFIG/EXEPATH");
+                                    if (string.IsNullOrEmpty(location)) location = PluginPath;
+                                    
+                                    CFDialogParams dialogParams = new CFDialogParams(this.pluginLang.ReadField("/APPLANG/SETUP/EXEPATH"), location);
+                                    dialogParams.browseable = true;
+                                    dialogParams.enablesubactions = false;
+                                    dialogParams.showfiles = true;
+
+                                    CFDialogResults results = new CFDialogResults();
+                                    if (CF_displayDialog(CF_Dialogs.FileBrowser, dialogParams, results) == DialogResult.OK)
+                                    {
+                                        WriteLog("Found :" + results.resulttext);
+                                        FileInfo fi3 = new FileInfo(results.resultvalue);
+                                        if (fi3.Exists)
+                                        {
+                                            string strPath = Path.GetDirectoryName(results.resultvalue);
+                                            this.pluginConfig.WriteField("/APPCONFIG/EXEPATH", strPath, true);
+                                            strEXEPath = strPath;
+                                        }
+                                        else
+                                        {
+                                            CF_systemDisplayDialog(CF_Dialogs.OkBox, this.pluginLang.ReadField("/APPLANG/NAVIGATOR/UNABLE") + EXEName + this.pluginLang.ReadField("/APPLANG/NAVIGATOR/USESETUP"));
+                                        }
+                                    }
+                                }
+                                catch (Exception errmsg) { CFTools.writeError(errmsg.Message, errmsg.StackTrace); }            
+                            }
+                        }
                     }
                 }
                 catch
@@ -836,10 +897,9 @@ namespace Navigator
                 //Get correct atlas setting:
                 try
                 {
-                    //Read from registry 
-                    /**/ //Should not read hardcoded registry values. Either move to xml file, or enumerate registry
+                    //Read from registry                     
                     RegistryKey rk = Registry.LocalMachine;
-                    RegistryKey sk1 = rk.OpenSubKey("SOFTWARE\\MapFactor\\set\\pcnavigator_12");
+                    RegistryKey sk1 = rk.OpenSubKey(REGNavigator);                  
 
                     if (boolFREE)
                     {
@@ -858,6 +918,7 @@ namespace Navigator
                 }
                 catch
                 {
+                    //Default value if all goes wrong...
                     strEXEParameters = strEXEParameters + " --atlas=C:\\ProgramData\\Navigator\\12.3\\atlas_pcn_free.idc";
                 }
                 finally
@@ -945,8 +1006,7 @@ namespace Navigator
                 {
                     this.pluginConfig.WriteField("/APPCONFIG/NOHIRES", "False", true);
                 }
-
-
+                
                 // Delay after Unmute
                 int intDelay = 0;
                 try
@@ -955,12 +1015,13 @@ namespace Navigator
                 }
                 catch
                 {
-                    intDelay = 1000;
+                    intDelay = 1800;    //LK, 30-nov-2013: Default value for sumulated UnMute (when no Unmute messages are received from the named pipe
                     this.pluginConfig.WriteField("/APPCONFIG/AUDIODELAYAFTERMUTE", intDelay.ToString(), true);
                 }
                 finally
                 {
                     WriteLog("intDelay: " + intDelay.ToString());
+                    muteCFTimerInterval = intDelay; //LK, 30-nov-2013: Cache this value to avoid many reads from the config file
                 }
 
                 // CF Settings
@@ -976,21 +1037,20 @@ namespace Navigator
                     WriteLog("CF_ConfigFlags.RadioMute:           '" + CF_getConfigFlag(CF_ConfigFlags.RadioMute).ToString() + "'");
                     WriteLog("CF_ConfigSettings.GPSNavSoundLevel: '" + CF_getConfigSetting(CF_ConfigSettings.GPSNavSoundLevel).ToString() + "'");
                     WriteLog("CF_ConfigSettings.AttMuteLevel:     '" + CF_getConfigSetting(CF_ConfigSettings.AttMuteLevel).ToString() + "'");
-                    WriteLog("CF_ConfigSettings.GPSNavSoundLevel: '" + CF_getConfigSetting(CF_ConfigSettings.GPSNavSoundLevel).ToString() + "'");
                     WriteLog("CF_ConfigSettings.GPSVoicePrompts:  '" + CF_getConfigSetting(CF_ConfigSettings.GPSVoicePrompts).ToString() + "'");
                     WriteLog("CF_ConfigSettings.OSVersion:        '" + CF_getConfigSetting(CF_ConfigSettings.OSVersion).ToString() + "'");
                 }
-                catch { }
+                catch (Exception errMsg) { WriteLog("Unable to get CF configuration flags or settings: " + errMsg.Message); }
             }
-            catch { }
+            catch (Exception errMsg) { WriteLog("Unable to get configuration settings: " + errMsg.Message); }
         }
 
         //Manipulate Navigator's XML file
-        private void ConfigureNavigatorXML()
+        public void ConfigureNavigatorXML()
         {
             //Find users profile path with settings.xml file
             RegistryKey rk = Registry.LocalMachine;
-            RegistryKey sk1 = rk.OpenSubKey("SOFTWARE\\MapFactor\\set\\pcnavigator_12");
+            RegistryKey sk1 = rk.OpenSubKey(REGNavigator);
 
             strAppDataPath = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData) + "\\Navigator\\" + sk1.GetValue("major_ver").ToString() + "." + sk1.GetValue("minor_ver").ToString();
             WriteLog("Path :" + strAppDataPath);
@@ -1009,7 +1069,7 @@ namespace Navigator
                 {
                     WriteLog("NAV Exists");
                     try { System.IO.File.Move(strAppDataPath + "\\settings.xml.NAV", strAppDataPath + "\\settings.xml." + DateTime.Now.ToString("yyyy-MM-dd-HH-mm-ss")); }
-                    catch { }
+                    catch { WriteLog("Unable to rename xml.NAV to XML.datetime"); }
                     WriteLog("NAV Removed");
                 }
 
@@ -1018,12 +1078,13 @@ namespace Navigator
                 {
                     WriteLog("CF Exists");
                     //Rename XML to NAV
-                    try { System.IO.File.Move(strAppDataPath + "\\settings.xml", strAppDataPath + "\\settings.xml.NAV");} catch { }
+                    try { System.IO.File.Move(strAppDataPath + "\\settings.xml", strAppDataPath + "\\settings.xml.NAV"); }
+                    catch { WriteLog("Unable to rename xml to xml.NAV"); }
                     WriteLog("Renamed XML to NAV");
 
                     //Rename CF to XML
                     try { System.IO.File.Move(strAppDataPath + "\\settings.xml.CF", strAppDataPath + "\\settings.xml"); }
-                    catch { }
+                    catch { WriteLog("Unable to rename xml.CF to xml"); }
                     WriteLog("Renamed CF to XML");
                 }
                 else
@@ -1039,7 +1100,7 @@ namespace Navigator
                         System.IO.File.Copy(newFileName, strAppDataPath + "\\settings.xml", true);
                         System.IO.File.Copy(newFileName, strAppDataPath + "\\settings.xml.NAV", true);
                     }
-                    catch { WriteLog("Failed to create new settings.xml file"); }
+                    catch (Exception errMsg) { WriteLog("Failed to create new settings.xml file: " + errMsg.Message); }
                 }
             }
             else
@@ -1049,18 +1110,20 @@ namespace Navigator
                 if (fiCF.Exists)
                 {
                     WriteLog("Using CF");
-                    try { System.IO.File.Move(strAppDataPath + "\\settings.xml.CF", strAppDataPath + "\\settings.xml"); } catch { };
+                    try { System.IO.File.Move(strAppDataPath + "\\settings.xml.CF", strAppDataPath + "\\settings.xml"); }
+                    catch (Exception errMsg) { WriteLog("Unable to rename xml.CF to xml: "+ errMsg.Message); }
 
                     if (fiNAV.Exists == false)
                     {
                         try { System.IO.File.Copy(strAppDataPath + "\\settings.xml", strAppDataPath + "\\settings.xml.NAV"); }
-                        catch { };
+                        catch (Exception errMsg) { WriteLog("Unable to copy xml to xml.NAV: " + errMsg.Message); }
                     }
                 }
                 else if (fiNAV.Exists) //try NAV
                 {
                     WriteLog("Using NAV");
-                    try { System.IO.File.Copy(strAppDataPath + "\\settings.xml.NAV", strAppDataPath + "\\settings.xml"); } catch { };
+                    try { System.IO.File.Copy(strAppDataPath + "\\settings.xml.NAV", strAppDataPath + "\\settings.xml"); }
+                    catch (Exception errMsg) { WriteLog("Unable to rename xml.NAV to xml: " + errMsg.Message); }
                 }
                 else
                 {
@@ -1091,7 +1154,7 @@ namespace Navigator
                         }
                         configxml.Save(strAppDataPath + "\\settings.xml");
                     }
-                    catch { WriteLog("Failed to set communication type"); }
+                    catch (Exception errMsg) { WriteLog("Failed to set communication type: " + errMsg.Message); }
 
                     //Set communication IP and port
                     try
@@ -1106,7 +1169,7 @@ namespace Navigator
                         }
                         configxml.Save(strAppDataPath + "\\settings.xml");
                     }
-                    catch { WriteLog("Failed to set IP / Port details"); }
+                    catch (Exception errMsg) { WriteLog("Failed to set IP / Port details: " + errMsg.Message); }
 
                     //Remove Exit and Minimize from Navigator
                     try
@@ -1127,9 +1190,9 @@ namespace Navigator
                         }
                         configxml.Save(strAppDataPath + "\\settings.xml");
                     }
-                    catch { WriteLog("Failed to disable menu options"); }
+                    catch (Exception errMsg) { WriteLog("Failed to disable menu options: " + errMsg.Message); }
                 }
-                catch { WriteLog("Failed to configure Navigator's settings.xml file"); }
+                catch (Exception errMsg) { WriteLog("Failed to configure Navigator's settings.xml file: " + errMsg.Message); }
             }
         }
 
@@ -1144,7 +1207,7 @@ namespace Navigator
                 if (boolTmp) nightTimer.Enabled = true; else nightTimer.Enabled = false;
                 WriteLog("AUTOSWITCHSKIN: " + nightTimer.Enabled.ToString());
             }
-            catch { WriteLog("Failed to configure auto day/night mode"); }
+            catch (Exception errMsg) { WriteLog("Failed to configure auto day/night mode: " + errMsg.Message); }
         }
 
         // Event to keep checking if CF is in night mode
@@ -1162,10 +1225,11 @@ namespace Navigator
                     boolCurrentNightMode = nightMode;
                 }
             }
-            catch { WriteLog("Failed to change day/night mode"); }
+            catch (Exception errMsg) { WriteLog("Failed to change day/night mode: " + errMsg.Message); }
         }
 
         //Background polling of Callstatus information
+        /**/ //This should be an event instead of polling a flag...
         private void CallStatusTimer_Tick(object sender, EventArgs e)
         {
             //ATT Mute enabled. Lets do some wrk
@@ -1216,7 +1280,7 @@ namespace Navigator
                         boolCurrentCallMode = callMode;
                     }
                 }
-                catch { WriteLog("Failed to change sound warning mode"); }
+                catch (Exception errMsg) { WriteLog("Failed to change sound warning mode: " + errMsg.Message); }
             }
          }
 
@@ -1226,26 +1290,31 @@ namespace Navigator
             if (boolMainScreen)
             {
                 WriteLog("Switch to status screen");
-                SendCommand("$minimize\r\n", false, TCPCommand.Minimize);
                 thepanel.Visible = false;
-                SetLabelStatus(true);
+                SendCommand("$minimize\r\n", false, TCPCommand.Minimize);
+                boolMainScreen = false;
+                CF_localskinsetup();
 
                 //Timer to update GPS Status screen
                 NavStatustimer_Tick(null, null); //Make first update now
-                NavStatustimer.Interval = 500; // Wait this long between the next updates
                 NavStatustimer.Enabled = true;
-                NavStatustimer.Tick += new EventHandler(NavStatustimer_Tick);
 
-                boolMainScreen = false;
+                //Make button hidden
+                this.CF_setButtonEnableFlag("MinMax", false);
             }
             else
             {
                 WriteLog("Switch to Navigator");
                 NavStatustimer.Enabled = false; //Stop the updates
-                SetLabelStatus(false);
-                thepanel.Visible = true;
-                SendCommand("$maximize\r\n", false, TCPCommand.Maximize);
+
                 boolMainScreen = true;
+                CF_localskinsetup();
+                thepanel.Visible = true;
+                
+                SendCommand("$maximize\r\n", false, TCPCommand.Maximize);
+
+                //Make it visible
+                this.CF_setButtonEnableFlag("MinMax", true);
             }
         }
 
@@ -1257,14 +1326,7 @@ namespace Navigator
             WriteLog("MinMax Button clicked.");
             try
             {
-                if (boolFullScreen == true)
-                {
-                    SetNonFullScreen();
-                }
-                else
-                {
-                    SetFullScreen();
-                }
+                if (boolFullScreen) SetNonFullScreen(); else SetFullScreen();
             }
             catch (Exception errmsg) { WriteLog(errmsg.ToString()); }
         }
@@ -1274,34 +1336,41 @@ namespace Navigator
             //Not currently fullscreen, change to fullscreen
             WriteLog("Configure for fullscreen");
 
-            //Resize panel
-            this.thepanel.Bounds = base.CF_createRect(SkinReader.ParseBounds(SkinReader.GetControlAttribute("Navigator", "PanelNavigator", ("fullbounds").ToLower(), base.pluginSkinReader)));
-            
-            //Repos buttons
-            RePosbutton("GPSStatus", "fullbounds");
-            RePosbutton("VolDown", "fullbounds");
-            RePosbutton("VolUp", "fullbounds");
-            RePosbutton("PlayPause", "fullbounds");
-            RePosbutton("Rewind", "fullbounds");
-            RePosbutton("FastForward", "fullbounds");
-            RePosbutton("MinMax", "fullbounds");
-            RePosbutton("NowPlaying", "fullbounds");
-            RePosbutton("Exit", "fullbounds");
-
-            //Repos label
-            try
+            if (boolMainScreen)
             {
-                CFControls.CFLabel a = new CFControls.CFLabel();
-                a = labelArray[CF_getLabelID("DateTime")];
-                a.Bounds = base.CF_createRect(SkinReader.ParseBounds(SkinReader.GetControlAttribute("Navigator", "DateTime", ("fullbounds").ToLower(), base.pluginSkinReader)));
+                //Resize section
+                this.Bounds = base.CF_createRect(SkinReader.ParseBounds(SkinReader.GetSectionAttribute("Navigator", ("fullbounds").ToLower(), base.pluginSkinReader)));
+
+                //Resize panel
+                this.thepanel.Bounds = base.CF_createRect(SkinReader.ParseBounds(SkinReader.GetControlAttribute("Navigator", "PanelNavigator", ("fullbounds").ToLower(), base.pluginSkinReader)));
+
+                //Repos buttons
+                RePosbutton("GPSStatus", "fullbounds");
+                RePosbutton("VolDown", "fullbounds");
+                RePosbutton("VolUp", "fullbounds");
+                RePosbutton("PlayPause", "fullbounds");
+                RePosbutton("Rewind", "fullbounds");
+                RePosbutton("FastForward", "fullbounds");
+                RePosbutton("MinMax", "fullbounds");
+                RePosbutton("NowPlaying", "fullbounds");
+                RePosbutton("Exit", "fullbounds");
+
+                //Repos label
+                RePosLabel("DateTime", "fullbounds");	//LK,24-nov-2013: Simular to RePosbutton
+
+                //Configure screen size. Use the panel size            
+                SendCommand("$window=" + thepanel.Bounds.Left.ToString() + "," + thepanel.Bounds.Top.ToString() + "," + thepanel.Bounds.Right.ToString() + "," + thepanel.Bounds.Bottom.ToString() + ",noborder\r\n", false, TCPCommand.Window);
+                WriteLog("$window=" + thepanel.Bounds.Left.ToString() + "," + thepanel.Bounds.Top.ToString() + "," + thepanel.Bounds.Right.ToString() + "," + thepanel.Bounds.Bottom.ToString() + ",noborder\r\n");
+                //LK, 30-nov-2013: Window position is relative to the position of the panel:
+                //JJ: Maybe, but nothing stops user from being creative with the startup values or has made modifications to skin. Left and top will normally resolve to 0, unless user tinkers... Better safe than sorry
+                //SendCommand("$window=" + 0 + "," + 0 + "," + thepanel.Bounds.Width.ToString() + "," + thepanel.Bounds.Height.ToString() + ",noborder\r\n", false, TCPCommand.Window);
             }
-            catch { WriteLog("Not in skin"); }
-
-            //Configure screen size. Use the panel size
-            SendCommand("$window=" + thepanel.Bounds.Left.ToString() + "," + thepanel.Bounds.Top.ToString() + "," + thepanel.Bounds.Right.ToString() + "," + thepanel.Bounds.Bottom.ToString() + ",noborder\r\n", false, TCPCommand.Window);
-
-            //Resize section
-            this.Bounds = base.CF_createRect(SkinReader.ParseBounds(SkinReader.GetSectionAttribute("Navigator", ("fullbounds").ToLower(), base.pluginSkinReader)));
+            else
+            {
+                //Resize section
+                //Do NOT enable this, causes Navigator to frequently crash! Workaround by modifying Skin.xml
+                //this.Bounds = base.CF_createRect(SkinReader.ParseBounds(SkinReader.GetSectionAttribute("GPSStatus", ("fullbounds").ToLower(), base.pluginSkinReader)));
+            }
 
             //Refresh screen
             this.Invalidate();
@@ -1314,34 +1383,41 @@ namespace Navigator
         {
             WriteLog("Configure for non-fullscreen");
 
-            //Resize panel
-            thepanel.Bounds = base.CF_createRect(SkinReader.ParseBounds(SkinReader.GetControlAttribute("Navigator", "PanelNavigator", ("bounds").ToLower(), base.pluginSkinReader)));
-
-            //Repos buttons
-            RePosbutton("GPSStatus", "bounds");
-            RePosbutton("VolDown", "bounds");
-            RePosbutton("VolUp", "bounds");
-            RePosbutton("PlayPause", "bounds");
-            RePosbutton("Rewind", "bounds");
-            RePosbutton("FastForward", "bounds");
-            RePosbutton("MinMax", "bounds");
-            RePosbutton("NowPlaying", "bounds");
-            RePosbutton("Exit", "bounds");
-
-            //Reposition label
-            try
+            if (boolMainScreen)
             {
-                CFControls.CFLabel a = new CFControls.CFLabel();
-                a = labelArray[CF_getLabelID("DateTime")];
-                a.Bounds = base.CF_createRect(SkinReader.ParseBounds(SkinReader.GetControlAttribute("Navigator", "DateTime", ("bounds").ToLower(), base.pluginSkinReader)));
+                //Resize section
+                this.Bounds = base.CF_createRect(SkinReader.ParseBounds(SkinReader.GetSectionAttribute("Navigator", ("bounds").ToLower(), base.pluginSkinReader)));
+
+                //Resize panel
+                thepanel.Bounds = base.CF_createRect(SkinReader.ParseBounds(SkinReader.GetControlAttribute("Navigator", "PanelNavigator", ("bounds").ToLower(), base.pluginSkinReader)));
+
+                //Repos buttons
+                RePosbutton("GPSStatus", "bounds");
+                RePosbutton("VolDown", "bounds");
+                RePosbutton("VolUp", "bounds");
+                RePosbutton("PlayPause", "bounds");
+                RePosbutton("Rewind", "bounds");
+                RePosbutton("FastForward", "bounds");
+                RePosbutton("MinMax", "bounds");
+                RePosbutton("NowPlaying", "bounds");
+                RePosbutton("Exit", "bounds");
+
+                //Reposition label
+                RePosLabel("DateTime", "bounds");	//LK,24-nov-2013: Simular to RePosbutton
+
+                //Configure screen size. Use the panel size
+                SendCommand("$window=" + thepanel.Bounds.Left.ToString() + "," + thepanel.Bounds.Top.ToString() + "," + thepanel.Bounds.Right.ToString() + "," + thepanel.Bounds.Bottom.ToString() + ",noborder\r\n", false, TCPCommand.Window);
+                WriteLog("$window=" + thepanel.Bounds.Left.ToString() + "," + thepanel.Bounds.Top.ToString() + "," + thepanel.Bounds.Right.ToString() + "," + thepanel.Bounds.Bottom.ToString() + ",noborder\r\n");
+                //LK, 30-nov-2013: Window position is relative to the position of the panel:          
+                //JJ: Maybe, but nothing stops user from being creative with the startup values or has made modifications to skin. Left and top will normally resolve to 0, unless user tinkers... Better safe than sorry
+                //SendCommand("$window=" + 0 + "," + 0 + "," + thepanel.Bounds.Width.ToString() + "," + thepanel.Bounds.Height.ToString() + ",noborder\r\n", false, TCPCommand.Window);            
             }
-            catch { WriteLog("Not in skin"); }
-
-            //Configure screen size. Use the panel size
-            SendCommand("$window=" + thepanel.Bounds.Left.ToString() + "," + thepanel.Bounds.Top.ToString() + "," + thepanel.Bounds.Right.ToString() + "," + thepanel.Bounds.Bottom.ToString() + ",noborder\r\n", false, TCPCommand.Window);
-
-            //Resize section
-            this.Bounds = base.CF_createRect(SkinReader.ParseBounds(SkinReader.GetSectionAttribute("Navigator", ("bounds").ToLower(), base.pluginSkinReader)));
+            else
+            {
+                //Resize section
+                //Do NOT enable this, causes Navigator to frequently crash! Workaround by modifying Skin.xml
+                //this.Bounds = base.CF_createRect(SkinReader.ParseBounds(SkinReader.GetSectionAttribute("GPSStatus", ("bounds").ToLower(), base.pluginSkinReader)));
+            }
 
             //Refresh screen
             this.Invalidate();
@@ -1350,7 +1426,7 @@ namespace Navigator
         }
 
 
-        //Reposition buttons when changing size
+        //Reposition buttons when changing skin size
         private void RePosbutton(string strID, string strSize)
         {
             try
@@ -1359,8 +1435,20 @@ namespace Navigator
                 a = buttonArray[CF_getButtonID(strID)];
                 a.Bounds = base.CF_createRect(SkinReader.ParseBounds(SkinReader.GetControlAttribute("Navigator", strID, (strSize).ToLower(), base.pluginSkinReader)));
             }
-            catch { WriteLog("Failed to set button's new position"); }
+            catch { WriteLog("Failed to set button's new position, or button does not existing in skin: " + strID); } //JJ: Added button ID
         }
+
+        private void RePosLabel(string strID, string strSize)
+        {
+            try
+            {
+                CFControls.CFLabel a = new CFControls.CFLabel();
+                a = labelArray[CF_getLabelID(strID)];
+                a.Bounds = base.CF_createRect(SkinReader.ParseBounds(SkinReader.GetControlAttribute("Navigator", strID, (strSize).ToLower(), base.pluginSkinReader)));
+            }
+            catch { WriteLog("Failed to set label's new position, or label does not existing in skin: " + strID); } //JJ: Added label ID
+        }
+
         
         //Write to plugin log file
         private void WriteLog(string msg)
@@ -1370,7 +1458,7 @@ namespace Navigator
                 if (Boolean.Parse(this.pluginConfig.ReadField("/APPCONFIG/LOGEVENTS")))
                     CFTools.writeModuleLog(msg, LogFilePath);
             }
-            catch { }
+            catch (Exception errMsg) { CFTools.writeError("Unable to log to plugin log file: " + errMsg.Message); }
         }
 #endregion
 
@@ -1381,7 +1469,7 @@ namespace Navigator
 
             try
             {
-                WriteLog("Listing all processes to check if PC_Navigator.exe is already running");
+                WriteLog("Listing all processes to check if " + EXEName + " is running");
                 Process[] processlist = Process.GetProcesses();
                 foreach (Process theprocess in processlist)
                 {
@@ -1396,15 +1484,86 @@ namespace Navigator
                             theprocess.Kill();
                             System.Threading.Thread.Sleep(1000); // Allow the process time to terminate
                         }
+                        return boolTerminateOrphanedProcess;    //LK, 29-nov-2013: Return here, no need to continue search
                     }
                 }
             }
-            catch
+            catch (Exception errMsg)
             {
-                WriteLog("Error getting Process information");
+                WriteLog("Error getting Process information: " + errMsg.Message);
             }
 
             return boolTerminateOrphanedProcess;
+        }
+
+        public void CloseNavigator()
+        {
+            //User really wants to exit Navigator...
+            boolExit = true;
+
+            //LK, 25-nov-2013: Only close when started
+            if (pNavigator != null)
+            {
+                IntPtr mainWindowHandle = pNavigator.MainWindowHandle;  //LK, 29-nov-2013: Cache before close
+
+                //Disconnect the TCP connection so it can be re-established
+                WriteLog("Disconnecting TCP connection for reuse");
+                try
+                {
+                    server.Disconnect(true);
+                    boolConnecting = false;
+                }
+                catch (Exception errMsg) { WriteLog("Failed to disconnect: " + errMsg.Message); }
+
+                //Stop all timers first to avoid callbacks and additional TCP commands
+                nightTimer.Enabled = false;
+                muteCFTimer.Enabled = false;
+                CallStatusTimer.Enabled = false;
+                NavDestinationTimer.Enabled = false;
+
+                //SendCommand("$exit\r\n", false, TCPCommand.Exit);
+                pNavigator.CloseMainWindow(); //Ask nicely, just like ALT-F4
+                
+                //Louk's Pipe
+                if (this.pipeServer != null && this.pipeServer.Running)//LK, 29-nov-2013: Added check for null object
+                {
+                    WriteLog("Closing Louk's pipe");
+                    this.pipeServer.Stop();
+                    this.pipeServer.MessageReceived -= new PipeServer.Server.MessageReceivedHandler(pipeServer_MessageReceived);
+                    //Don't discard pipeServer here, only in pluginClose()
+                }
+                else WriteLog("Can't stop a non-running pipe-server");
+                
+                //Wait for Navigator to close before swapping XML files around
+                for (int loop = 20; loop > 0; loop--)   //LK, 29-nov-2013: count down...    //was 100
+                {
+                    if (TerminateOrphanedProcess(false) == false)
+                    {
+                        //No longer running, exit out of loop
+                        break;
+                    }
+                    WriteLog("Waiting for Navigator to close: " + loop.ToString());
+                    //LK, 29-nov-2014: Use the applications main window handle instead of the panel handle mHandlePtr
+                    try
+                    {
+                        if (boolFREE)
+                            ClickOnPoint(mainWindowHandle, new Point(100, 200));
+                        pNavigator.WaitForExit(500);    //LK, 29-nov-2014: Don;t wait longer then required//---   System.Threading.Thread.Sleep(200); //was 20
+                        //JJ: Changed from 1000. Too long to wait... I'll meet you half way. Check every 500ms
+                    }
+                    catch (Exception errMsg) { WriteLog("Failed to stop application: " + errMsg.Message); } //LK,28-nov-2013: Catch unhandled pointer exceptions
+                }
+            }
+
+            //Release resources as all mouse clicks etc are done
+            pNavigator.Close(); 
+
+            //Assume didn't exit. Force close if still running...
+            try
+            {
+                TerminateOrphanedProcess(true);
+            }
+            catch (Exception errMsg) { WriteLog("Failed to terminate process: " + errMsg.Message); }  //LK,28-nov-2013: Add reason to message
         }
 			
 #region CF events
@@ -1427,76 +1586,13 @@ namespace Navigator
             //If suspending
             if (e.Mode == CFPowerModes.Suspend)
             {
-                //User really wants to exit Navigator. Do not restart
-                boolExit = true;
-
-                //Stop all timers. Call back does not work and causes grief...
-                nightTimer.Enabled = false;
-                muteCFTimer.Enabled = false;
-                CallStatusTimer.Enabled = false;
-                NavDestinationTimer.Enabled = false;
-
-                //If navigator is not running, its probably half hidden behind CF. Switch to Nav screen if not free edition
-                if (boolFREE)
-                {
-                    WriteLog("Switch to NAV and close it");
-                    CF3_executeCMLAction("Centrafuse.CFActions.Nav");
-                    System.Threading.Thread.Sleep(500);
-                    if (!boolMainScreen)
-                    {
-                        thepanel.Visible = true; // Make sure its visible, and not behind stats screen
-                        thepanel.Focus(); //Give it focus
-                        SendCommand("$maximize\r\n", false, TCPCommand.Maximize);
-                    }
-                }
-
-                //Disconnect the TCP connection so it can be re-established
-                server.Disconnect(true);
-                boolConnecting = false;
-                
-                //Close it
-                pNavigator.Exited -= new EventHandler(pNavigator_Exited);
-                pNavigator.CloseMainWindow();
-                pNavigator.Close();
-
-                //Wait for Navigator to close
-                for (int loop = 0; loop < 100; loop++)
-                {
-                    if (TerminateOrphanedProcess(false) == false)
-                    {
-                        WriteLog("Navigator no longer running. Gracefull shutdown");
-                        break;
-                    }
-                    WriteLog("Waiting for Navigator to close");
-                    /**/ //Is it even possible to send mouse clicks during hibernation?!? this does not appear to be working....
-                    if (boolFREE) ClickOnPoint(mHandlePtr, new Point(100, 200));
-
-                    System.Threading.Thread.Sleep(20);
-                }
-
-                //Assume didn't exit. Force close if still running...
-                try
-                {
-                    TerminateOrphanedProcess(true);
-                }
-                catch { WriteLog("Failed to terminate process"); }
+                CloseNavigator();
             }
 
             //If resuming from sleep
             if (e.Mode == CFPowerModes.Resume)
             {
-                //Launch Navigator
-                LaunchNavigator();
-
-                //Set correct size
-                if (boolFullScreen) SetFullScreen(); else SetNonFullScreen();
-
-                //Re-configure Navigator
-                ConfigureNavigator();
-
-                thepanel.Visible = true; // Make sure its visible, and not behind stats screen
-                thepanel.Focus(); //Give it focus
-                SendCommand("$maximize\r\n", false, TCPCommand.Maximize);
+                StartNavigator();
 
                 //Reset timers
                 CallStatusTimer.Enabled = true;
@@ -1509,27 +1605,6 @@ namespace Navigator
             WriteLog("OnPowerModeChanged - end()");
             return;
         }
-
-        // If the plugin uses back/forward buttons, we need to catch the left/right keyboard commands too...
-		private void Navigator_KeyDown(object sender, KeyEventArgs e)
-		{
-			e.Handled = true;
-
-			if(e.KeyCode == Keys.Left)
-			{
-				//---------------------------------------------------------------------------
-				// TODO: replace this if needed
-				//--------------------------------------------------------------------------- 
-				//this.back_Click(this, new MouseEventArgs(MouseButtons.Left,1,0,0,0));
-			}
-			else if(e.KeyCode == Keys.Right)
-			{
-				//---------------------------------------------------------------------------
-				// TODO: replace this if needed
-				//--------------------------------------------------------------------------- 
-				//this.forward_Click(this, new MouseEventArgs(MouseButtons.Left,1,0,0,0));
-			}
-		}
 
 #endregion
 
