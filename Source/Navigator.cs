@@ -280,12 +280,6 @@ namespace Navigator
                     if (thepanel != null)   //Anytime, but the first (when called from CF_pluginInit())
                     {
                         WriteLog("Panel configured. Configure screen-size");
-                        //JJ: Moved here, else never called...
-                        if (boolFullScreen)
-                            SetFullScreen();
-                        else
-                            SetNonFullScreen();
-
                         ////LK, 22-nov-2013: Experimental
                         //CFControls.CFPanel tmpPanel = new CFControls.CFPanel();
                         //tmpPanel = panelArray[CF_getPanelID("PanelNavigator")];
@@ -294,8 +288,6 @@ namespace Navigator
                         //tmpPanel.ForeColor = Color.Blue;
 
                         //LK, 30-nov-2013: Instead of keeping the old panels (leeds to trouble when changing sections), dock again
-                        //JJ: This is never called and is the cause of the panel size error
-                        //The string "Connected to new panel again" never appears in the log file
                         if (pNavigator != null)
                         {
                             SetParent(pNavigator.MainWindowHandle, mHandlePtr);
@@ -321,8 +313,7 @@ namespace Navigator
             }
             catch (Exception errMsg) { CFTools.writeError(errMsg.Message, errMsg.StackTrace); }
 		}
-
-        
+       
 		/// <summary>
 		/// This is called by the system when it exits or the plugin has been deleted.
 		/// </summary>

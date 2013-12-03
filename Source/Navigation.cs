@@ -506,9 +506,6 @@ namespace Navigator
         //Called by GPS Status screen to parse GPS Date/Time into local date/time
         private DateTime parsTimeOfFix(String dateOfFix, String timeOfFix)
         {
-            WriteLog("Dateoffix: " + dateOfFix);
-            WriteLog("timeoffix: " + timeOfFix);
-
             string[] formats= { "dd/MM/yy HH:mm:ss" };
             DateTime convertedDate = DateTime.SpecifyKind(DateTime.ParseExact(dateOfFix.Substring(0, 2) + "/" + dateOfFix.Substring(2, 2) + "/" + dateOfFix.Substring(4, 2) + " " + timeOfFix.Substring(0, 2) + ":" + timeOfFix.Substring(2, 2) + ":" + timeOfFix.Substring(4, 2), formats, new CultureInfo("en-US"), DateTimeStyles.None), DateTimeKind.Utc);
 
