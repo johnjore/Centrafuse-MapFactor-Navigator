@@ -312,55 +312,87 @@ namespace Navigator
                     retvalue = "";
                     break;
                 case CFNavInfo.NextTurn:
-                    retvalue = _navStats.TimeSecondsNextWaypoint.ToString();
+                    //retvalue = _navStats.TimeSecondsNextWaypoint.ToString();
+                    retvalue = _navStats.DistanceMetersNextWaypoint.ToString();
                     break;
                 case CFNavInfo.InRoute:
-                    retvalue = _navStats.DistanceMetersNextWaypoint.ToString();
+                    if (_navStats.DistanceMetersDestination != 0) retvalue = "True"; else retvalue = "False";
                     break;
             }
 
             return retvalue;
         }
 
-        /**/
-        // This returns the underlying data your plugin has. It is called by CF_pluginData as well as Centrafuse
-        //This is a usless function? Can it's purpose be explained as it looks like a duplicate of CF_navGetInfo(...) ?
+        // This returns the underlying data your plugin has. It is called by Centrafuse
         public override CFNavInfoBundle CF_navGetInfoBundle()
         {
             var retvalue = new CFNavInfoBundle();
 
             if (InvokeRequired)
             {
-                CFTools.writeLog("NAV", "CF_navGetInfoBundle", "INVOKE REQUIRED!!");
+                WriteLog("INVOKE REQUIRED!!");
             }
-            CFTools.writeLog("NAV", "CF_navGetInfoBundle", "", CFTools.DebugLevel.FIVE);
 
-            retvalue.altitude = "";
-            retvalue.azimuth = "";
-            retvalue.direction = "";
-            retvalue.eta = "";
-            retvalue.etr = "";
-            retvalue.lockedsatellites = "";
-            retvalue.remainingdistance = "";
-            retvalue.speed = "";
-            retvalue.nextturn = "";
-            retvalue.inroute = false;
+            try
+            {
+                retvalue.altitude = CF_navGetInfo(CFNavInfo.Altitude);
+                retvalue.azimuth = CF_navGetInfo(CFNavInfo.Azimuth);
+                retvalue.direction = CF_navGetInfo(CFNavInfo.Direction);
+                retvalue.eta = CF_navGetInfo(CFNavInfo.ETA);
+                retvalue.etr = CF_navGetInfo(CFNavInfo.ETR);
+                retvalue.lockedsatellites = CF_navGetInfo(CFNavInfo.LockedSatellites);
+                retvalue.remainingdistance = CF_navGetInfo(CFNavInfo.RemainingDistance);
+                retvalue.speed = CF_navGetInfo(CFNavInfo.Speed);
+                retvalue.nextturn = CF_navGetInfo(CFNavInfo.NextTurn);
+                if (CF_navGetInfo(CFNavInfo.RemainingDistance) != "0") retvalue.inroute = true; else retvalue.inroute = false;
 
-            retvalue.currentlocation.house = "";
-            retvalue.currentlocation.latitude = -1;
-            retvalue.currentlocation.longitude = -1;
-            retvalue.currentlocation.street = "";
-            retvalue.currentlocation.city = "";
-            retvalue.currentlocation.zip = "";
+                retvalue.currentlocation.house = CF_navGetInfo(CFNavInfo.HouseNumber);
+                retvalue.currentlocation.latitude = double.Parse(CF_navGetInfo(CFNavInfo.Latitude), CultureInfo.InvariantCulture);
+                retvalue.currentlocation.longitude = double.Parse(CF_navGetInfo(CFNavInfo.Longitude), CultureInfo.InvariantCulture);
+                retvalue.currentlocation.street = CF_navGetInfo(CFNavInfo.Street);
+                retvalue.currentlocation.city = CF_navGetInfo(CFNavInfo.City);
+                retvalue.currentlocation.zip = CF_navGetInfo(CFNavInfo.Zip);
 
-            retvalue.destlocation.city = "";
-            retvalue.destlocation.house = "";
-            retvalue.destlocation.latitude = -1;
-            retvalue.destlocation.longitude = -1;
-            retvalue.destlocation.street = "";
-            retvalue.destlocation.zip = "";
-            retvalue.destlocation.description = "";
-            retvalue.destlocation.telephone = "";
+                retvalue.destlocation.city = CF_navGetInfo(CFNavInfo.DestCity);
+                retvalue.destlocation.house = CF_navGetInfo(CFNavInfo.DestHouseNumber);
+                retvalue.destlocation.latitude = double.Parse(CF_navGetInfo(CFNavInfo.DestLatitude), CultureInfo.InvariantCulture);
+                retvalue.destlocation.longitude = double.Parse(CF_navGetInfo(CFNavInfo.DestLongitude), CultureInfo.InvariantCulture);
+                retvalue.destlocation.street = CF_navGetInfo(CFNavInfo.DestStreet);
+                retvalue.destlocation.zip = CF_navGetInfo(CFNavInfo.DestZip);
+                retvalue.destlocation.description = "";
+                retvalue.destlocation.telephone = "";
+            }
+            catch (Exception errMsg) 
+            {
+                WriteLog("Unable to parse retvalue :" + errMsg.Message);
+
+                retvalue.altitude = "";
+                retvalue.azimuth = "";
+                retvalue.direction = "";
+                retvalue.eta = "";
+                retvalue.etr = "";
+                retvalue.lockedsatellites = "";
+                retvalue.remainingdistance = "";
+                retvalue.speed = "";
+                retvalue.nextturn = "";
+                retvalue.inroute = false;
+
+                retvalue.currentlocation.house = "";
+                retvalue.currentlocation.latitude = -1;
+                retvalue.currentlocation.longitude = -1;
+                retvalue.currentlocation.street = "";
+                retvalue.currentlocation.city = "";
+                retvalue.currentlocation.zip = "";
+
+                retvalue.destlocation.city = "";
+                retvalue.destlocation.house = "";
+                retvalue.destlocation.latitude = -1;
+                retvalue.destlocation.longitude = -1;
+                retvalue.destlocation.street = "";
+                retvalue.destlocation.zip = "";
+                retvalue.destlocation.description = "";
+                retvalue.destlocation.telephone = "";
+            }
 
             return retvalue;
         }
