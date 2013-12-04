@@ -1350,11 +1350,7 @@ namespace Navigator
                 RePosLabel("DateTime", "fullbounds");	//LK,24-nov-2013: Simular to RePosbutton
 
                 //Configure screen size. Use the panel size            
-                SendCommand("$window=" + thepanel.Bounds.Left.ToString() + "," + thepanel.Bounds.Top.ToString() + "," + thepanel.Bounds.Right.ToString() + "," + thepanel.Bounds.Bottom.ToString() + ",noborder\r\n", false, TCPCommand.Window);
-                WriteLog("$window=" + thepanel.Bounds.Left.ToString() + "," + thepanel.Bounds.Top.ToString() + "," + thepanel.Bounds.Right.ToString() + "," + thepanel.Bounds.Bottom.ToString() + ",noborder\r\n");
-                //LK, 30-nov-2013: Window position is relative to the position of the panel:
-                //JJ: Maybe, but nothing stops user from being creative with the startup values or has made modifications to skin. Left and top will normally resolve to 0, unless user tinkers... Better safe than sorry
-                //SendCommand("$window=" + 0 + "," + 0 + "," + thepanel.Bounds.Width.ToString() + "," + thepanel.Bounds.Height.ToString() + ",noborder\r\n", false, TCPCommand.Window);
+                SendCommand("$window=0,0," + thepanel.Bounds.Width.ToString() + "," + thepanel.Bounds.Height.ToString() + ",noborder\r\n", false, TCPCommand.Window);
             }
             else
             {
@@ -1396,12 +1392,8 @@ namespace Navigator
                 //Reposition label
                 RePosLabel("DateTime", "bounds");	//LK,24-nov-2013: Simular to RePosbutton
 
-                //Configure screen size. Use the panel size
-                SendCommand("$window=" + thepanel.Bounds.Left.ToString() + "," + thepanel.Bounds.Top.ToString() + "," + thepanel.Bounds.Right.ToString() + "," + thepanel.Bounds.Bottom.ToString() + ",noborder\r\n", false, TCPCommand.Window);
-                WriteLog("$window=" + thepanel.Bounds.Left.ToString() + "," + thepanel.Bounds.Top.ToString() + "," + thepanel.Bounds.Right.ToString() + "," + thepanel.Bounds.Bottom.ToString() + ",noborder\r\n");
-                //LK, 30-nov-2013: Window position is relative to the position of the panel:          
-                //JJ: Maybe, but nothing stops user from being creative with the startup values or has made modifications to skin. Left and top will normally resolve to 0, unless user tinkers... Better safe than sorry
-                //SendCommand("$window=" + 0 + "," + 0 + "," + thepanel.Bounds.Width.ToString() + "," + thepanel.Bounds.Height.ToString() + ",noborder\r\n", false, TCPCommand.Window);            
+                //Configure screen size. Use the panel size              
+                SendCommand("$window=0,0," + thepanel.Bounds.Width.ToString() + "," + thepanel.Bounds.Height.ToString() + ",noborder\r\n", false, TCPCommand.Window);
             }
             else
             {
