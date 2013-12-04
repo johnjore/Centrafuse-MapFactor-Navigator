@@ -90,7 +90,7 @@ namespace Navigator
     public enum WindowManagerEvents : int
     {
         WM_KEYDOWN = 0x001,
-        WM_KEYUP = 0X002,
+        WM_KEYUP = 0x002,
         WM_CHAR = 0x102,
         WM_COMMAND = 0x112,
 

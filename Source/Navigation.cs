@@ -76,13 +76,13 @@ namespace Navigator
                 {
                     if (ReadCFValue("/APPCONFIG/SPEEDUNIT", "I", configPath)) CF_updateText("DataSpeed", CF_navGetInfo(CFNavInfo.Speed).Substring(0, 5) + " mph");
                 }
-                catch { CF_updateText("DataSpeed", " mph"); }
+                catch { CF_updateText("DataSpeed", "0 mph"); }
 
                 try
                 {
                     if (ReadCFValue("/APPCONFIG/SPEEDUNIT", "M", configPath)) CF_updateText("DataSpeed", CF_navGetInfo(CFNavInfo.Speed).Substring(0, 5) + " km/h");
                 }
-                catch { CF_updateText("DataSpeed", " km/h"); }
+                catch { CF_updateText("DataSpeed", "0 km/h"); }
             }
             catch 
             {
