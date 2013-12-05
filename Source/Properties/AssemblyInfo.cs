@@ -22,10 +22,10 @@ using System.Runtime.CompilerServices;
 // set of attributes. Change these attribute values to modify the information
 // associated with an assembly.
 [assembly: AssemblyTitle("Navigator")]
-[assembly: AssemblyDescription("Launcher for Mapfactor Navigator")]
+[assembly: AssemblyDescription("Launcher for mapFactor Navigator")]
 [assembly: AssemblyConfiguration("")]
 [assembly: AssemblyCompany("Kala Solutions Pty Ltd")]
-[assembly: AssemblyProduct("Mapfactor Navigator Launcher")]
+[assembly: AssemblyProduct("mapFactor Navigator Launcher")]
 [assembly: AssemblyCopyright("Copyright 2013 John Jore")]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]
