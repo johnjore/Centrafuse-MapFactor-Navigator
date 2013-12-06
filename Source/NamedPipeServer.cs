@@ -1,5 +1,5 @@
 ﻿/*
- * Copyright 2013, 2014, Louk
+ * Copyright 2013, 2014, Louk and John Jore
  * 
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser General Public License as published by
@@ -33,13 +33,24 @@ namespace Navigator
 {
     public partial class Navigator
     {
+        //JJ: byte arrays for patched or unpatched
+        byte[] unpatched = { 0x57, 0x49, 0x4e, 0x4d, 0x4d };
+        byte[] patched = { 0x43, 0x46, 0x5f, 0x4e, 0x50 };
+
         //Configure and enable named pipe, if enabled by user
-        public void SetupNamedPipe()
+        public bool SetupNamedPipe()
         {
             //Using named pipe? 
             if (boolNamedPipes)
             {
-                patchNavigator();
+                //Did we succeed in patching Navigator for named pipe support?
+                if (!patchNavigator())
+                {
+                    CF_systemDisplayDialog(CF_Dialogs.OkBox, pluginLang.ReadField("/APPLANG/NAVIGATOR/NAMEDPIPEPATCHFAILED"));
+                    return false;
+                }
+                else
+                    WriteLog("Patch successfully applied or already patched");
 
                 //Louk's Named pipe server
                 try
@@ -56,10 +67,26 @@ namespace Navigator
                     else
                         WriteLog("Named pipe server is already running");
                 }
-                catch (Exception errMsg) { WriteLog("Failed to check pipeServer: " + errMsg.Message); }
+                catch (Exception errMsg) 
+                {
+                    WriteLog("Failed to check pipeServer: " + errMsg.Message);
+                    return false;
+                }
             }
             else
-                unpatchNavigator();
+            {
+                //Did we succeed in patching Navigator for named pipe support?
+                if (!unpatchNavigator())
+                {                    
+                    CF_systemDisplayDialog(CF_Dialogs.OkBox, pluginLang.ReadField("/APPLANG/NAVIGATOR/NAMEDPIPEPATCHFAILED"));
+                    return false;
+                }
+                else
+                    WriteLog("Patch successfully removed or already removed");
+            }
+
+            //We made it this far, no issues
+            return true;
         }
 
         //From Louk. Used by patched Navigator for mute/unmute instructions
@@ -71,75 +98,201 @@ namespace Navigator
             this.Invoke(new PipeServer.Server.MessageReceivedHandler(namedPipeMessageReceived), new object[] { client, message });
         }
 
+        //JJ: Search for a byte[] pattern within a byte[]
+        private int ByteMatch(ref byte[] Source, ref byte[] Match)
+        {
+            for (int i=0; i < Source.Length; i++)
+            {
+                bool Matched = false;
+                if (Source[i] == Match[0])
+                {
+                    Matched = true; //Match found on first byte[] in Source. Are the rest a match too?
+                    for (int j=1; j < Match.Length; j++)
+                    {
+                        //WriteLog("Potential");
+                        if (Match[j] != Source[i + j])
+                        {
+                            //No match, set flag as such and break out
+                            Matched = false;
+                            break;
+                        }                       
+                    }
+
+                    //If we made it this far, we've compared all byte[] in Match, and still good. Tell the world!
+                    if (Matched)
+                    {
+                        WriteLog("Looped all, and still true. First match @ 0x" + i.ToString("X"));
+                        return i;
+                    }
+                }
+            }
+         
+            return -1;
+        }
+
         //Patch navigator to support named pipe
-        private void patchNavigator()
+        private bool patchNavigator()
         {
             WriteLog("Checking whether " + EXEName + " is patched for Named Pipe Support or not. Desired state: Patched");
 
             //Patch or UnPatch PC_Navigator.exe for named pipe support
-            string strPatchedFile = strEXEPath + "\\" + EXEName;
+            string strExeFile = strEXEPath + "\\" + EXEName;
             string strBackupFile = strEXEPath + "\\" + EXEName + ".orig";
+            string strDLLFile = strEXEPath + "\\CF_NP.dll";
+            FileInfo fiExe = new FileInfo(strExeFile);
             FileInfo fiUnPatched = new FileInfo(strBackupFile);
-            FileInfo fiPatched = new FileInfo(strPatchedFile);
-
-            if (fiUnPatched.Exists)
+            FileInfo fiDLL = new FileInfo(strDLLFile);
+            
+            //Check if file to patch exists (PC_Navigator.exe)
+            if (fiExe.Exists)
             {
-                WriteLog("Patch already applied. Nothing to do.");
+                //Read the file
+                byte[] bPatchedFile = File.ReadAllBytes(strExeFile);
+
+                //-1 if not found
+                if (ByteMatch(ref bPatchedFile, ref patched) != -1)
+                {
+                    //Patch found
+                    WriteLog("Patch applied. No further action required");
+                    return true;
+                }
+                else
+                {
+                    //Patch not found, need to modify the file
+
+                    //Does a backup file exist?
+                    if (fiUnPatched.Exists == false)
+                    {
+                        //Create backup file first
+                        try
+                        {
+                            System.IO.File.Copy(strExeFile, strBackupFile);
+                        }
+                        catch (Exception errMsg)
+                        {
+                            WriteLog("Failed to create backup file : " + errMsg.Message);
+                            return false;
+                        };
+                    }
+                        
+                    //Copy the extra dll
+                    try
+                    {
+                        if (!fiDLL.Exists) System.IO.File.Copy(@PluginPath + "\\NamedPipePatch\\CF_NP.dll", strEXEPath + "\\CF_NP.dll");
+                    }
+                    catch (Exception errMsg)
+                    {
+                        WriteLog("Failed to copy helper DLL : " + errMsg.Message);
+                        return false;
+                    };
+
+                    //Apply patch
+                    try
+                    {
+                        BinaryWriter bw = new BinaryWriter(File.Open(strExeFile, FileMode.Open, FileAccess.ReadWrite));
+                        bw.BaseStream.Seek(ByteMatch(ref bPatchedFile, ref unpatched), SeekOrigin.Begin);
+                        bw.Write(patched);
+                        bw.Close();                        
+                    }
+                    catch (Exception errMsg)
+                    {
+                        WriteLog("Failed to apply patch : " + errMsg.Message);
+                        return false;
+                    };
+
+                    //We made it this far. Patch applied successfully
+                    return true;
+                }
             }
             else
             {
-                try
-                {
-                    //Create backup file first
-                    System.IO.File.Copy(strPatchedFile, strBackupFile);
-
-                    //Copy the extra dll
-                    System.IO.File.Copy(@PluginPath + "\\NamedPipePatch\\CF_NP.dll", strEXEPath + "\\CF_NP.dll");
-
-                    //Patch the Executable
-                    Process pPatch = new Process();
-                    pPatch.StartInfo.FileName = PluginPath + "\\NamedPipePatch\\binmay.exe";
-                    pPatch.StartInfo.Arguments = "-i \"" + strBackupFile + "\" -o \"" + strPatchedFile + "\" -s \"57494e4d4d\" -r \"43465f4e50\"";
-                    WriteLog(pPatch.StartInfo.FileName);
-                    WriteLog(pPatch.StartInfo.Arguments);
-                    pPatch.Start();
-                    pPatch.WaitForExit();
-                    if (pPatch.ExitCode != 0) WriteLog("Failed to patch " + EXEName + ", return code: " + pPatch.ExitCode.ToString());
-                }
-                catch (Exception errMsg)
-                {
-                    WriteLog("Failed to apply named pipe patch: " + errMsg.Message);    //LK, 24-nov-2013: Added reason for failure
-                };
+                WriteLog("File to patch does not exist. Can't proceed");
+                return false;
             }
         }
 
         //UnPatch navigator and remove name pipe support
-        private void unpatchNavigator()
+        private bool unpatchNavigator()
         {
             WriteLog("Checking whether " + EXEName + " is patched for Named Pipe Support or not. Desired state: UnPatched");
 
-            //Patch or UnPatch PC_Navigator.exe for named pipe support
-            string strPatchedFile = strEXEPath + "\\" + EXEName;
+            //Remove named pipe support from PC_Navigator.exe
+            string strExeFile = strEXEPath + "\\" + EXEName;
             string strBackupFile = strEXEPath + "\\" + EXEName + ".orig";
-            FileInfo fiUnPatched = new FileInfo(strBackupFile);
+            string strDLLFile = strEXEPath + "\\CF_NP.dll";
+            FileInfo fiExe = new FileInfo(strExeFile);
+            FileInfo fiBackup = new FileInfo(strBackupFile);
+            FileInfo fiDLL = new FileInfo(strDLLFile);
 
-            if (fiUnPatched.Exists)
+            //Check if file to unpatch exists (PC_Navigator.exe)
+            if (fiExe.Exists)
             {
-                //Put the exe files back...
-                try { System.IO.File.Copy(strBackupFile, strPatchedFile, true); }
-                catch (Exception errMsg) { WriteLog("Failed to undo named pipe patch (on restore original exe): " + errMsg.Message); }
+                //Read the file
+                byte[] bExeFile = File.ReadAllBytes(strExeFile);
 
-                //Delete the extra dll
-                try { System.IO.File.Delete(strEXEPath + "\\CF_NP.dll"); }
-                catch (Exception errMsg) { WriteLog("Failed to undo named pipe patch (on delete helper DLL): " + errMsg.Message); }
+                //-1 if not found
+                if (ByteMatch(ref bExeFile, ref unpatched) != -1)
+                {
+                    //UnPatch found
+                    WriteLog("Patch not applied. No further action required");
+                    return true;
+                }
+                else
+                {
+                    //Patch found, need to modify the file to remove patch
 
-                //Delete the extra EXE
-                try { System.IO.File.Delete(strBackupFile); }
-                catch (Exception errMsg) { WriteLog("Failed to undo named pipe patch (on delete backup file): " + errMsg.Message); }
+                    //Does a backup file exist?
+                    if (fiBackup.Exists == false)
+                    {
+                        //Create backup file first
+                        try
+                        {
+                            System.IO.File.Copy(strExeFile, strBackupFile);
+                        }
+                        catch (Exception errMsg)
+                        {
+                            WriteLog("Failed to create backup file : " + errMsg.Message);
+                            return false;
+                        };
+                    }
+
+                    //Find location to apply patch
+                    try
+                    {
+                        //Remove patch
+                        BinaryWriter bw = new BinaryWriter(File.Open(strExeFile, FileMode.Open, FileAccess.ReadWrite));
+                        bw.BaseStream.Seek(ByteMatch(ref bExeFile, ref patched), SeekOrigin.Begin);
+                        bw.Write(unpatched);
+                        bw.Close();
+                    }
+                    catch (Exception errMsg)
+                    {
+                        WriteLog("Failed to remove patch : " + errMsg.Message);
+                        return false;
+                    };
+
+                    //Delete the extra dll if it exists
+                    if (fiDLL.Exists)
+                    {
+                        try
+                        {
+                            System.IO.File.Delete(strEXEPath + "\\CF_NP.dll");
+                        }
+                        catch (Exception errMsg)
+                        {
+                            WriteLog("Failed to remove helper DLL: " + errMsg.Message);
+                            return false;
+                        }
+                    }
+                    
+                    //We made it this far. Patch removed successfully
+                    return true;
+                }
             }
             else
             {
-                WriteLog(EXEName + " is not patched, so nothing to do");
+                WriteLog("File to remove patch from does not exist. Can't proceed");
+                return false;
             }
         }
     }

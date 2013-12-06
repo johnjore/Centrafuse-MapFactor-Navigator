@@ -22,17 +22,7 @@
  * Parse TCP responses from Navigator... counter++ for each SendCommand. Create FIFO buffer? Create thread?
  * 
  * Horizontal / vertical Skins
- * Sync CF Connect destinations to Navigator Favorites
-
-Patching of CF: Use internal process, not binmay
-
- If not pc_navigator.exe.cf, create pc_navigator.exe.cf
- If boolNamedPipe
-  if Pc_navigator.exe is NOT patched, patch PCNavigator  
- else
-  if Pc_navigator.exe is patched, unpatch PCNavigator  
- end if
- 
+ * Sync CF Connect destinations to Navigator Favorites 
  * 
  * Resolve all /**/
 
@@ -462,8 +452,7 @@ namespace Navigator
 		{
             WriteLog("CF_pluginResume");
 		}
-
-
+        
 		/// <summary>
 		/// Used for plugin to plugin communication. Parameters can be passed into CF_Main_systemCommands
 		/// with CF_Actions.PLUGIN, plugin name, plugin command, and a command parameter.
@@ -483,14 +472,15 @@ namespace Navigator
         {
             try
             {
+                //Must run this before Launching Navigator, else we can't patch the EXE!
+                //Configure named pipe. If failed, fall back to non named-pipe for audio
+                if (!SetupNamedPipe()) boolNamedPipes = false;
+
                 if (LaunchNavigator())
                 {
                     //LK, 23-nov-2013: Start timers
                     CallStatusTimer.Enabled = true;
                     NavDestinationTimer.Enabled = true;
-
-                    //Configure named pipe
-                    SetupNamedPipe();
 
                     //Get Fullscreen information
                     boolFullScreen = CF_getConfigFlag(CF_ConfigFlags.GPSFullscreen);
