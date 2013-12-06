@@ -35,7 +35,6 @@ Patching of CF: Use internal process
 Is clean skin (gps status) too correct size?
 
 Sync CF Connect destinations to Navigator Favorites
-Turn on/off XML file swappings: Default: On
 Trim number of digits in Speed value to match NMEA string + Digits Option
  
 Change text "Next turn" to "Next Waypoint"
@@ -371,25 +370,29 @@ namespace Navigator
                 WriteLog("TCP connection closed ");
             }
             catch (Exception errMsg) { WriteLog("Failed to dispose of TCP connection: " + errMsg.Message); }
-            
-            
-            //Put the configuration files back again
-            try
-            {
-                System.IO.File.Move(strAppDataPath + "\\settings.xml", strAppDataPath + "\\settings.xml.CF");  //LK,28-nov-2013: Add reason to message
-            }
-            catch (Exception errMsg)
-            {
-                WriteLog("Failed to restore settings.xml to .CF: " + errMsg.Message);
-            }
 
-            try
+            //Only put files back, if user wants to flip XML files around
+            if (bool.Parse(this.pluginConfig.ReadField("/APPCONFIG/SETTINGSXMLSWAP")) == true)
+                
             {
-                System.IO.File.Move(strAppDataPath + "\\settings.xml.NAV", strAppDataPath + "\\settings.xml");  //LK,28-nov-2013: Add reason to message
-            }
-            catch (Exception errMsg)
-            {
-                WriteLog("Failed to restore .NAV to settings.xml: " + errMsg.Message);
+                //Put the configuration files back again
+                try
+                {
+                    System.IO.File.Move(strAppDataPath + "\\settings.xml", strAppDataPath + "\\settings.xml.CF");  //LK,28-nov-2013: Add reason to message
+                }
+                catch (Exception errMsg)
+                {
+                    WriteLog("Failed to restore settings.xml to .CF: " + errMsg.Message);
+                }
+
+                try
+                {
+                    System.IO.File.Move(strAppDataPath + "\\settings.xml.NAV", strAppDataPath + "\\settings.xml");  //LK,28-nov-2013: Add reason to message
+                }
+                catch (Exception errMsg)
+                {
+                    WriteLog("Failed to restore .NAV to settings.xml: " + errMsg.Message);
+                }
             }
 
             base.CF_pluginClose(); // calls form Dispose() method
@@ -1063,7 +1066,23 @@ namespace Navigator
                 {
                     strFALSE = "False";
                 }
-                
+
+                // Swap mapFactor Navigator's Config.xml files around.
+                bool boolSETTINGSXMLSWAP = true;
+                try
+                {
+                    boolSETTINGSXMLSWAP = bool.Parse(this.pluginConfig.ReadField("/APPCONFIG/SETTINGSXMLSWAP"));
+                }
+                catch
+                {
+                    boolSETTINGSXMLSWAP = true;
+                    this.pluginConfig.WriteField("/APPCONFIG/SETTINGSXMLSWAP", boolSETTINGSXMLSWAP.ToString(), true);
+                }
+                finally
+                {
+                    WriteLog("Swap mapFactor Navigator's settings.xml files around: " + boolSETTINGSXMLSWAP.ToString());
+                }
+
 
                 // CF Settings
                 try
@@ -1100,9 +1119,9 @@ namespace Navigator
             FileInfo fiXML= new FileInfo(strAppDataPath + "\\settings.xml");
             FileInfo fiNAV = new FileInfo(strAppDataPath + "\\settings.xml.NAV");
             FileInfo fiCF = new FileInfo(strAppDataPath + "\\settings.xml.CF");
-                
-            //XML File exists
-            if (fiXML.Exists)
+            
+            //XML File exists, and user wants to swap config files around
+            if (fiXML.Exists && bool.Parse(this.pluginConfig.ReadField("/APPCONFIG/SETTINGSXMLSWAP")))
             {
                 WriteLog("XML exists");
                 //If NAV files exist, remove NAV

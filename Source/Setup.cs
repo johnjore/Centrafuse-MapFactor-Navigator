@@ -160,7 +160,9 @@ namespace Navigator
                     ButtonText[i] = this.langReader.ReadField("/APPLANG/SETUP/NOHIRES");
                     ButtonValue[i++] = this.configReader.ReadField("/APPCONFIG/NOHIRES");
 
-                    ButtonHandler[i] = null; ButtonText[i] = ""; ButtonValue[i++] = "";
+                    ButtonHandler[i] = new CFSetupHandler(SetSettingsXMLSwap);
+                    ButtonText[i] = this.langReader.ReadField("/APPLANG/SETUP/SETTINGSXMLSWAP");
+                    ButtonValue[i++] = this.configReader.ReadField("/APPCONFIG/SETTINGSXMLSWAP");
                 }
             }
             catch (Exception errmsg) { CFTools.writeError(errmsg.Message, errmsg.StackTrace); }
@@ -425,6 +427,12 @@ namespace Navigator
         {
             this.configReader.WriteField("/APPCONFIG/NOHIRES", value.ToString());
         }
+
+        //Swap mapFactor Navigator Config XML files around
+        private void SetSettingsXMLSwap(ref object value)
+        {
+            this.configReader.WriteField("/APPCONFIG/SETTINGSXMLSWAP", value.ToString());
+        }               
         
 #endregion
 
