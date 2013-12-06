@@ -21,9 +21,36 @@
  * Move SendCommand and receive to its own thread?
  * Parse TCP responses from Navigator... counter++ for each SendCommand. Create FIFO buffer? Create thread?
  * 
- * Remove non-used functions
- * Resolve all /**/
+Horizontal / vertical Skins
+
+Patching of CF: Use internal process
+
+ If not pc_navigator.exe.cf, create pc_navigator.exe.cf
+ If boolNamedPipe
+  if Pc_navigator.exe is NOT patched, patch PCNavigator  
+ else
+  if Pc_navigator.exe is patched, unpatch PCNavigator  
+ end if
  
+Is clean skin (gps status) too correct size?
+
+Sync CF Connect destinations to Navigator Favorites
+Turn on/off XML file swappings: Default: On
+Trim number of digits in Speed value to match NMEA string + Digits Option
+ 
+Change text "Next turn" to "Next Waypoint"
+ 
+Add "meters" or "yards" after
+
+Altitude
+Heading
+ETR
+Distance
+Next Turn
+
+ * 
+ * Resolve all /**/
+
 /* 
  * This is the main CS file
  */
@@ -68,6 +95,8 @@ namespace Navigator
         public static string configPath = CFTools.AppDataPath + "\\system\\config.xml";	//LK, 20-nov-2013: Needed to check if this is the current navigation app
                 
         /**/ //This should be moved to a AppConfiguration class?
+        private string strTRUE = "True";                    // True
+        private string strFALSE = "False";                  // False
         private string strEXEPath = "";                     // Folder and EXE name
         private string strEXEParameters = "";               // Paramters to use
         private bool boolFullScreen = false;                // Full screen?
@@ -1014,6 +1043,27 @@ namespace Navigator
                     WriteLog("intDelay: " + intDelay.ToString());
                     muteCFTimerInterval = intDelay; //LK, 30-nov-2013: Cache this value to avoid many reads from the config file
                 }
+
+                //True string
+                try
+                {
+                    strTRUE = this.pluginLang.ReadField("/APPLANG/NAVIGATOR/TRUE"); 
+                }
+                catch
+                {
+                    strTRUE = "True";
+                }
+
+                //False string
+                try
+                {
+                    strFALSE = this.pluginLang.ReadField("/APPLANG/NAVIGATOR/FALSE");
+                }
+                catch
+                {
+                    strFALSE = "False";
+                }
+                
 
                 // CF Settings
                 try

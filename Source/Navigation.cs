@@ -316,7 +316,7 @@ namespace Navigator
                     retvalue = _navStats.DistanceMetersNextWaypoint.ToString();
                     break;
                 case CFNavInfo.InRoute:
-                    if (_navStats.DistanceMetersDestination != 0) retvalue = "True"; else retvalue = "False";
+                    if (_navStats.DistanceMetersDestination != 0) retvalue = strTRUE; else retvalue = strFALSE;
                     break;
             }
 
