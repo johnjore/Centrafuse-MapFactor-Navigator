@@ -23,7 +23,7 @@
  * 
 Horizontal / vertical Skins
 
-Patching of CF: Use internal process
+Patching of CF: Use internal process, not binmay
 
  If not pc_navigator.exe.cf, create pc_navigator.exe.cf
  If boolNamedPipe
@@ -32,20 +32,17 @@ Patching of CF: Use internal process
   if Pc_navigator.exe is patched, unpatch PCNavigator  
  end if
  
-Is clean skin (gps status) too correct size?
+Is clean skin (gps status) correct size?
 
 Sync CF Connect destinations to Navigator Favorites
-Trim number of digits in Speed value to match NMEA string + Digits Option
- 
 Change text "Next turn" to "Next Waypoint"
  
 Add "meters" or "yards" after
-
-Altitude
-Heading
-ETR
-Distance
-Next Turn
+    Altitude
+    Heading
+    ETR
+    Distance
+    Next Turn
 
  * 
  * Resolve all /**/
@@ -99,6 +96,7 @@ namespace Navigator
         private string strEXEPath = "";                     // Folder and EXE name
         private string strEXEParameters = "";               // Paramters to use
         private bool boolFullScreen = false;                // Full screen?
+        private bool boolTRIMDIGITS = false;                // Trim number of digits for speed etc?
         public bool boolExit = false;                       // Set True if hibernating
         private bool boolFREE = true;                       // Free edition?
         private bool boolOSMOK = false;                     // If true, supresses OSM License prompt
@@ -1081,6 +1079,21 @@ namespace Navigator
                 finally
                 {
                     WriteLog("Swap mapFactor Navigator's settings.xml files around: " + boolSETTINGSXMLSWAP.ToString());
+                }
+
+                // Trim number of digits?
+                try
+                {
+                    boolTRIMDIGITS = bool.Parse(this.pluginConfig.ReadField("/APPCONFIG/TRIMDIGITS"));
+                }
+                catch
+                {
+                    boolTRIMDIGITS = false;
+                    this.pluginConfig.WriteField("/APPCONFIG/TRIMDIGITS", boolTRIMDIGITS.ToString(), true);
+                }
+                finally
+                {
+                    WriteLog("Trim digits: " + boolTRIMDIGITS.ToString());
                 }
 
 

@@ -38,8 +38,8 @@ namespace Navigator
         private readonly Navigator mainForm;
 
         // Total configuration pages for each mode
-        public int nAdvancedSetupPages { get { return 2; } }
-        public int nBasicSetupPages { get { return 2; } }
+        public int nAdvancedSetupPages { get { return 3; } }
+        public int nBasicSetupPages { get { return 3; } }
 
         public int numAdvancedSetupPages { get { return nAdvancedSetupPages; } }
         public int numBasicSetupPages { get { return nBasicSetupPages; } }
@@ -164,6 +164,24 @@ namespace Navigator
                     ButtonText[i] = this.langReader.ReadField("/APPLANG/SETUP/SETTINGSXMLSWAP");
                     ButtonValue[i++] = this.configReader.ReadField("/APPCONFIG/SETTINGSXMLSWAP");
                 }
+                else if (page == 3)
+                {
+                    // TEXT BUTTONS (1-4)
+                    ButtonHandler[i] = null; ButtonText[i] = ""; ButtonValue[i++] = "";
+                    ButtonHandler[i] = null; ButtonText[i] = ""; ButtonValue[i++] = "";
+                    ButtonHandler[i] = null; ButtonText[i] = ""; ButtonValue[i++] = "";
+                    ButtonHandler[i] = null; ButtonText[i] = ""; ButtonValue[i++] = "";
+
+                    // BOOL BUTTONS (5-8)
+                    ButtonHandler[i] = new CFSetupHandler(SetTrimDigits);
+                    ButtonText[i] = this.langReader.ReadField("/APPLANG/SETUP/TRIMDIGITS");
+                    ButtonValue[i++] = this.configReader.ReadField("/APPCONFIG/TRIMDIGITS");                   
+
+                    ButtonHandler[i] = null; ButtonText[i] = ""; ButtonValue[i++] = "";
+                    ButtonHandler[i] = null; ButtonText[i] = ""; ButtonValue[i++] = "";
+                    ButtonHandler[i] = null; ButtonText[i] = ""; ButtonValue[i++] = "";
+                }
+
             }
             catch (Exception errmsg) { CFTools.writeError(errmsg.Message, errmsg.StackTrace); }
         }
@@ -432,8 +450,14 @@ namespace Navigator
         private void SetSettingsXMLSwap(ref object value)
         {
             this.configReader.WriteField("/APPCONFIG/SETTINGSXMLSWAP", value.ToString());
-        }               
-        
+        }
+
+        //Trim number of digits?
+        private void SetTrimDigits(ref object value)
+        {
+            this.configReader.WriteField("/APPCONFIG/TRIMDIGITS", value.ToString());
+        }
+
 #endregion
 
     }

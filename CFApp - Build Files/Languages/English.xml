@@ -51,5 +51,7 @@
     <UNPATCHNAVIGATOR>Patch for named pipe will be removed on next CF restart</UNPATCHNAVIGATOR>
     <MUTEUNMUTEW7>This feature works on Windows 7 only</MUTEUNMUTEW7>
     <AUDIODELAYAFTERMUTE>Unmute after (ms)</AUDIODELAYAFTERMUTE>
+    <SETTINGSXMLSWAP>Dedicated Navigator Settings.XML file</SETTINGSXMLSWAP>
+    <TRIMDIGITS>Trim Digits</TRIMDIGITS>
   </SETUP>
 </APPLANG>

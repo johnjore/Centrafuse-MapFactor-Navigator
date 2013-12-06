@@ -51,6 +51,8 @@
     <UNPATCHNAVIGATOR>Patch voor ondersteuning van named pipes wordt bij de volgende herstart van CF verwijderd</UNPATCHNAVIGATOR>
     <MUTEUNMUTEW7>This feature werkt alleen met Windows 7</MUTEUNMUTEW7>
     <AUDIODELAYAFTERMUTE>Automatische Unmute na Mute in ms</AUDIODELAYAFTERMUTE>
+    <SETTINGSXMLSWAP>Dedicated Navigator Settings.XML file</SETTINGSXMLSWAP>
+    <TRIMDIGITS>Trim Digits</TRIMDIGITS>
   </SETUP>
 </APPLANG>
 

@@ -285,18 +285,35 @@ namespace Navigator
                                         //Speed
                                         try 
                                         {
-                                            //Speed is in knots in NMEA strings
+                                            WriteLog("NMEA Speed: " + rmCdata[7].ToString());
 
+                                            //Speed is in knots in NMEA strings                                            
                                             //Convert to Metric?
                                             if (ReadCFValue("/APPCONFIG/SPEEDUNIT", "M", configPath))
-                                            {
-                                                _currentPosition.Speed = double.Parse(rmCdata[7], CultureInfo.InvariantCulture) * 1.94384449244;
+                                            {                                                
+                                                _currentPosition.Speed = double.Parse(rmCdata[7], CultureInfo.InvariantCulture) * 1.94384449244;                                                
                                             } //Convert to Imperial?
                                             else if (ReadCFValue("/APPCONFIG/SPEEDUNIT", "I", configPath))
                                             {
-                                                _currentPosition.Speed = double.Parse(rmCdata[7], CultureInfo.InvariantCulture) * 1.1507794480136;
+                                                _currentPosition.Speed = double.Parse(rmCdata[7], CultureInfo.InvariantCulture) * 1.1507794480136;                                                                                                
                                             } //Unknown...
                                             else _currentPosition.Speed = 0;
+
+                                            //How many digits after .?
+                                            int length = rmCdata[7].Substring(rmCdata[7].IndexOf(".") + 1).Length;
+
+                                            WriteLog("CF Speed 1: " + _currentPosition.Speed.ToString());
+                                            //Round to the same number of decimals as the input string has?
+                                            if (boolTRIMDIGITS)
+                                            {
+                                                _currentPosition.Speed = System.Math.Round(_currentPosition.Speed, 0, MidpointRounding.AwayFromZero);
+                                            }
+                                            else
+                                            {
+                                                _currentPosition.Speed = System.Math.Round(_currentPosition.Speed, length, MidpointRounding.AwayFromZero);
+                                            }
+
+                                            WriteLog("CF Speed 2: " + _currentPosition.Speed.ToString());
                                         }
                                         catch
                                         {
