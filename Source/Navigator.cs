@@ -21,7 +21,8 @@
  * Move SendCommand and receive to its own thread?
  * Parse TCP responses from Navigator... counter++ for each SendCommand. Create FIFO buffer? Create thread?
  * 
-Horizontal / vertical Skins
+ * Horizontal / vertical Skins
+ * Sync CF Connect destinations to Navigator Favorites
 
 Patching of CF: Use internal process, not binmay
 
@@ -32,18 +33,6 @@ Patching of CF: Use internal process, not binmay
   if Pc_navigator.exe is patched, unpatch PCNavigator  
  end if
  
-Is clean skin (gps status) correct size?
-
-Sync CF Connect destinations to Navigator Favorites
-Change text "Next turn" to "Next Waypoint"
- 
-Add "meters" or "yards" after
-    Altitude
-    Heading
-    ETR
-    Distance
-    Next Turn
-
  * 
  * Resolve all /**/
 
@@ -114,6 +103,7 @@ namespace Navigator
         private string strAppDataPath = "";                 // Path to Navigator's XML file
         private CFNavLocation navCurrentLocation = new CFNavLocation();       // Navigator's current location
         private NavStats _navStats = new NavStats();         // Navigation statistics
+        private SpeedUnit SpeedUnit = SpeedUnit.UNKNOWN;    // Default to unknown unit
 
         //Timers
         Timer nightTimer = new System.Windows.Forms.Timer(); // timer for switching day/night skin      
@@ -1095,6 +1085,11 @@ namespace Navigator
                 {
                     WriteLog("Trim digits: " + boolTRIMDIGITS.ToString());
                 }
+
+
+                //Get SpeedUnit
+                if (ReadCFValue("/APPCONFIG/SPEEDUNIT", "I", configPath)) SpeedUnit = SpeedUnit.IMPERIAL;
+                if (ReadCFValue("/APPCONFIG/SPEEDUNIT", "M", configPath)) SpeedUnit = SpeedUnit.METRIC;
 
 
                 // CF Settings

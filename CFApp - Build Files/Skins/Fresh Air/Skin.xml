@@ -52,7 +52,7 @@
         <CONTROL type="Label" id="lblAzimuth"            bounds="300; 70;280;22" enabled="true"  fontclass="LabelText" fontstyle="" textenable="true" text="AppLang.Navigator.lblAzimuth" />
         <CONTROL type="Label" id="DataAzimuth"           bounds="590; 70;100;22" enabled="true"  fontclass="DataText"  fontstyle="" textenable="true" text="" />
         <CONTROL type="Label" id="lblETR"                bounds="  0;100;270;22" enabled="true"  fontclass="LabelText" fontstyle="" textenable="true" text="AppLang.Navigator.lblETR" />
-        <CONTROL type="Label" id="DataETR"               bounds="280;100;100;22" enabled="true"  fontclass="DataText"  fontstyle="" textenable="true" text="" />
+        <CONTROL type="Label" id="DataETR"               bounds="280;100;200;22" enabled="true"  fontclass="DataText"  fontstyle="" textenable="true" text="" />
         <CONTROL type="Label" id="lblNextTurn"           bounds="300;100;280;22" enabled="true"  fontclass="LabelText" fontstyle="" textenable="true" text="AppLang.Navigator.lblNextTurn" />
         <CONTROL type="Label" id="DataNextTurn"          bounds="590;100;100;22" enabled="true"  fontclass="DataText"  fontstyle="" textenable="true" text="" />
         <CONTROL type="Label" id="lblRemainingDistance"  bounds="  0;130;270;22" enabled="true"  fontclass="LabelText" fontstyle="" textenable="true" text="AppLang.Navigator.lblRemainingDistance" />

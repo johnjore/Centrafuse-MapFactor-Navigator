@@ -51,7 +51,7 @@
         <CONTROL type="Label" id="DataSpeed" bounds="345;130;200;22" fontclass="DataText" fontstyle="" textenable="true" text="" enabled="true"/>
         <CONTROL type="Label" id="DataDirection" bounds="345;160;100;22" fontclass="DataText" fontstyle="" textenable="true" text="" enabled="true"/>
         <CONTROL type="Label" id="DataAzimuth" bounds="345;190;100;22" fontclass="DataText" fontstyle="" textenable="true" text="" enabled="true"/>
-        <CONTROL type="Label" id="DataETR" bounds="345;220;100;22" fontclass="DataText" fontstyle="" textenable="true" text="" enabled="true"/>
+        <CONTROL type="Label" id="DataETR" bounds="345;220;200;22" fontclass="DataText" fontstyle="" textenable="true" text="" enabled="true"/>
         <CONTROL type="Label" id="DataRemainingDistance" bounds="345;250;100;22" fontclass="DataText" fontstyle="" textenable="true" text="" enabled="true"/>
         <CONTROL type="Label" id="DataNextTurn" bounds="345;280;100;22" fontclass="DataText" fontstyle="" textenable="true" text="" enabled="true"/>
         <CONTROL type="Label" id="DataInRoute" bounds="345;310;100;22" fontclass="DataText" fontstyle="" textenable="true" text="" enabled="true"/>

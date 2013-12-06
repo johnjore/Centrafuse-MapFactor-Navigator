@@ -47,10 +47,10 @@ namespace Navigator
     // Structure for holding navigation statistics
     public struct NavStats
     {
-        public int DistanceMetersNextWaypoint;
-        public int TimeSecondsNextWaypoint;
-        public int DistanceMetersDestination;
-        public int TimeSecondsDestination;
+        public double DistanceMetersNextWaypoint;
+        public double TimeSecondsNextWaypoint;
+        public double DistanceMetersDestination;
+        public double TimeSecondsDestination;
         public string GPSDate;
         public string GPSTime;
     }
@@ -130,5 +130,12 @@ namespace Navigator
     public enum VK : int
     {
         VK_RETURN = 0x00d
+    }
+
+    public enum SpeedUnit : int
+    {
+        UNKNOWN = -1,
+        METRIC = 0,
+        IMPERIAL = 1
     }
 }

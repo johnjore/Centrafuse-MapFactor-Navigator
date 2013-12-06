@@ -36,7 +36,7 @@ namespace Navigator
         {
             try 
             { 
-                CF_updateText("DataLongitude", CF_navGetInfo(CFNavInfo.Longitude)); 
+                CF_updateText("DataLongitude", CF_navGetInfo(CFNavInfo.Longitude));
             }
             catch 
             {
@@ -52,15 +52,6 @@ namespace Navigator
                 CF_updateText("DataLatitude", "");
             }
 
-            try
-            {
-                CF_updateText("DataAltitude", CF_navGetInfo(CFNavInfo.Altitude));
-            }
-            catch
-            {
-                CF_updateText("DataAltitude", "");
-            }
-
             try 
             {
                 CF_updateText("DataLockedSatellites", CF_navGetInfo(CFNavInfo.LockedSatellites));
@@ -70,25 +61,66 @@ namespace Navigator
                 CF_updateText("DataLockedSatellites", "");
             }
 
+            //Don't read from disk on each update or each attribute
+            switch (SpeedUnit)
+            {
+                case SpeedUnit.METRIC:
+                    try { CF_updateText("DataSpeed", CF_navGetInfo(CFNavInfo.Speed) + " km/h");}
+                    catch { CF_updateText("DataSpeed", "0 km/h"); }
+
+                    try { CF_updateText("DataAltitude", CF_navGetInfo(CFNavInfo.Altitude) + " m"); }
+                    catch { CF_updateText("DataAltitude", "0 m"); }
+                    
+                    try { CF_updateText("DataRemainingDistance", CF_navGetInfo(CFNavInfo.RemainingDistance) + " m"); }
+                    catch {CF_updateText("DataRemainingDistance", "0 m");}
+
+                    try { CF_updateText("DataNextTurn", CF_navGetInfo(CFNavInfo.NextTurn)+ " m");}
+                    catch { CF_updateText("DataNextTurn", "0 m"); }
+
+                    break;
+                case SpeedUnit.IMPERIAL:
+                    try { CF_updateText("DataSpeed", CF_navGetInfo(CFNavInfo.Speed) + " mph");}
+                    catch { CF_updateText("DataSpeed", "0 mph"); }
+
+                    try { CF_updateText("DataAltitude", CF_navGetInfo(CFNavInfo.Altitude) + " ft"); }
+                    catch { CF_updateText("DataAltitude", "0 ft"); }
+                    
+                    try { CF_updateText("DataRemainingDistance", CF_navGetInfo(CFNavInfo.RemainingDistance) + " ft"); }
+                    catch {CF_updateText("DataRemainingDistance", "0 ft");}
+
+                    try { CF_updateText("DataNextTurn", CF_navGetInfo(CFNavInfo.NextTurn)+ " ft");}
+                    catch { CF_updateText("DataNextTurn", "0 ft"); }
+
+                    break;
+                default:
+                    CF_updateText("DataSpeed", "");
+                    break;
+            }
+
             try 
             {
-                try
-                {
-                    if (ReadCFValue("/APPCONFIG/SPEEDUNIT", "I", configPath)) CF_updateText("DataSpeed", CF_navGetInfo(CFNavInfo.Speed) + " mph");
-                }
-                catch { CF_updateText("DataSpeed", "0 mph"); }
+                //CF_updateText("DataETR", CF_navGetInfo(CFNavInfo.ETR) + " seconds");
+                double tmpETR = System.Math.Floor(double.Parse(CF_navGetInfo(CFNavInfo.ETR)) / 60);
 
-                try
+                //Less than 1 minute?
+                switch (tmpETR.ToString())
                 {
-                    if (ReadCFValue("/APPCONFIG/SPEEDUNIT", "M", configPath)) CF_updateText("DataSpeed", CF_navGetInfo(CFNavInfo.Speed) + " km/h");
+                    case "0":
+                        CF_updateText("DataETR", CF_navGetInfo(CFNavInfo.ETR) + " seconds");
+                        break;
+                    case "1":
+                        CF_updateText("DataETR", tmpETR.ToString() + " minute");
+                        break;
+                    default:
+                        CF_updateText("DataETR", tmpETR.ToString() + " minutes");
+                        break;
                 }
-                catch { CF_updateText("DataSpeed", "0 km/h"); }
             }
             catch 
             {
-                CF_updateText("DataSpeed", "");
+                CF_updateText("DataETR", "0"); 
             }
-
+            
             try 
             {
                 CF_updateText("DataDirection", CF_navGetInfo(CFNavInfo.Direction));
@@ -100,38 +132,11 @@ namespace Navigator
 
             try
             {
-                CF_updateText("DataAzimuth", CF_navGetInfo(CFNavInfo.Azimuth));
+                CF_updateText("DataAzimuth", CF_navGetInfo(CFNavInfo.Azimuth) + "°");
             }
             catch 
             {
                 CF_updateText("DataAzimuth", "");
-            }
-
-            try 
-            {
-                CF_updateText("DataETR", CF_navGetInfo(CFNavInfo.ETR));
-            }
-            catch 
-            {
-                CF_updateText("DataETR", "");
-            }
-
-            try 
-            {
-                CF_updateText("DataRemainingDistance", CF_navGetInfo(CFNavInfo.RemainingDistance));
-            }
-            catch 
-            {
-                CF_updateText("DataRemainingDistance", "");
-            }
-
-            try 
-            {
-                CF_updateText("DataNextTurn", CF_navGetInfo(CFNavInfo.NextTurn));
-            }
-            catch 
-            {
-                CF_updateText("DataNextTurn", "");
             }
 
             try
@@ -264,7 +269,7 @@ namespace Navigator
                     retvalue = "";
                     break;
                 case CFNavInfo.ETR:
-                    retvalue = _navStats.TimeSecondsNextWaypoint.ToString();
+                    retvalue = _navStats.TimeSecondsDestination.ToString();
                     break;
                 case CFNavInfo.HouseNumber:
                     retvalue = "";
