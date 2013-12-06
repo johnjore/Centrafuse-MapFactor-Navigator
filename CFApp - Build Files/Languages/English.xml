@@ -30,6 +30,7 @@
     <ERROR>Navigator can't perform requested task</ERROR>
     <TRUE>True</TRUE>
     <FALSE>False</FALSE>
+    <NAMEDPIPEPATCHFAILED>Failed to change named pipe patch status</NAMEDPIPEPATCHFAILED>
   </NAVIGATOR>
   <SETUP>
     <DESCRIPTION>Configure Mapfactor Navigator Plugin</DESCRIPTION>
