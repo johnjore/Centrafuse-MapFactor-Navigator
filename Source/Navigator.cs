@@ -151,8 +151,8 @@ namespace Navigator
 			{
                 // Call writeModuleLog() with the string startup() to keep only last 2 runtimes...
                 // Note CF_loadConfig() must be called before WriteLog() can be used
-                WriteLog(PluginName + " starting");
-                WriteLog("CF_pluginInit");
+                CFTools.writeLog(PluginName + " starting");
+                CFTools.writeLog(PluginName + "CF_pluginInit");
 
                 // CF3_initPlugin() Will configure pluginConfig and pluginLang automatically
                 CF3_initPlugin(PluginName, true);
@@ -201,7 +201,7 @@ namespace Navigator
                 NavStatustimer.Interval = 500; // Wait this long between the next updates
                 NavStatustimer.Enabled = false;
                 NavStatustimer.Tick += new EventHandler(NavStatustimer_Tick);
-
+                
                 // Creates new events to catch power mode change
                 this.CF_events.CFPowerModeChanged += OnPowerModeChanged;
 
@@ -1653,6 +1653,18 @@ namespace Navigator
             }
 
             WriteLog("OnPowerModeChanged - end()");
+            return;
+        }
+
+        private void OnApplicationClosing(object sender, EventArgs e)
+        {
+            CFTools.writeLog(PluginName, "OnApplicationClosing", "");
+            return;
+        }
+        
+        private void OnApplicationLoaded(object sender, EventArgs e)
+        {
+            CFTools.writeLog(PluginName, "OnApplicationLoaded", "");
             return;
         }
 
