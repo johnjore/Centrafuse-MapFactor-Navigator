@@ -4,13 +4,12 @@
     <APPNAME>Navigator</APPNAME>
     <APPLOCATION>[CFAPPDIR]\Plugins\Navigator</APPLOCATION>
     <APPTYPE>PLUGIN</APPTYPE>
-    <VERSION>2.0.0.3</VERSION>
+    <VERSION>2.0.1</VERSION>
     <REQUIRESRESTART>True</REQUIRESRESTART>
   </APPDATA>
   <APPFILES>
     <FILENAME register="false" overwrite="true" source="Navigator.dll" destination="[CFAPPDIR]\Plugins\Navigator\Navigator.dll" />
     <FILENAME register="false" overwrite="true" source="Textfiles\lgpl.txt" destination="[CFAPPDIR]\Plugins\Navigator\Textfiles\lgpl.txt" />
-    <FILENAME register="false" overwrite="true" source="NamedPipePatch\binmay.exe" destination="[CFAPPDIR]\Plugins\Navigator\NamedPipePatch\binmay.exe" />
     <FILENAME register="false" overwrite="true" source="NamedPipePatch\CF_NP.dll" destination="[CFAPPDIR]\Plugins\Navigator\NamedPipePatch\CF_NP.dll" />
     <FILENAME register="false" overwrite="true" source="NamedPipePatch\Readme_CF_NP.txt" destination="[CFAPPDIR]\Plugins\Navigator\NamedPipePatch\Readme_CF_NP.txt" />
     <FILENAME register="false" overwrite="true" source="Languages\English.xml" destination="[CFAPPDIR]\Plugins\Navigator\Languages\English.xml" />

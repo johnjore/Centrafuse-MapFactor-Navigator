@@ -36,6 +36,7 @@ namespace Navigator
         private readonly ConfigReader configReader;
         private readonly LanguageReader langReader;
         private readonly Navigator mainForm;
+        private bool boolAskNavigatorRestart = false;       //Ask if to restart Navigator?
 
         // Total configuration pages for each mode
         public int nAdvancedSetupPages { get { return 3; } }
@@ -54,6 +55,8 @@ namespace Navigator
 
             configReader = config;
             langReader = lang;
+
+            boolAskNavigatorRestart = false;       //Ask if to restart Navigator?
         }
 
         public void CF_setupExitSettings(bool save)
@@ -64,23 +67,35 @@ namespace Navigator
                 configReader.Save();
                 mainForm.LoadSettings();
 
-                //Ask if restart of Navigator is desired?
-                if (mainForm.CF_systemDisplayDialog(CF_Dialogs.YesNo, this.langReader.ReadField("/APPLANG/NAVIGATOR/RESTARTNAVIGATOR")) == DialogResult.OK)
+                //Only ask if a parameter that requires Navigator restart is changed
+                if (boolAskNavigatorRestart)
                 {
-                    //Close Navigator
-                    mainForm.CloseNavigator();
+                    //Ask if restart of Navigator is desired?
+                    if (mainForm.CF_systemDisplayDialog(CF_Dialogs.YesNo, this.langReader.ReadField("/APPLANG/NAVIGATOR/RESTARTNAVIGATOR")) == DialogResult.OK)
+                    {
+                        mainForm.WriteLog("Restarting Navigator by user request (setup)");
+                        //Close Navigator
+                        mainForm.WriteLog("Setup - Closenavigator()");
+                        mainForm.CloseNavigator();
 
-                    //User does not really want to exit Navigator anymore
-                    mainForm.boolExit = false;
+                        //User does not really want to exit Navigator anymore
+                        mainForm.boolExit = false;
 
-                    //Modify Navigator's Settings XML file to match new configuration
-                    mainForm.ConfigureNavigatorXML();
+                        //Modify Navigator's Settings XML file to match new configuration
+                        mainForm.WriteLog("Setup - ConfigureNavigatorXML()");
+                        mainForm.ConfigureNavigatorXML();
 
-                    //Start Nnavigator
-                    mainForm.StartNavigator();
+                        //Start Nnavigator
+                        mainForm.WriteLog("Setup - StartNavigator()");
+                        mainForm.StartNavigator();
 
-                    //Need this to get back to the correct window
-                    mainForm.CF3_executeCMLAction("Centrafuse.CFActions.MainMenu");
+                        //Need this to get back to the correct window
+                        mainForm.WriteLog("Setup - Centrafuse.CFActions.MainMenu");
+                        mainForm.CF3_executeCMLAction("Centrafuse.CFActions.MainMenu");
+
+                        //Default back to off now
+                        boolAskNavigatorRestart = false;       //Ask if to restart Navigator?
+                    }
                 }
             }
             else
@@ -213,6 +228,9 @@ namespace Navigator
                         ((CFSetupHandlerParams)value).result.text = results.resulttext;
                         ((CFSetupHandlerParams)value).result.value = results.resultvalue;
                         this.configReader.WriteField("/APPCONFIG/EXEPATH", results.resultvalue);
+
+                        //Make sure user can opt to restart Navigator
+                        boolAskNavigatorRestart = true;
                     }
 
                     ((CFSetupHandlerParams)value).requesttype = CFSetupHandlerRequest.None; //Get out of loop
@@ -242,7 +260,15 @@ namespace Navigator
                 if (value.GetType().Equals(typeof(CFSetupHandlerParams)))
                 {
                     if (((CFSetupHandlerParams)value).result.ok)
+                    {
                         this.configReader.WriteField("/APPCONFIG/EXEPARAMETERS", ((CFSetupHandlerParams)value).result.value);
+
+                        //Make sure user can opt to restart Navigator
+                        boolAskNavigatorRestart = true;
+
+                        //Let use know about the screen refresh issue
+                        if (((CFSetupHandlerParams)value).result.value == "") mainForm.CF_systemDisplayDialog(CF_Dialogs.OkBox, mainForm.pluginLang.ReadField("/APPLANG/SETUP/CFREFRESHBUG"));                        
+                    }
 
                     ((CFSetupHandlerParams)value).requesttype = CFSetupHandlerRequest.None; //Get out of loop
                     return;
@@ -283,6 +309,10 @@ namespace Navigator
                         {
                             ((CFSetupHandlerParams)value).requesttype = CFSetupHandlerRequest.None; //Get out of loop
                             this.configReader.WriteField("/APPCONFIG/TCPPORT", iTemp.ToString());
+
+                            //Make sure user can opt to restart Navigator
+                            boolAskNavigatorRestart = true;
+
                             return;
                         }
                     }
@@ -322,6 +352,10 @@ namespace Navigator
                         this.configReader.WriteField("/APPCONFIG/WINDOWSIZE", ((CFSetupHandlerParams)value).result.value);
 
                     ((CFSetupHandlerParams)value).requesttype = CFSetupHandlerRequest.None; //Get out of loop
+
+                    //Make sure user can opt to restart Navigator
+                    boolAskNavigatorRestart = true;
+
                     return;
                 }
 
@@ -350,6 +384,9 @@ namespace Navigator
         private void SetEdition(ref object value)
         {
             this.configReader.WriteField("/APPCONFIG/FREEEDITION", value.ToString());
+
+            //Make sure user can opt to restart Navigator
+            boolAskNavigatorRestart = true;
         }
 
         //If on, supresses OSM OK box
@@ -417,10 +454,13 @@ namespace Navigator
         {
             this.configReader.WriteField("/APPCONFIG/MUTEUNMUTESTATUS", value.ToString());
 
-            //string boolButton = value.ToString();
             if (bool.Parse(value.ToString()))
             {
-                mainForm.CF_systemDisplayDialog(CF_Dialogs.OkBox, mainForm.pluginLang.ReadField("/APPLANG/SETUP/MUTEUNMUTEW7"));
+                //Dont show warning if running W7 or W8
+                if ((mainForm.CF_getConfigSetting(CF_ConfigSettings.OSVersion).ToString() != "Win7") && (mainForm.CF_getConfigSetting(CF_ConfigSettings.OSVersion).ToString() != "Win8"))
+                {
+                    mainForm.CF_systemDisplayDialog(CF_Dialogs.OkBox, mainForm.pluginLang.ReadField("/APPLANG/SETUP/MUTEUNMUTEW7"));
+                }
             }
         }
 
@@ -437,13 +477,19 @@ namespace Navigator
             else
             {
                 mainForm.CF_systemDisplayDialog(CF_Dialogs.OkBox, mainForm.pluginLang.ReadField("/APPLANG/SETUP/UNPATCHNAVIGATOR"));
-            }           
+            }
+
+            //Make sure user can opt to restart Navigator
+            boolAskNavigatorRestart = true;
         }
 
         //NoHiRes on or off
         private void SetNoHiRes(ref object value)
         {
             this.configReader.WriteField("/APPCONFIG/NOHIRES", value.ToString());
+
+            //Make sure user can opt to restart Navigator
+            boolAskNavigatorRestart = true;
         }
 
         //Swap mapFactor Navigator Config XML files around

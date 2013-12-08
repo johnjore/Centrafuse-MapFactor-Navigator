@@ -8,6 +8,8 @@
     <DESTINATION>Bestemming bereikt</DESTINATION>
     <EMBEDDINGFAILED>Kan de nog actieve versie van PC_navigator niet afsluiten. Insluiten zal mislukken</EMBEDDINGFAILED>
     <SECONDS>seconden</SECONDS>
+    <MINUTES>minutes</MINUTES>
+    <MINUTE>minute</MINUTE>
     <LBLLONGITUDE>Lengtegraad:</LBLLONGITUDE>
     <LBLLATITUDE>Breedtegraad:</LBLLATITUDE>
     <LBLALTITUDE>Hoogte:</LBLALTITUDE>
@@ -16,6 +18,7 @@
     <LBLDIRECTION>Richting:</LBLDIRECTION>
     <LBLAZIMUTH>Koers:</LBLAZIMUTH>
     <LBLETR>Resterende tijd:</LBLETR>
+    <LBLETA>ETA:</LBLETA>
     <LBLREMAININGDISTANCE>Resterende afstand:</LBLREMAININGDISTANCE>
     <LBLNEXTTURN>Volgende afslag:</LBLNEXTTURN>
     <LBLINROUTE>Op de route:</LBLINROUTE>
@@ -54,6 +57,7 @@
     <AUDIODELAYAFTERMUTE>Automatische Unmute na Mute in ms</AUDIODELAYAFTERMUTE>
     <SETTINGSXMLSWAP>Dedicated Navigator Settings.XML file</SETTINGSXMLSWAP>
     <TRIMDIGITS>Trim Digits</TRIMDIGITS>
+    <CFREFRESHBUG>Note: Screen is not updated correctly due to bug in CF</CFREFRESHBUG>
   </SETUP>
 </APPLANG>
 

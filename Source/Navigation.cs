@@ -59,7 +59,7 @@ namespace Navigator
             catch 
             {
                 CF_updateText("DataLockedSatellites", "");
-            }
+            }            
 
             //Don't read from disk on each update or each attribute
             switch (SpeedUnit)
@@ -69,13 +69,13 @@ namespace Navigator
                     catch { CF_updateText("DataSpeed", "0 km/h"); }
 
                     try { CF_updateText("DataAltitude", CF_navGetInfo(CFNavInfo.Altitude) + " m"); }
-                    catch { CF_updateText("DataAltitude", "0 m"); }
+                    catch { CF_updateText("DataAltitude", ""); }
                     
                     try { CF_updateText("DataRemainingDistance", CF_navGetInfo(CFNavInfo.RemainingDistance) + " m"); }
-                    catch {CF_updateText("DataRemainingDistance", "0 m");}
+                    catch {CF_updateText("DataRemainingDistance", "");}
 
                     try { CF_updateText("DataNextTurn", CF_navGetInfo(CFNavInfo.NextTurn)+ " m");}
-                    catch { CF_updateText("DataNextTurn", "0 m"); }
+                    catch { CF_updateText("DataNextTurn", ""); }
 
                     break;
                 case SpeedUnit.IMPERIAL:
@@ -83,13 +83,13 @@ namespace Navigator
                     catch { CF_updateText("DataSpeed", "0 mph"); }
 
                     try { CF_updateText("DataAltitude", CF_navGetInfo(CFNavInfo.Altitude) + " ft"); }
-                    catch { CF_updateText("DataAltitude", "0 ft"); }
+                    catch { CF_updateText("DataAltitude", ""); }
                     
                     try { CF_updateText("DataRemainingDistance", CF_navGetInfo(CFNavInfo.RemainingDistance) + " ft"); }
-                    catch {CF_updateText("DataRemainingDistance", "0 ft");}
+                    catch {CF_updateText("DataRemainingDistance", "");}
 
                     try { CF_updateText("DataNextTurn", CF_navGetInfo(CFNavInfo.NextTurn)+ " ft");}
-                    catch { CF_updateText("DataNextTurn", "0 ft"); }
+                    catch { CF_updateText("DataNextTurn", ""); }
 
                     break;
                 default:
@@ -97,8 +97,8 @@ namespace Navigator
                     break;
             }
 
-            try 
-            {
+            try
+            {               
                 //CF_updateText("DataETR", CF_navGetInfo(CFNavInfo.ETR) + " seconds");
                 double tmpETR = System.Math.Floor(double.Parse(CF_navGetInfo(CFNavInfo.ETR)) / 60);
 
@@ -106,21 +106,30 @@ namespace Navigator
                 switch (tmpETR.ToString())
                 {
                     case "0":
-                        CF_updateText("DataETR", CF_navGetInfo(CFNavInfo.ETR) + " seconds");
+                        CF_updateText("DataETR", CF_navGetInfo(CFNavInfo.ETR) + " " + pluginLang.ReadField("/APPLANG/NAVIGATOR/SECONDS"));
                         break;
                     case "1":
-                        CF_updateText("DataETR", tmpETR.ToString() + " minute");
+                        CF_updateText("DataETR", tmpETR.ToString() + " " + pluginLang.ReadField("/APPLANG/NAVIGATOR/MINUTE") + " ("+ CF_navGetInfo(CFNavInfo.ETR) + " " + pluginLang.ReadField("/APPLANG/NAVIGATOR/SECONDS") + ")");
                         break;
                     default:
-                        CF_updateText("DataETR", tmpETR.ToString() + " minutes");
+                        CF_updateText("DataETR", tmpETR.ToString() + " " + pluginLang.ReadField("/APPLANG/NAVIGATOR/MINUTES") + " (" + CF_navGetInfo(CFNavInfo.ETR) + " " + pluginLang.ReadField("/APPLANG/NAVIGATOR/SECONDS") + ")");
                         break;
                 }
             }
             catch 
             {
-                CF_updateText("DataETR", "0"); 
+                CF_updateText("DataETR", "");
             }
-            
+
+            try
+            {
+                CF_updateText("DataETA", CF_navGetInfo(CFNavInfo.ETA));
+            }
+            catch
+            {
+                CF_updateText("DataETA", "");
+            }
+
             try 
             {
                 CF_updateText("DataDirection", CF_navGetInfo(CFNavInfo.Direction));
@@ -266,10 +275,10 @@ namespace Navigator
                                    : "";
                     break;
                 case CFNavInfo.ETA:
-                    retvalue = "";
+                    if (String.Compare(CF_navGetInfo(CFNavInfo.InRoute), strTRUE, true) == 0) retvalue = (DateTime.Now.AddSeconds(_navStats.TimeSecondsDestination)).ToString(); else retvalue = "";                    
                     break;
                 case CFNavInfo.ETR:
-                    retvalue = _navStats.TimeSecondsDestination.ToString();
+                    if (String.Compare(CF_navGetInfo(CFNavInfo.InRoute), strTRUE, true) == 0) retvalue = _navStats.TimeSecondsDestination.ToString(); else retvalue = "";
                     break;
                 case CFNavInfo.HouseNumber:
                     retvalue = "";
@@ -284,7 +293,7 @@ namespace Navigator
                     retvalue = _currentPosition.Longitude.ToString("F5", CultureInfo.InvariantCulture);
                     break;
                 case CFNavInfo.RemainingDistance:
-                    retvalue = _navStats.DistanceMetersDestination.ToString();
+                    if (String.Compare(CF_navGetInfo(CFNavInfo.InRoute), strTRUE, true) == 0) retvalue = _navStats.DistanceMetersDestination.ToString(); else retvalue = "";
                     break;
                 case CFNavInfo.Speed:
                     retvalue = _currentPosition.Speed.ToString(CultureInfo.InvariantCulture);
@@ -317,8 +326,7 @@ namespace Navigator
                     retvalue = "";
                     break;
                 case CFNavInfo.NextTurn:
-                    //retvalue = _navStats.TimeSecondsNextWaypoint.ToString();
-                    retvalue = _navStats.DistanceMetersNextWaypoint.ToString();
+                    if (String.Compare(CF_navGetInfo(CFNavInfo.InRoute), strTRUE, true) == 0) retvalue = _navStats.DistanceMetersNextWaypoint.ToString(); else retvalue = "";
                     break;
                 case CFNavInfo.InRoute:
                     if (_navStats.DistanceMetersDestination != 0) retvalue = strTRUE; else retvalue = strFALSE;
@@ -544,7 +552,15 @@ namespace Navigator
         private DateTime parsTimeOfFix(String dateOfFix, String timeOfFix)
         {
             string[] formats= { "dd/MM/yy HH:mm:ss" };
-            DateTime convertedDate = DateTime.SpecifyKind(DateTime.ParseExact(dateOfFix.Substring(0, 2) + "/" + dateOfFix.Substring(2, 2) + "/" + dateOfFix.Substring(4, 2) + " " + timeOfFix.Substring(0, 2) + ":" + timeOfFix.Substring(2, 2) + ":" + timeOfFix.Substring(4, 2), formats, new CultureInfo("en-US"), DateTimeStyles.None), DateTimeKind.Utc);
+            DateTime convertedDate = 
+                DateTime.SpecifyKind(
+                    DateTime.ParseExact(
+                        dateOfFix.Substring(0, 2) + "/" + dateOfFix.Substring(2, 2) + "/" + dateOfFix.Substring(4, 2) + " "
+                        + timeOfFix.Substring(0, 2) + ":" + timeOfFix.Substring(2, 2) + ":" + timeOfFix.Substring(4, 2), 
+                        formats, 
+                        new CultureInfo(CultureInfo.CurrentUICulture.Name), 
+                        DateTimeStyles.None)
+                , DateTimeKind.Utc);
 
             DateTime dt = convertedDate.ToLocalTime();
             return dt;

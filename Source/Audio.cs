@@ -50,7 +50,7 @@ namespace Navigator
                 if (boolInMutePeriod == true)
                 {
                     //Use user selectable unmute delay
-                    muteCFTimer.Interval = int.Parse(this.pluginConfig.ReadField("/APPCONFIG/AUDIODELAYAFTERMUTE"));
+                    muteCFTimer.Interval = muteCFTimerInterval;
                     muteCFTimer.Enabled = true;
                 }
             }

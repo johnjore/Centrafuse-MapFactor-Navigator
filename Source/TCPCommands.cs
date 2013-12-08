@@ -285,7 +285,7 @@ namespace Navigator
                                         //Speed
                                         try 
                                         {
-                                            //WriteLog("NMEA Speed: " + rmCdata[7].ToString());
+                                            //WriteLog("Raw NMEA Speed: " + rmCdata[7].ToString());
 
                                             //Speed is in knots in NMEA strings
                                             switch (SpeedUnit)

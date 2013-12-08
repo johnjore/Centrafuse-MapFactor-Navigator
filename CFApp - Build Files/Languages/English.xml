@@ -8,6 +8,8 @@
     <DESTINATION>Destination reached</DESTINATION>
     <EMBEDDINGFAILED>Unable to terminated existing PC_Navigator. Embedding will fail</EMBEDDINGFAILED>
     <SECONDS>seconds</SECONDS>
+    <MINUTES>minutes</MINUTES>
+    <MINUTE>minute</MINUTE>
     <LBLLONGITUDE>LONGITUDE:</LBLLONGITUDE>
     <LBLLATITUDE>LATITUDE:</LBLLATITUDE>
     <LBLALTITUDE>ALTITUDE:</LBLALTITUDE>
@@ -16,6 +18,7 @@
     <LBLDIRECTION>DIRECTION:</LBLDIRECTION>
     <LBLAZIMUTH>HEADING:</LBLAZIMUTH>
     <LBLETR>ETR:</LBLETR>
+    <LBLETA>ETA:</LBLETA>
     <LBLREMAININGDISTANCE>REMAINING DISTANCE:</LBLREMAININGDISTANCE>
     <LBLNEXTTURN>NEXT TURN:</LBLNEXTTURN>
     <LBLINROUTE>IN ROUTE:</LBLINROUTE>
@@ -48,11 +51,12 @@
     <NAMEDPIPE>Use Named Pipe</NAMEDPIPE>
     <NOHIRES>Enable --nohires option</NOHIRES>
     <WINDOWSIZE>Startup Window Size (Affects Font size)</WINDOWSIZE>
-    <PATCHNAVIGATOR>PC_Navigator.exe will be patched to support named pipe on next CF restart</PATCHNAVIGATOR>
-    <UNPATCHNAVIGATOR>Patch for named pipe will be removed on next CF restart</UNPATCHNAVIGATOR>
+    <PATCHNAVIGATOR>PC_Navigator.exe will be patched to support named pipe on next restart</PATCHNAVIGATOR>
+    <UNPATCHNAVIGATOR>Patch for named pipe will be removed on next restart</UNPATCHNAVIGATOR>
     <MUTEUNMUTEW7>This feature works on Windows 7 only</MUTEUNMUTEW7>
     <AUDIODELAYAFTERMUTE>Unmute after (ms)</AUDIODELAYAFTERMUTE>
     <SETTINGSXMLSWAP>Dedicated Navigator Settings.XML file</SETTINGSXMLSWAP>
     <TRIMDIGITS>Trim Digits</TRIMDIGITS>
+    <CFREFRESHBUG>Note: Screen is not updated correctly due to bug in CF</CFREFRESHBUG>
   </SETUP>
 </APPLANG>

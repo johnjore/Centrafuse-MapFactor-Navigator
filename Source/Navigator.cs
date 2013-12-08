@@ -22,7 +22,6 @@
  * Parse TCP responses from Navigator... counter++ for each SendCommand. Create FIFO buffer? Create thread?
  * 
  * Horizontal / vertical Skins
- * Sync CF Connect destinations to Navigator Favorites 
  * 
  * Resolve all /**/
 
@@ -224,7 +223,7 @@ namespace Navigator
                     //Launch navigator
                     //LK, 30-nov-2013: Moved common code to new method  
                     StartNavigator();
-                }               
+                }
 			}
 			catch(Exception errmsg) { CFTools.writeError(errmsg.ToString()); }
 		}
@@ -389,6 +388,7 @@ namespace Navigator
                 WriteLog("Start: CF_pluginShow");
 
                 //LK, 30-nov-2013: When we became the new navigation app and PC_Navigator isn't loaded yet, load it now
+                //JJ: How can CF_pluginShow() be called if we're not the active navigation plugin?!?
                 if (ReadCFValue("/APPCONFIG/NAVENGINE", "NAVIGATOR", configPath) && pNavigator == null)
                     StartNavigator();
 
@@ -592,14 +592,7 @@ namespace Navigator
                             //LK, 29-nov-2013: This command will send the key to the top window, not always to PC_Navigator:
                             //---thepanel.Focus(); //Give it focus
 
-                            //IntPtr toplevelWindow = FindWindow("MPFCWindow", "");
-                            //JJ: Hm.. somehow i deleted FindWindow...
-                            /*if (toplevelWindow != null)
-                            {
-                                WriteLog("Got a handle...");
-                            }*/
-
-                            //JJ: Just send 'Enter' until the message system works...
+                            //JJ: Just send 'Enter' until a new message system works...
                             SendKeys.SendWait("{ENTER}");
                         }
                     }
@@ -1354,8 +1347,9 @@ namespace Navigator
                 CF_localskinsetup();
 
                 //Timer to update GPS Status screen
+                NavDestinationTimer.Interval = 1000; // Increase freqency of updates from Navigator
                 NavStatustimer_Tick(null, null); //Make first update now
-                NavStatustimer.Enabled = true;
+                NavStatustimer.Enabled = true;               
 
                 //Make button hidden
                 this.CF_setButtonEnableFlag("MinMax", false);
@@ -1364,6 +1358,7 @@ namespace Navigator
             {
                 WriteLog("Switch to Navigator");
                 NavStatustimer.Enabled = false; //Stop the updates
+                NavDestinationTimer.Interval = 5000; // Put back to 5000ms
 
                 boolMainScreen = true;
                 CF_localskinsetup();
@@ -1501,7 +1496,7 @@ namespace Navigator
 
         
         //Write to plugin log file
-        private void WriteLog(string msg)
+        public void WriteLog(string msg)
         {
             try
             {
@@ -1617,14 +1612,6 @@ namespace Navigator
         }
 			
 #region CF events
-
-#if !WindowsCE
-		private void Navigator_CF_Event_powerModeChanged(object sender, Microsoft.Win32.PowerModeChangedEventArgs e)
-		{
-
-		}
-#endif
-
         // Fired when the power mode of the operating system changes
         private void OnPowerModeChanged(object sender, CFPowerModeChangedEventArgs e)
         {
@@ -1650,21 +1637,12 @@ namespace Navigator
 
                 //If exit, restart Navigator
                 boolExit = false;
+
+                //If suspend was initiated when plugin active, we need to ensure CF_pluginShow() is called
+                if (this.Visible == true) CF_pluginShow();
             }
 
             WriteLog("OnPowerModeChanged - end()");
-            return;
-        }
-
-        private void OnApplicationClosing(object sender, EventArgs e)
-        {
-            CFTools.writeLog(PluginName, "OnApplicationClosing", "");
-            return;
-        }
-        
-        private void OnApplicationLoaded(object sender, EventArgs e)
-        {
-            CFTools.writeLog(PluginName, "OnApplicationLoaded", "");
             return;
         }
 
