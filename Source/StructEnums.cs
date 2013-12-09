@@ -132,7 +132,7 @@ namespace Navigator
         VK_RETURN = 0x00d
     }
 
-    public enum SpeedUnit : int
+    public enum Unit : int
     {
         UNKNOWN = -1,
         METRIC = 0,

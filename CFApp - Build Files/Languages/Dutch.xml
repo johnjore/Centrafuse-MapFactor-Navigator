@@ -34,6 +34,7 @@
     <TRUE>True</TRUE>
     <FALSE>False</FALSE>
     <NAMEDPIPEPATCHFAILED>Failed to change named pipe patch status</NAMEDPIPEPATCHFAILED>
+    <NOIDCFILE>Fatal error: No IDC file. Navigator will not launch!</NOIDCFILE>
   </NAVIGATOR>
   <SETUP>
     <DESCRIPTION>Configuren Mapfactor Navigator Plugin</DESCRIPTION>

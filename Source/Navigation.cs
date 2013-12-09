@@ -64,36 +64,60 @@ namespace Navigator
             //Don't read from disk on each update or each attribute
             switch (SpeedUnit)
             {
-                case SpeedUnit.METRIC:
+                case Unit.METRIC:
                     try { CF_updateText("DataSpeed", CF_navGetInfo(CFNavInfo.Speed) + " km/h");}
                     catch { CF_updateText("DataSpeed", "0 km/h"); }
 
-                    try { CF_updateText("DataAltitude", CF_navGetInfo(CFNavInfo.Altitude) + " m"); }
-                    catch { CF_updateText("DataAltitude", ""); }
-                    
-                    try { CF_updateText("DataRemainingDistance", CF_navGetInfo(CFNavInfo.RemainingDistance) + " m"); }
-                    catch {CF_updateText("DataRemainingDistance", "");}
-
-                    try { CF_updateText("DataNextTurn", CF_navGetInfo(CFNavInfo.NextTurn)+ " m");}
-                    catch { CF_updateText("DataNextTurn", ""); }
-
                     break;
-                case SpeedUnit.IMPERIAL:
+                case Unit.IMPERIAL:
                     try { CF_updateText("DataSpeed", CF_navGetInfo(CFNavInfo.Speed) + " mph");}
                     catch { CF_updateText("DataSpeed", "0 mph"); }
 
+                    break;
+                default:
+                    try { CF_updateText("DataSpeed", CF_navGetInfo(CFNavInfo.Speed)); }
+                    catch { CF_updateText("DataSpeed", "0"); }
+                    break;
+            }
+
+            //Don't read from disk on each update or each attribute
+            string tmpRD = CF_navGetInfo(CFNavInfo.RemainingDistance);
+            string tmpNT = CF_navGetInfo(CFNavInfo.NextTurn);
+
+            switch (DistUnit)
+            {
+                case Unit.METRIC:
+                    try { CF_updateText("DataAltitude", CF_navGetInfo(CFNavInfo.Altitude) + " m"); }
+                    catch { CF_updateText("DataAltitude", ""); }
+
+                    try {if (tmpRD != "") CF_updateText("DataRemainingDistance", tmpRD + " m"); else CF_updateText("DataRemainingDistance", ""); }
+                    catch { CF_updateText("DataRemainingDistance", ""); }
+
+                    try { if (tmpNT != "") CF_updateText("DataNextTurn", tmpRD + " m"); else CF_updateText("DataNextTurn", ""); }
+                    catch { CF_updateText("DataNextTurn", ""); }
+
+                    break;
+                case Unit.IMPERIAL:
                     try { CF_updateText("DataAltitude", CF_navGetInfo(CFNavInfo.Altitude) + " ft"); }
                     catch { CF_updateText("DataAltitude", ""); }
-                    
-                    try { CF_updateText("DataRemainingDistance", CF_navGetInfo(CFNavInfo.RemainingDistance) + " ft"); }
-                    catch {CF_updateText("DataRemainingDistance", "");}
 
-                    try { CF_updateText("DataNextTurn", CF_navGetInfo(CFNavInfo.NextTurn)+ " ft");}
+                    try { if (tmpRD != "") CF_updateText("DataRemainingDistance", tmpRD + " ft"); else CF_updateText("DataRemainingDistance", ""); }
+                    catch { CF_updateText("DataRemainingDistance", ""); }
+
+                    try { if (tmpNT != "") CF_updateText("DataNextTurn", tmpRD + " ft"); else CF_updateText("DataNextTurn", ""); }
                     catch { CF_updateText("DataNextTurn", ""); }
 
                     break;
                 default:
-                    CF_updateText("DataSpeed", "");
+                    try { CF_updateText("DataAltitude", CF_navGetInfo(CFNavInfo.Altitude)); }
+                    catch { CF_updateText("DataAltitude", ""); }
+
+                    try { CF_updateText("DataRemainingDistance", CF_navGetInfo(CFNavInfo.RemainingDistance)); }
+                    catch { CF_updateText("DataRemainingDistance", ""); }
+
+                    try { CF_updateText("DataNextTurn", CF_navGetInfo(CFNavInfo.NextTurn)); }
+                    catch { CF_updateText("DataNextTurn", ""); }
+
                     break;
             }
 
@@ -543,8 +567,14 @@ namespace Navigator
         {
             //Ask Navigator for navigation statistics
             SendCommand("$navigation_statistics\r\n", false, TCPCommand.Statistics);
-            
-            //This is not documented in the API and returns "Error". Probably issing
+
+            //Get SpeedUnit (We need to poll this as user can change setting, but we're not told about the change)
+            if (ReadCFValue("/APPCONFIG/SPEEDUNIT", "I", configPath)) SpeedUnit = Unit.IMPERIAL;
+            if (ReadCFValue("/APPCONFIG/SPEEDUNIT", "M", configPath)) SpeedUnit = Unit.METRIC;
+            if (ReadCFValue("/APPCONFIG/UNIT", "I", configPath)) DistUnit = Unit.IMPERIAL;
+            if (ReadCFValue("/APPCONFIG/UNIT", "M", configPath)) DistUnit = Unit.METRIC;
+
+            //This is not documented in the API and returns "Error". Probably missing parameters
             //SendCommand("$nearest_streets\r\n", false, TCPCommand.NearestStreets);
         }
         

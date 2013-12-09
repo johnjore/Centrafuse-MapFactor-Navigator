@@ -267,7 +267,7 @@ namespace Navigator
                         boolAskNavigatorRestart = true;
 
                         //Let use know about the screen refresh issue
-                        if (((CFSetupHandlerParams)value).result.value == "") mainForm.CF_systemDisplayDialog(CF_Dialogs.OkBox, mainForm.pluginLang.ReadField("/APPLANG/SETUP/CFREFRESHBUG"));                        
+                        if (((CFSetupHandlerParams)value).result.value == "") mainForm.CF_systemDisplayDialog(CF_Dialogs.OkBox, mainForm.pluginLang.ReadField("/APPLANG/SETUP/CFREFRESHBUG"));
                     }
 
                     ((CFSetupHandlerParams)value).requesttype = CFSetupHandlerRequest.None; //Get out of loop
@@ -384,6 +384,15 @@ namespace Navigator
         private void SetEdition(ref object value)
         {
             this.configReader.WriteField("/APPCONFIG/FREEEDITION", value.ToString());
+
+            try
+            {
+                if (bool.Parse(value.ToString()) == false)
+                {
+                    mainForm.CF_systemDisplayDialog(CF_Dialogs.OkBox, mainForm.pluginLang.ReadField("/APPLANG/SETUP/LICENSED"));
+                }
+            }
+            catch (Exception errmsg) { CFTools.writeError(errmsg.Message, errmsg.StackTrace); }
 
             //Make sure user can opt to restart Navigator
             boolAskNavigatorRestart = true;

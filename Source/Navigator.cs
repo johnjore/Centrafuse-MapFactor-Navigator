@@ -23,6 +23,9 @@
  * 
  * Horizontal / vertical Skins
  * 
+ * condense config settings
+ * 
+ * 
  * Resolve all /**/
 
 /* 
@@ -91,9 +94,10 @@ namespace Navigator
         private bool boolCurrentCallMode = false;           // Are we currently on the phone?
         private string strAppDataPath = "";                 // Path to Navigator's XML file
         private CFNavLocation navCurrentLocation = new CFNavLocation();       // Navigator's current location
-        private NavStats _navStats = new NavStats();         // Navigation statistics
-        private SpeedUnit SpeedUnit = SpeedUnit.UNKNOWN;    // Default to unknown unit
-
+        private NavStats _navStats = new NavStats();        // Navigation statistics
+        private Unit SpeedUnit = Unit.UNKNOWN;              // Default to unknown unit
+        private Unit DistUnit = Unit.UNKNOWN;               // Default to unknown unit
+        
         //Timers
         Timer nightTimer = new System.Windows.Forms.Timer(); // timer for switching day/night skin      
         Timer muteCFTimer = new System.Windows.Forms.Timer();    // timer for mute'ing CF
@@ -893,21 +897,45 @@ namespace Navigator
                 {
                     //Read from registry                     
                     RegistryKey rk = Registry.LocalMachine;
-                    RegistryKey sk1 = rk.OpenSubKey(REGNavigator);                  
+                    RegistryKey sk1 = rk.OpenSubKey(REGNavigator);
+
+                    string strTmp = sk1.GetValue("Atlas").ToString().ToUpper();
+                    string strFolder = Path.GetDirectoryName(strTmp);
 
                     if (boolFREE)
                     {
-                        //Add the '_free' text to the filename        
-                        string strTmp = sk1.GetValue("Atlas").ToString();
-                        strTmp = strTmp.ToUpper();
-                        if (!strTmp.Contains("_FREE.IDC")) 
-                            strEXEParameters = strEXEParameters + " --atlas=" + strTmp.Substring(0, strTmp.Length - 4) + "_free.idc";
-                        else 
-                            strEXEParameters = strEXEParameters + " --atlas=" + sk1.GetValue("Atlas").ToString();
+                        if (GetProductKey(strFolder + "\\atlas_pcn_free.idc") == true)
+                        {
+                            WriteLog("Using FREE edition");
+                            strEXEParameters = strEXEParameters + " --atlas=" + strFolder + "\\atlas_pcn_free.idc";
+                        }
+                        else
+                        {
+                            WriteLog("FREE edition selected, but no product key in file");
+                            CF_systemDisplayDialog(CF_Dialogs.OkBox, this.pluginLang.ReadField("/APPLANG/NAVIGATOR/NOIDCFILE"));
+                        }
                     }
                     else
                     {
-                        strEXEParameters = strEXEParameters + " --atlas=" + sk1.GetValue("Atlas").ToString();
+                        if (GetProductKey(strFolder + "\\atlas_pcn.idc") == true)
+                        {
+                            WriteLog("PAID edition selected");
+                            strEXEParameters = strEXEParameters + " --atlas=" + strFolder + "\\atlas_pcn.idc";
+                        }
+                        else
+                        {
+                            WriteLog("PAID edition selected, but no product key in file. Trying FREE edition");
+                            if (GetProductKey(strFolder + "\\atlas_pcn_free.idc") == true)
+                            {
+                                WriteLog("Using FREE edition");
+                                strEXEParameters = strEXEParameters + " --atlas=" + strFolder + "\\atlas_pcn_free.idc";
+                            }
+                            else
+                            {
+                                WriteLog("Still no product key. Can't progress");
+                                CF_systemDisplayDialog(CF_Dialogs.OkBox, this.pluginLang.ReadField("/APPLANG/NAVIGATOR/NOIDCFILE"));
+                            }
+                        }                        
                     }
                 }
                 catch
@@ -1002,7 +1030,7 @@ namespace Navigator
                 }
                 
                 // Delay after Unmute
-                int intDelay = 0;
+                int intDelay = 1800;
                 try
                 {
                     intDelay = int.Parse(this.pluginConfig.ReadField("/APPCONFIG/AUDIODELAYAFTERMUTE"));
@@ -1069,12 +1097,6 @@ namespace Navigator
                     WriteLog("Trim digits: " + boolTRIMDIGITS.ToString());
                 }
 
-
-                //Get SpeedUnit
-                if (ReadCFValue("/APPCONFIG/SPEEDUNIT", "I", configPath)) SpeedUnit = SpeedUnit.IMPERIAL;
-                if (ReadCFValue("/APPCONFIG/SPEEDUNIT", "M", configPath)) SpeedUnit = SpeedUnit.METRIC;
-
-
                 // CF Settings
                 try
                 {
@@ -1095,6 +1117,46 @@ namespace Navigator
             }
             catch (Exception errMsg) { WriteLog("Unable to get configuration settings: " + errMsg.Message); }
         }
+
+        //Read Navigator's product key from IDC file
+        private bool GetProductKey(string tmpIDCFile)
+        {
+            string productKey = "";
+            FileInfo fiIDC = new FileInfo(tmpIDCFile);
+            
+            //bool boolTmp = ReadCFValue("/config/app/product_key", "", tmpIDCFile);
+            //WriteLog("booltmp: " + boolTmp);
+                        
+
+            //XML File exists, and user wants to swap config files around
+            if (fiIDC.Exists)
+            {
+                WriteLog("Reading product key from '" + tmpIDCFile + "'");
+                try
+                {
+                    //Get Mapfactor license
+                    XmlDocument configxml = new XmlDocument();
+                    configxml.XmlResolver = null; //Ignore settings.dtd file not in same folder
+                    configxml.Load(tmpIDCFile);
+
+                    XmlNodeList xnList = configxml.SelectNodes("/config/app");
+                    foreach (XmlNode xn in xnList)
+                    {
+                        productKey = xn["product_key"].InnerText;
+                    }
+                }
+                catch (Exception errMsg) { WriteLog("Failed to read product key: " + errMsg.Message); }
+
+                WriteLog("ProductKey: " + productKey);
+                if (productKey == "") return false; else return true;
+            }
+            else
+            {
+                WriteLog("IDC file '" + tmpIDCFile + "' does not exist");
+                return false;
+            }
+        }
+        
 
         //Manipulate Navigator's XML file
         public void ConfigureNavigatorXML()

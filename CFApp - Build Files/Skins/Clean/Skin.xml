@@ -47,16 +47,16 @@
 
         <CONTROL type="Label" id="DataLongitude" bounds="345;10;240;22" fontclass="DataText" fontstyle="" textenable="true" text="" enabled="true"/>
         <CONTROL type="Label" id="DataLatitude" bounds="345;35;240;22" fontclass="DataText" fontstyle="" textenable="true" text="" enabled="true"/>
-        <CONTROL type="Label" id="DataAltitude" bounds="345;60;100;22" fontclass="DataText" fontstyle="" textenable="true" text="" enabled="true"/>
+        <CONTROL type="Label" id="DataAltitude" bounds="345;60;240;22" fontclass="DataText" fontstyle="" textenable="true" text="" enabled="true"/>
         <CONTROL type="Label" id="DataLockedSatellites" bounds="345;85;100;22" fontclass="DataText" fontstyle="" textenable="true" text="" enabled="true"/>
         <CONTROL type="Label" id="DataSpeed" bounds="345;110;200;22" fontclass="DataText" fontstyle="" textenable="true" text="" enabled="true"/>
         <CONTROL type="Label" id="DataDirection" bounds="345;135;100;22" fontclass="DataText" fontstyle="" textenable="true" text="" enabled="true"/>
         <CONTROL type="Label" id="DataAzimuth" bounds="345;160;100;22" fontclass="DataText" fontstyle="" textenable="true" text="" enabled="true"/>
-        <CONTROL type="Label" id="DataETR" bounds="345;185;200;22" fontclass="DataText" fontstyle="" textenable="true" text="" enabled="true"/>
-        <CONTROL type="Label" id="DataETA" bounds="345;210;200;22" fontclass="DataText" fontstyle="" textenable="true" text="" enabled="true"/>
-        <CONTROL type="Label" id="DataRemainingDistance" bounds="345;235;100;22" fontclass="DataText" fontstyle="" textenable="true" text="" enabled="true"/>
-        <CONTROL type="Label" id="DataNextTurn" bounds="345;260;100;22" fontclass="DataText" fontstyle="" textenable="true" text="" enabled="true"/>
-        <CONTROL type="Label" id="DataInRoute" bounds="345;285;100;22" fontclass="DataText" fontstyle="" textenable="true" text="" enabled="true"/>
+        <CONTROL type="Label" id="DataETR" bounds="345;185;320;22" fontclass="DataText" fontstyle="" textenable="true" text="" enabled="true"/>
+        <CONTROL type="Label" id="DataETA" bounds="345;210;320;22" fontclass="DataText" fontstyle="" textenable="true" text="" enabled="true"/>
+        <CONTROL type="Label" id="DataRemainingDistance" bounds="345;235;320;22" fontclass="DataText" fontstyle="" textenable="true" text="" enabled="true"/>
+        <CONTROL type="Label" id="DataNextTurn" bounds="345;260;320;22" fontclass="DataText" fontstyle="" textenable="true" text="" enabled="true"/>
+        <CONTROL type="Label" id="DataInRoute" bounds="345;285;320;22" fontclass="DataText" fontstyle="" textenable="true" text="" enabled="true"/>
         <CONTROL type="Label" id="DataGPSTime" bounds="345;310;320;22" fontclass="DataText" fontstyle="" textenable="true" text="" enabled="true"/>
 
         <CONTROL type="DynButton" id="MinMax"      bounds="710;009;080;058" fullbounds="710;097;080;058" tabindex="1" enabled="true"  action="ToggleMinMax"                   off="ResizeOff"      down="ResizeDown"     fontclass="Standard12" />
