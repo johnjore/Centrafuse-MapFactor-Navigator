@@ -30,13 +30,26 @@ namespace Navigator
     public partial class Navigator
     {
         private readonly CfNavData _currentPosition = new CfNavData();
+        private readonly double meter_To_ft = 3.2808399;
+        private readonly double knots_To_kmh = 1.94384449244;
+        private readonly double knots_To_mph = 1.1507794480136;
 
         // Event to get CF to ask for stats
         private void NavStatustimer_Tick(object sender, EventArgs e)
         {
+            //Get current decimal separator
+            string decimalSeparator = CultureInfo.CurrentCulture.NumberFormat.NumberDecimalSeparator;
+            //WriteLog("Localize: " + boolLocalize.ToString() + " " + decimalSeparator);
+
             try 
             { 
-                CF_updateText("DataLongitude", CF_navGetInfo(CFNavInfo.Longitude));
+                
+                if (boolLocalize)
+                {
+                    CF_updateText("DataLongitude", CF_navGetInfo(CFNavInfo.Longitude).Replace(".", decimalSeparator));
+                }
+                else
+                    CF_updateText("DataLongitude", CF_navGetInfo(CFNavInfo.Longitude));
             }
             catch 
             {
@@ -45,7 +58,10 @@ namespace Navigator
 
             try 
             {
-                CF_updateText("DataLatitude", CF_navGetInfo(CFNavInfo.Latitude));
+                if (boolLocalize)
+                    CF_updateText("DataLatitude", CF_navGetInfo(CFNavInfo.Latitude).Replace(".", decimalSeparator));
+                else
+                    CF_updateText("DataLatitude", CF_navGetInfo(CFNavInfo.Latitude));
             }
             catch 
             {
@@ -62,20 +78,26 @@ namespace Navigator
             }            
 
             //Don't read from disk on each update or each attribute
+            string tmpSpeed;
+            if (boolLocalize)
+                tmpSpeed = CF_navGetInfo(CFNavInfo.Speed).Replace(".", decimalSeparator);
+            else
+                tmpSpeed = CF_navGetInfo(CFNavInfo.Speed);
+
             switch (SpeedUnit)
             {
                 case Unit.METRIC:
-                    try { CF_updateText("DataSpeed", CF_navGetInfo(CFNavInfo.Speed) + " km/h");}
+                    try { CF_updateText("DataSpeed", tmpSpeed + " km/h");}
                     catch { CF_updateText("DataSpeed", "0 km/h"); }
 
                     break;
                 case Unit.IMPERIAL:
-                    try { CF_updateText("DataSpeed", CF_navGetInfo(CFNavInfo.Speed) + " mph");}
+                    try { CF_updateText("DataSpeed", tmpSpeed + " mph");}
                     catch { CF_updateText("DataSpeed", "0 mph"); }
 
                     break;
                 default:
-                    try { CF_updateText("DataSpeed", CF_navGetInfo(CFNavInfo.Speed)); }
+                    try { CF_updateText("DataSpeed", tmpSpeed); }
                     catch { CF_updateText("DataSpeed", "0"); }
                     break;
             }
@@ -93,7 +115,7 @@ namespace Navigator
                     try {if (tmpRD != "") CF_updateText("DataRemainingDistance", tmpRD + " m"); else CF_updateText("DataRemainingDistance", ""); }
                     catch { CF_updateText("DataRemainingDistance", ""); }
 
-                    try { if (tmpNT != "") CF_updateText("DataNextTurn", tmpRD + " m"); else CF_updateText("DataNextTurn", ""); }
+                    try { if (tmpNT != "") CF_updateText("DataNextTurn", tmpNT + " m"); else CF_updateText("DataNextTurn", ""); }
                     catch { CF_updateText("DataNextTurn", ""); }
 
                     break;
@@ -104,7 +126,7 @@ namespace Navigator
                     try { if (tmpRD != "") CF_updateText("DataRemainingDistance", tmpRD + " ft"); else CF_updateText("DataRemainingDistance", ""); }
                     catch { CF_updateText("DataRemainingDistance", ""); }
 
-                    try { if (tmpNT != "") CF_updateText("DataNextTurn", tmpRD + " ft"); else CF_updateText("DataNextTurn", ""); }
+                    try { if (tmpNT != "") CF_updateText("DataNextTurn", tmpNT + " ft"); else CF_updateText("DataNextTurn", ""); }
                     catch { CF_updateText("DataNextTurn", ""); }
 
                     break;
@@ -123,8 +145,9 @@ namespace Navigator
 
             try
             {               
-                //CF_updateText("DataETR", CF_navGetInfo(CFNavInfo.ETR) + " seconds");
-                double tmpETR = System.Math.Floor(double.Parse(CF_navGetInfo(CFNavInfo.ETR)) / 60);
+                CF_updateText("DataETR", CF_navGetInfo(CFNavInfo.ETR) + " seconds");
+                
+                /*double tmpETR = System.Math.Floor(double.Parse(CF_navGetInfo(CFNavInfo.ETR)) / 60);
 
                 //Less than 1 minute?
                 switch (tmpETR.ToString())
@@ -139,6 +162,7 @@ namespace Navigator
                         CF_updateText("DataETR", tmpETR.ToString() + " " + pluginLang.ReadField("/APPLANG/NAVIGATOR/MINUTES") + " (" + CF_navGetInfo(CFNavInfo.ETR) + " " + pluginLang.ReadField("/APPLANG/NAVIGATOR/SECONDS") + ")");
                         break;
                 }
+                */
             }
             catch 
             {
@@ -317,7 +341,7 @@ namespace Navigator
                     retvalue = _currentPosition.Longitude.ToString("F5", CultureInfo.InvariantCulture);
                     break;
                 case CFNavInfo.RemainingDistance:
-                    if (String.Compare(CF_navGetInfo(CFNavInfo.InRoute), strTRUE, true) == 0) retvalue = _navStats.DistanceMetersDestination.ToString(); else retvalue = "";
+                    if (String.Compare(CF_navGetInfo(CFNavInfo.InRoute), strTRUE, true) == 0) retvalue = _navStats.DistanceDestination.ToString(); else retvalue = "";
                     break;
                 case CFNavInfo.Speed:
                     retvalue = _currentPosition.Speed.ToString(CultureInfo.InvariantCulture);
@@ -350,10 +374,10 @@ namespace Navigator
                     retvalue = "";
                     break;
                 case CFNavInfo.NextTurn:
-                    if (String.Compare(CF_navGetInfo(CFNavInfo.InRoute), strTRUE, true) == 0) retvalue = _navStats.DistanceMetersNextWaypoint.ToString(); else retvalue = "";
+                    if (String.Compare(CF_navGetInfo(CFNavInfo.InRoute), strTRUE, true) == 0) retvalue = _navStats.DistanceNextWaypoint.ToString(); else retvalue = "";
                     break;
                 case CFNavInfo.InRoute:
-                    if (_navStats.DistanceMetersDestination != 0) retvalue = strTRUE; else retvalue = strFALSE;
+                    if (_navStats.DistanceDestination != 0) retvalue = strTRUE; else retvalue = strFALSE;
                     break;
             }
 

@@ -23,9 +23,6 @@
  * 
  * Horizontal / vertical Skins
  * 
- * condense config settings
- * 
- * 
  * Resolve all /**/
 
 /* 
@@ -78,6 +75,7 @@ namespace Navigator
         private string strEXEParameters = "";               // Paramters to use
         private bool boolFullScreen = false;                // Full screen?
         private bool boolTRIMDIGITS = false;                // Trim number of digits for speed etc?
+        private bool boolLocalize = false;                  // Localize GPS Status screen
         public bool boolExit = false;                       // Set True if hibernating
         private bool boolFREE = true;                       // Free edition?
         private bool boolOSMOK = false;                     // If true, supresses OSM License prompt
@@ -394,7 +392,13 @@ namespace Navigator
                 //LK, 30-nov-2013: When we became the new navigation app and PC_Navigator isn't loaded yet, load it now
                 //JJ: How can CF_pluginShow() be called if we're not the active navigation plugin?!?
                 if (ReadCFValue("/APPCONFIG/NAVENGINE", "NAVIGATOR", configPath) && pNavigator == null)
+                {
+                    //Modify Navigator's Settings XML file...
+                    ConfigureNavigatorXML();
+
+                    //Start Navigator
                     StartNavigator();
+                }
 
                 if (boolMainScreen) //LK, 30-nov-2013: Aonly do this when in the main screen (not the status screen)
                 {
@@ -510,6 +514,7 @@ namespace Navigator
             //Launch Navigator                    
             try
             {
+                /**/ //This check is redundant. No paths lead to this without this already checked
                 if (ReadCFValue("/APPCONFIG/NAVENGINE", "NAVIGATOR", configPath))
                 {
                     pNavigator = new Process();
@@ -679,42 +684,66 @@ namespace Navigator
         // Handle Navigator Exited event
         private void pNavigator_Exited(object sender, System.EventArgs e)
         {
-            //User really wants to exit Navigator...
-            if (!boolExit)
+            try
             {
-                WriteLog("Navigator no longer running. Exit code: " + pNavigator.ExitCode.ToString());
-
-                //Get current timer status
-                bool nightTimer_Status = nightTimer.Enabled;
-                bool muteCFTimer_Status = muteCFTimer.Enabled;                
-
-                //Stop all timers. Call back does not work and causes grief...
-                nightTimer.Enabled = false;
-                muteCFTimer.Enabled = false;
-                CallStatusTimer.Enabled = false;
-                NavDestinationTimer.Enabled = false;
-
-                //Disconnect the TCP connection so it can be re-established
-                server.Disconnect(true);
-                boolConnecting = false;
-
-                //Modify Navigator's Settings XML file...
-                ConfigureNavigatorXML();
-
-                //Start  Navigator
-                StartNavigator();
-
-                //If user exited Navigator manually, then plugin is visible
-                if (this.Visible == true)
+                //User really wants to exit Navigator...
+                if (!boolExit)
                 {
-                    thepanel.Visible = true; // Make sure its visible, and not behind stats screen
-                    thepanel.Focus(); //Give it focus
-                    SendCommand("$maximize\r\n", false, TCPCommand.Maximize);
+                    WriteLog("Navigator no longer running. Exit code: " + pNavigator.ExitCode.ToString());
+
+                    //Get current timer status
+                    bool nightTimer_Status = nightTimer.Enabled;
+                    bool muteCFTimer_Status = muteCFTimer.Enabled;
+
+                    //Stop all timers. Call back does not work and causes grief...
+                    nightTimer.Enabled = false;
+                    muteCFTimer.Enabled = false;
+                    CallStatusTimer.Enabled = false;
+                    NavDestinationTimer.Enabled = false;
+
+                    //Disconnect the TCP connection so it can be re-established                
+                    WriteLog("Disconnecting TCP connection for reuse");
+                    try
+                    {
+                        //Disconnect the TCP connection so it can be re-established                    
+                        try
+                        {
+                            //This is known to fail on WinXP, so provide an alternative
+                            if (CF_getConfigSetting(CF_ConfigSettings.OSVersion).ToString().ToUpper() != "XP".ToUpper()) server.Disconnect(true); else server.Close();
+                        }
+                        catch (Exception errMsg) { WriteLog("Failed to disconnect: " + errMsg.Message); }
+                    }
+                    catch (Exception errMsg)
+                    {
+                        WriteLog("Failed to disconnect :" + errMsg.Message);
+                    }
+                    finally
+                    {
+                        boolConnecting = false;
+                    }
+
+                    //Modify Navigator's Settings XML file...
+                    ConfigureNavigatorXML();
+
+                    //Start  Navigator
+                    StartNavigator();
+
+                    //If user exited Navigator manually, then plugin is visible
+                    if (this.Visible == true)
+                    {
+                        thepanel.Visible = true; // Make sure its visible, and not behind stats screen
+                        thepanel.Focus(); //Give it focus
+                        SendCommand("$maximize\r\n", false, TCPCommand.Maximize);
+                    }
+
+                    //Set timers back the way they were
+                    nightTimer.Enabled = nightTimer_Status;
+                    muteCFTimer.Enabled = muteCFTimer_Status;
                 }
-               
-                //Set timers back the way they were
-                nightTimer.Enabled = nightTimer_Status;
-                muteCFTimer.Enabled = muteCFTimer_Status;
+            }
+            catch (Exception ex)
+            {
+                WriteLog("Restart of PC_Navigator failed: '" + ex.Message); //LK, 28-nov-2013: Text adjusted
             }
         }
 
@@ -843,7 +872,7 @@ namespace Navigator
                                     
                                     CFDialogParams dialogParams = new CFDialogParams(this.pluginLang.ReadField("/APPLANG/SETUP/EXEPATH"), location);
                                     dialogParams.browseable = true;
-                                    dialogParams.enablesubactions = false;
+                                    dialogParams.enablesubactions = true;
                                     dialogParams.showfiles = true;
 
                                     CFDialogResults results = new CFDialogResults();
@@ -1080,6 +1109,22 @@ namespace Navigator
                 finally
                 {
                     WriteLog("Swap mapFactor Navigator's settings.xml files around: " + boolSETTINGSXMLSWAP.ToString());
+                }
+
+                // Localize GPS Status screen?
+                boolLocalize = false;
+                try
+                {
+                    boolLocalize = bool.Parse(this.pluginConfig.ReadField("/APPCONFIG/LOCALIZE"));
+                }
+                catch
+                {
+                    boolLocalize = false;
+                    this.pluginConfig.WriteField("/APPCONFIG/LOCALIZE", boolLocalize.ToString(), true);
+                }
+                finally
+                {
+                    WriteLog("Localize GPS Status screen: : " + boolLocalize.ToString());
                 }
 
                 // Trim number of digits?
@@ -1613,14 +1658,27 @@ namespace Navigator
             {
                 IntPtr mainWindowHandle = pNavigator.MainWindowHandle;  //LK, 29-nov-2013: Cache before close
 
-                //Disconnect the TCP connection so it can be re-established
+                //Disconnect the TCP connection so it can be re-established                
                 WriteLog("Disconnecting TCP connection for reuse");
                 try
                 {
-                    server.Disconnect(true);
+                    //Disconnect the TCP connection so it can be re-established                    
+                    try
+                    {
+                        //This is known to fail on WinXP, so provide an alternative
+                        if (CF_getConfigSetting(CF_ConfigSettings.OSVersion).ToString().ToUpper() != "XP".ToUpper()) server.Disconnect(true); else server.Close();
+                    }
+                    catch (Exception errMsg) { WriteLog("Failed to disconnect: " + errMsg.Message); }
+                }
+                catch (Exception errMsg)
+                {
+                    WriteLog("Failed to disconnect :" + errMsg.Message);
+                }
+                finally
+                {
                     boolConnecting = false;
                 }
-                catch (Exception errMsg) { WriteLog("Failed to disconnect: " + errMsg.Message); }
+
 
                 //Stop all timers first to avoid callbacks and additional TCP commands
                 nightTimer.Enabled = false;

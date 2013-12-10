@@ -20,11 +20,7 @@
  *  Unable to use command line parameters for IP and port for TCP communications. Workaround modifies XML file directly
  *  Requires Navigator to fix bug
 */
-/*
-M missing on remaining distance when in route
-Move "navigator config file" to a "wide option"
-*/
- 
+
 /*
  * All functions related to communicating with Navigator
 */
@@ -295,11 +291,11 @@ namespace Navigator
                                             switch (SpeedUnit)
                                             {
                                                 case Unit.METRIC:
-                                                    try { _currentPosition.Speed = double.Parse(rmCdata[7], CultureInfo.InvariantCulture) * 1.94384449244; }
+                                                    try { _currentPosition.Speed = double.Parse(rmCdata[7], CultureInfo.InvariantCulture) * knots_To_kmh; }
                                                     catch { _currentPosition.Speed = 0; }
                                                     break;
                                                 case Unit.IMPERIAL:
-                                                    try { _currentPosition.Speed = double.Parse(rmCdata[7], CultureInfo.InvariantCulture) * 1.1507794480136; }
+                                                    try { _currentPosition.Speed = double.Parse(rmCdata[7], CultureInfo.InvariantCulture) * knots_To_mph; }
                                                     catch { _currentPosition.Speed = 0; }
                                                     break;
                                                 default:
@@ -391,7 +387,7 @@ namespace Navigator
                                                         break;
                                                     case Unit.IMPERIAL:
                                                         //Convert M to feet and round it off to 0 decimals
-                                                        try { _currentPosition.Altitude = System.Math.Round(double.Parse(ggaData[9], CultureInfo.InvariantCulture) * 3.2808399, 0, MidpointRounding.AwayFromZero); }
+                                                        try { _currentPosition.Altitude = System.Math.Round(double.Parse(ggaData[9], CultureInfo.InvariantCulture) * meter_To_ft, 0, MidpointRounding.AwayFromZero); }
                                                         catch { _currentPosition.Altitude = 0; }
                                                         break;
                                                     default:
@@ -434,8 +430,8 @@ namespace Navigator
                                 else if (strCommands.Contains("NOTNAVIGATING"))
                                 {
                                     //If not navigating, clear these
-                                    _navStats.DistanceMetersDestination = 0;
-                                    _navStats.DistanceMetersNextWaypoint = 0;
+                                    _navStats.DistanceDestination = 0;
+                                    _navStats.DistanceNextWaypoint = 0;
                                     _navStats.TimeSecondsDestination = 0;
                                     _navStats.TimeSecondsNextWaypoint = 0;
                                 }
@@ -445,53 +441,80 @@ namespace Navigator
                                     switch (DistUnit)
                                     {
                                         case Unit.METRIC:
-                                            try { _navStats.DistanceMetersNextWaypoint = double.Parse(strCommands.Split(',')[0]); }
-                                            catch (Exception errMsg) { _navStats.DistanceMetersNextWaypoint = 0; WriteLog("Unable to parse DistanceMetersNextWaypoint: " + errMsg.Message); }
-                                            
-                                            try { _navStats.TimeSecondsNextWaypoint = double.Parse(strCommands.Split(',')[1]); }
-                                            catch (Exception errMsg) { _navStats.TimeSecondsNextWaypoint = 0; WriteLog("Unable to parse TimeSecondsNextWaypoint: " + errMsg.Message); }
+                                            WriteLog("Logging Stats in Metric");
 
-                                            try { _navStats.DistanceMetersDestination = double.Parse(strCommands.Split(',')[2]); }
-                                            catch (Exception errMsg) { _navStats.DistanceMetersDestination = 0; WriteLog("Unable to parse DistanceMetersDestination: " + errMsg.Message); }
+                                            try { _navStats.DistanceDestination = double.Parse(strCommands.Split(',')[2]); }
+                                            catch (Exception errMsg) { _navStats.DistanceDestination = 0; WriteLog("Unable to parse DistanceDestination: " + errMsg.Message); }
+
+                                            //Sanity check. If Destination = Waypoint, set Waypoint values to 0
+                                            try
+                                            {
+                                                if (double.Parse(strCommands.Split(',')[0]) != double.Parse(strCommands.Split(',')[2]))
+                                                    _navStats.DistanceNextWaypoint = double.Parse(strCommands.Split(',')[0]);
+                                                else
+                                                    _navStats.DistanceNextWaypoint = 0;
+                                            }
+                                            catch (Exception errMsg) { _navStats.DistanceNextWaypoint = 0; WriteLog("Unable to parse DistanceNextWaypoint: " + errMsg.Message); }
 
                                             try { _navStats.TimeSecondsDestination = double.Parse(strCommands.Split(',')[3]); }
                                             catch (Exception errMsg) { _navStats.TimeSecondsDestination = 0; WriteLog("Unable to parse TimeSecondsDestination: " + errMsg.Message); }
 
+                                            //Sanity check. If Destination = Waypoint, set Waypoint values to 0
+                                            try 
+                                            {
+                                                if (double.Parse(strCommands.Split(',')[1]) != double.Parse(strCommands.Split(',')[3]))
+                                                    _navStats.TimeSecondsNextWaypoint = double.Parse(strCommands.Split(',')[1]);
+                                                else
+                                                    _navStats.TimeSecondsNextWaypoint = 0;
+                                            }
+                                            catch (Exception errMsg) { _navStats.TimeSecondsNextWaypoint = 0; WriteLog("Unable to parse TimeSecondsNextWaypoint: " + errMsg.Message); }
+                                            
                                             break;
                                         case Unit.IMPERIAL:
                                             //Convert M to feet
-                                            try { _navStats.DistanceMetersNextWaypoint = System.Math.Round(double.Parse(strCommands.Split(',')[0]) * 3.2808399, 0, MidpointRounding.AwayFromZero); }
-                                            catch (Exception errMsg) { _navStats.DistanceMetersNextWaypoint = 0;  WriteLog("Unable to parse DistanceMetersNextWaypoint: " + errMsg.Message); }
+                                            WriteLog("Logging Stats in Imperial");
+                                            try { _navStats.DistanceDestination = System.Math.Round(double.Parse(strCommands.Split(',')[2]) * meter_To_ft, 0, MidpointRounding.AwayFromZero); }
+                                            catch (Exception errMsg) { _navStats.DistanceDestination = 0; WriteLog("Unable to parse DistanceDestination: " + errMsg.Message); }
 
-                                            try { _navStats.TimeSecondsNextWaypoint = System.Math.Round(double.Parse(strCommands.Split(',')[1]) * 3.2808399, 0, MidpointRounding.AwayFromZero); }
-                                            catch (Exception errMsg) { _navStats.TimeSecondsNextWaypoint = 0;  WriteLog("Unable to parse TimeSecondsNextWaypoint: " + errMsg.Message); }
+                                            //Sanity check. If Destination = Waypoint, set Waypoint values to 0
+                                            try
+                                            {
+                                                if (double.Parse(strCommands.Split(',')[0]) != double.Parse(strCommands.Split(',')[2]))
+                                                    _navStats.DistanceNextWaypoint = System.Math.Round(double.Parse(strCommands.Split(',')[0]) * meter_To_ft, 0, MidpointRounding.AwayFromZero);
+                                                else
+                                                    _navStats.DistanceNextWaypoint = 0;
+                                            }
+                                            catch (Exception errMsg) { _navStats.DistanceNextWaypoint = 0; WriteLog("Unable to parse DistanceNextWaypoint: " + errMsg.Message); }
 
-                                            try { _navStats.DistanceMetersDestination = System.Math.Round(double.Parse(strCommands.Split(',')[2]) * 3.2808399, 0, MidpointRounding.AwayFromZero); }
-                                            catch (Exception errMsg) { _navStats.DistanceMetersDestination = 0; WriteLog("Unable to parse DistanceMetersDestination: " + errMsg.Message); }
+                                            try { _navStats.TimeSecondsDestination = System.Math.Round(double.Parse(strCommands.Split(',')[3]) * meter_To_ft, 0, MidpointRounding.AwayFromZero); }
+                                            catch (Exception errMsg) { _navStats.TimeSecondsDestination = 0; WriteLog("Unable to parse TimeSecondsDestination: " + errMsg.Message); }
 
-                                            try { _navStats.TimeSecondsDestination = System.Math.Round(double.Parse(strCommands.Split(',')[3]) * 3.2808399, 0, MidpointRounding.AwayFromZero); }
-                                            catch (Exception errMsg) { _navStats.TimeSecondsDestination = 0;  WriteLog("Unable to parse TimeSecondsDestination: " + errMsg.Message); }
+                                            //Sanity check. If Destination = Waypoint, set Waypoint values to 0
+                                            try
+                                            {
+                                                if (double.Parse(strCommands.Split(',')[1]) != double.Parse(strCommands.Split(',')[3]))
+                                                    _navStats.TimeSecondsNextWaypoint = System.Math.Round(double.Parse(strCommands.Split(',')[1]) * meter_To_ft, 0, MidpointRounding.AwayFromZero);
+                                                else
+                                                    _navStats.TimeSecondsNextWaypoint = 0;
+                                            }
+                                            catch (Exception errMsg) { _navStats.TimeSecondsNextWaypoint = 0; WriteLog("Unable to parse TimeSecondsNextWaypoint: " + errMsg.Message); }
 
                                             break;
                                         default:
-                                            try { _navStats.DistanceMetersNextWaypoint = double.Parse(strCommands.Split(',')[0]); }
-                                            catch (Exception errMsg) { _navStats.DistanceMetersNextWaypoint = 0; WriteLog("Unable to parse DistanceMetersNextWaypoint: " + errMsg.Message); }
+                                            try { _navStats.DistanceNextWaypoint = double.Parse(strCommands.Split(',')[0]); }
+                                            catch (Exception errMsg) { _navStats.DistanceNextWaypoint = 0; WriteLog("Unable to parse DistanceNextWaypoint: " + errMsg.Message); }
                                             
                                             try { _navStats.TimeSecondsNextWaypoint = double.Parse(strCommands.Split(',')[1]); }
                                             catch (Exception errMsg) { _navStats.TimeSecondsNextWaypoint = 0; WriteLog("Unable to parse TimeSecondsNextWaypoint: " + errMsg.Message); }
 
-                                            try { _navStats.DistanceMetersDestination = double.Parse(strCommands.Split(',')[2]); }
-                                            catch (Exception errMsg) { _navStats.DistanceMetersDestination = 0; WriteLog("Unable to parse DistanceMetersDestination: " + errMsg.Message); }
+                                            try { _navStats.DistanceDestination = double.Parse(strCommands.Split(',')[2]); }
+                                            catch (Exception errMsg) { _navStats.DistanceDestination = 0; WriteLog("Unable to parse DistanceDestination: " + errMsg.Message); }
 
                                             try { _navStats.TimeSecondsDestination = double.Parse(strCommands.Split(',')[3]); }
                                             catch (Exception errMsg) { _navStats.TimeSecondsDestination = 0; WriteLog("Unable to parse TimeSecondsDestination: " + errMsg.Message); }
 
                                             break;
                                     }
-
-                                    //Sanity check. If Destination = Waypoint, set Waypoint values to 0
-                                    if (_navStats.DistanceMetersDestination == _navStats.DistanceMetersNextWaypoint) _navStats.DistanceMetersNextWaypoint = 0;
-                                    if (_navStats.TimeSecondsDestination == _navStats.TimeSecondsNextWaypoint) _navStats.TimeSecondsNextWaypoint = 0;
 
                                     if (this.Visible == true)
                                     {

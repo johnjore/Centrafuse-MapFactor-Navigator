@@ -49,16 +49,17 @@
     <GETGPS>Stream GPS information</GETGPS>
     <GETALERTSTATUS>Enable Navigator Alerts</GETALERTSTATUS>
     <MUTEUNMUTESTATUS>"Fake" CF ATT Mute/Unmute</MUTEUNMUTESTATUS>
-    <NAMEDPIPE>Enable Unmute Notification</NAMEDPIPE>
+    <NAMEDPIPE>Unmute Notification</NAMEDPIPE>
     <NOHIRES>Enable --nohires option</NOHIRES>
     <WINDOWSIZE>Startup Window Size (Affects Font size)</WINDOWSIZE>
     <PATCHNAVIGATOR>PC_Navigator.exe will be patched to support named pipe on next restart</PATCHNAVIGATOR>
     <UNPATCHNAVIGATOR>Patch for named pipe will be removed on next restart</UNPATCHNAVIGATOR>
-    <MUTEUNMUTEW7>This feature works on Windows 7 only</MUTEUNMUTEW7>
+    <MUTEUNMUTEW7>This feature works on Windows 7/8 only</MUTEUNMUTEW7>
     <AUDIODELAYAFTERMUTE>Unmute after (ms)</AUDIODELAYAFTERMUTE>
     <SETTINGSXMLSWAP>Dedicated Navigator Settings.XML file</SETTINGSXMLSWAP>
     <TRIMDIGITS>Trim Digits</TRIMDIGITS>
     <CFREFRESHBUG>Note: Screen is not updated correctly due to bug in CF</CFREFRESHBUG>
     <LICENSED>Do NOT enable this, if you're using free (OSM) version of Navigator</LICENSED>
+    <LOCALIZE>Localize GPS Status screen (. vs ,)</LOCALIZE>
   </SETUP>
 </APPLANG>

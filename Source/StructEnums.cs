@@ -47,9 +47,9 @@ namespace Navigator
     // Structure for holding navigation statistics
     public struct NavStats
     {
-        public double DistanceMetersNextWaypoint;
+        public double DistanceNextWaypoint;
         public double TimeSecondsNextWaypoint;
-        public double DistanceMetersDestination;
+        public double DistanceDestination;
         public double TimeSecondsDestination;
         public string GPSDate;
         public string GPSTime;

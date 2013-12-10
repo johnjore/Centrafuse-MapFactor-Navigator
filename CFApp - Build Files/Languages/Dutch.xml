@@ -8,8 +8,8 @@
     <DESTINATION>Bestemming bereikt</DESTINATION>
     <EMBEDDINGFAILED>Kan de nog actieve versie van PC_navigator niet afsluiten. Insluiten zal mislukken</EMBEDDINGFAILED>
     <SECONDS>seconden</SECONDS>
-    <MINUTES>minutes</MINUTES>
-    <MINUTE>minute</MINUTE>
+    <MINUTES>minutem</MINUTES>
+    <MINUTE>minuut</MINUTE>
     <LBLLONGITUDE>Lengtegraad:</LBLLONGITUDE>
     <LBLLATITUDE>Breedtegraad:</LBLLATITUDE>
     <LBLALTITUDE>Hoogte:</LBLALTITUDE>
@@ -18,7 +18,7 @@
     <LBLDIRECTION>Richting:</LBLDIRECTION>
     <LBLAZIMUTH>Koers:</LBLAZIMUTH>
     <LBLETR>Resterende tijd:</LBLETR>
-    <LBLETA>ETA:</LBLETA>
+    <LBLETA>Aankomsttijd:</LBLETA>
     <LBLREMAININGDISTANCE>Resterende afstand:</LBLREMAININGDISTANCE>
     <LBLNEXTTURN>Volgende afslag:</LBLNEXTTURN>
     <LBLINROUTE>Op de route:</LBLINROUTE>
@@ -26,14 +26,14 @@
     <TCPFAILED>Navigator: TCP-verbinding mislukt</TCPFAILED>
     <FAILEDTODOCK>Dokken van PC_Navigator is mislukt</FAILEDTODOCK>
     <RESTARTNAVIGATOR>Herstart mapFactor Navigator?</RESTARTNAVIGATOR>
-    <EXELOCATION>Please specify location of </EXELOCATION>
-    <UNABLE>Unable to locate </UNABLE>
-    <USESETUP>Use Setup to reconfigure Navigator plugin</USESETUP>
-    <BUSY>Navigator too busy to perform request. Try again</BUSY>
-    <ERROR>Navigator can't perform requested task</ERROR>
-    <TRUE>True</TRUE>
-    <FALSE>False</FALSE>
-    <NAMEDPIPEPATCHFAILED>Failed to change named pipe patch status</NAMEDPIPEPATCHFAILED>
+    <EXELOCATION>Specificeer de locatie van </EXELOCATION>
+    <UNABLE>Kan deze niet vinden </UNABLE>
+    <USESETUP>Gebruik Setup om Navigator app opnieuw te configureren</USESETUP>
+    <BUSY>Navigator is te druk om aan het verzoek te voldoen. Probeer het nogmaals</BUSY>
+    <ERROR>Navigator kan deze taak niet uitvoeren</ERROR>
+    <TRUE>Waar</TRUE>
+    <FALSE>Niet waar</FALSE>
+    <NAMEDPIPEPATCHFAILED>Het veranderen van de named pipe status is mislukt</NAMEDPIPEPATCHFAILED>
     <NOIDCFILE>Fatal error: No IDC file. Navigator will not launch!</NOIDCFILE>
   </NAVIGATOR>
   <SETUP>
@@ -54,11 +54,14 @@
     <WINDOWSIZE>Windowomvang bij opstarten (heeft effect op lettergrootte)</WINDOWSIZE>
     <PATCHNAVIGATOR>PC_Navigator.exe wordt gepatched voor de ondersteuning van named pipes bij de volgende herstart van CF</PATCHNAVIGATOR>
     <UNPATCHNAVIGATOR>Patch voor ondersteuning van named pipes wordt bij de volgende herstart van CF verwijderd</UNPATCHNAVIGATOR>
-    <MUTEUNMUTEW7>This feature werkt alleen met Windows 7</MUTEUNMUTEW7>
+    <MUTEUNMUTEW7>This feature werkt alleen met Windows 7/8</MUTEUNMUTEW7>
     <AUDIODELAYAFTERMUTE>Automatische Unmute na Mute in ms</AUDIODELAYAFTERMUTE>
-    <SETTINGSXMLSWAP>Dedicated Navigator Settings.XML file</SETTINGSXMLSWAP>
-    <TRIMDIGITS>Trim Digits</TRIMDIGITS>
-    <CFREFRESHBUG>Note: Screen is not updated correctly due to bug in CF</CFREFRESHBUG>
+    <SETTINGSXMLSWAP>Specifiek bestand Settings.XML voor Navigator</SETTINGSXMLSWAP>
+    <TRIMDIGITS>Decimalen trimmen</TRIMDIGITS>
+    <CFREFRESHBUG>Opm.: Het scherm bevat niet de meest recente informatie als gevolg van een bug in CF</CFREFRESHBUG>
+    <LICENSED>Do NOT enable this, if you're using free (OSM) version of Navigator</LICENSED>
+    <LOCALIZE>Localize GPS Status screen (. vs ,)</LOCALIZE>
   </SETUP>
 </APPLANG>
+
 
