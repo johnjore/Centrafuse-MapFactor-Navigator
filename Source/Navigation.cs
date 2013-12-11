@@ -39,7 +39,7 @@ namespace Navigator
         {
             //Get current decimal separator
             string decimalSeparator = CultureInfo.CurrentCulture.NumberFormat.NumberDecimalSeparator;
-            //WriteLog("Localize: " + boolLocalize.ToString() + " " + decimalSeparator);
+            //WriteLog("Localize: " + boolLocalize.ToString() + " " + decimalSeparator);            
 
             try 
             { 
@@ -201,6 +201,15 @@ namespace Navigator
             }
 
             try
+            {                
+                CF_updateText("DataStreet", CF_navGetInfo(CFNavInfo.Street));
+            }
+            catch
+            {
+                CF_updateText("Street", "");
+            }
+
+            try
             {
                 CF_updateText("DataInRoute", CF_navGetInfo(CFNavInfo.InRoute));
             }
@@ -217,7 +226,8 @@ namespace Navigator
             catch 
             {
                 CF_updateText("DataGPSTime", ""); 
-            }
+            }          
+
         }
 
 
@@ -351,7 +361,7 @@ namespace Navigator
                     retvalue = _currentPosition.Speed.ToString(CultureInfo.InvariantCulture);
                     break;
                 case CFNavInfo.Street:
-                    retvalue = "";
+                    retvalue = _navStats.Street;
                     break;
                 case CFNavInfo.City:
                     retvalue = "";
@@ -596,14 +606,17 @@ namespace Navigator
             //Ask Navigator for navigation statistics
             SendCommand("$navigation_statistics\r\n", false, TCPCommand.Statistics);
 
+            //Ask Navigator for nearest street
+            if ((CF_navGetInfo(CFNavInfo.Latitude) != "0.00000") && (CF_navGetInfo(CFNavInfo.Longitude) != "0.00000"))
+            {
+                SendCommand("$nearest_streets=" + CF_navGetInfo(CFNavInfo.Latitude) + "," + CF_navGetInfo(CFNavInfo.Longitude) + ";1;50\r\n", false, TCPCommand.NearestStreets);
+            }
+
             //Get SpeedUnit (We need to poll this as user can change setting, but we're not told about the change)
             if (ReadCFValue("/APPCONFIG/SPEEDUNIT", "I", configPath)) SpeedUnit = Unit.IMPERIAL;
             if (ReadCFValue("/APPCONFIG/SPEEDUNIT", "M", configPath)) SpeedUnit = Unit.METRIC;
             if (ReadCFValue("/APPCONFIG/UNIT", "I", configPath)) DistUnit = Unit.IMPERIAL;
             if (ReadCFValue("/APPCONFIG/UNIT", "M", configPath)) DistUnit = Unit.METRIC;
-
-            //This is not documented in the API and returns "Error". Probably missing parameters
-            //SendCommand("$nearest_streets\r\n", false, TCPCommand.NearestStreets);
         }
         
         //Called by GPS Status screen to parse GPS Date/Time into local date/time

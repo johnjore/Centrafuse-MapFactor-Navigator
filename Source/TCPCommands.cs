@@ -179,8 +179,8 @@ namespace Navigator
                         try
                         {
                             //Split on the CRLF and remove the empty spaces
-                            sMessage = sMessage.Replace(" ", "");
-                            string[] strParse = sMessage.ToUpper().Split(new string[] { "\r\n" }, StringSplitOptions.None);
+                            //sMessage = sMessage.Replace(" ", "");
+                            string[] strParse = sMessage.Replace(" ", "").ToUpper().Split(new string[] { "\r\n" }, StringSplitOptions.None);
 
                             //This is messy as there's no "standard" way Navigator provides the messages
                             foreach (string strCommands in strParse)
@@ -528,6 +528,18 @@ namespace Navigator
                                             this.CF_systemCommand(CF_Actions.SHOWINFO, this.pluginLang.ReadField("/APPLANG/NAVIGATOR/ARRIVING") + " " + _navStats.TimeSecondsNextWaypoint.ToString() + " " + this.pluginLang.ReadField("/APPLANG/NAVIGATOR/SECONDS"), "AUTOHIDE");
                                         }
                                     }
+                                }
+                                else if (strCommands.Split(';').Length == 2)
+                                {
+                                    try
+                                    {
+                                        _navStats.Street = sMessage.Split(';')[0].Replace("\"", "");
+                                        //WriteLog("Street name: '" + _navStats.Street + "'");
+                                        
+                                    }
+                                    catch (Exception errMsg) { _navStats.Street = ""; WriteLog("Unable to parse Street: " + errMsg.Message); }
+                                    
+
                                 }
                                 else if (strCommands != "")
                                 {

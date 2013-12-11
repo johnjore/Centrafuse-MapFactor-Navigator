@@ -59,12 +59,14 @@
         <CONTROL type="Label" id="DataRemainingDistance" bounds="280;130;100;22" enabled="true"  fontclass="DataText"  fontstyle="" textenable="true" text="" />
         <CONTROL type="Label" id="lblInRoute"            bounds="300;130;280;22" enabled="true"  fontclass="LabelText" fontstyle="" textenable="true" text="AppLang.Navigator.lblInRoute" />
         <CONTROL type="Label" id="DataInRoute"           bounds="590;130;100;22" enabled="true"  fontclass="DataText"  fontstyle="" textenable="true" text="" />
-        <CONTROL type="Label" id="lblETR"                bounds="  0;160;270;22" enabled="true"  fontclass="LabelText" fontstyle="" textenable="true" text="AppLang.Navigator.lblETR" />
-        <CONTROL type="Label" id="DataETR"               bounds="280;160;300;22" enabled="true"  fontclass="DataText"  fontstyle="" textenable="true" text="" />
-        <CONTROL type="Label" id="lblETA"	         bounds="  0;190;270;22" enabled="true"  fontclass="LabelText" fontstyle="" textenable="true" text="AppLang.Navigator.lblETA" />
-        <CONTROL type="Label" id="DataETA"      	 bounds="280;190;320;22" enabled="true"  fontclass="DataText"  fontstyle="" textenable="true" text="" />
-        <CONTROL type="Label" id="lblGPSTime"            bounds="  0;220;270;22" enabled="true"  fontclass="LabelText" fontstyle="" textenable="true" text="AppLang.Navigator.lblGPSTime" />
-        <CONTROL type="Label" id="DataGPSTime"           bounds="280;220;320;22" enabled="true"  fontclass="DataText"  fontstyle="" textenable="true" text="" />
+        <CONTROL type="Label" id="lblStreet"             bounds="  0;160;270;22" enabled="true"  fontclass="LabelText" fontstyle="" textenable="true" text="AppLang.Navigator.lblStreet" />
+        <CONTROL type="Label" id="DataStreet"            bounds="280;160;300;22" enabled="true"  fontclass="DataText"  fontstyle="" textenable="true" text="" />
+        <CONTROL type="Label" id="lblETR"                bounds="  0;190;270;22" enabled="true"  fontclass="LabelText" fontstyle="" textenable="true" text="AppLang.Navigator.lblETR" />
+        <CONTROL type="Label" id="DataETR"               bounds="280;190;300;22" enabled="true"  fontclass="DataText"  fontstyle="" textenable="true" text="" />
+        <CONTROL type="Label" id="lblETA"	         bounds="  0;220;270;22" enabled="true"  fontclass="LabelText" fontstyle="" textenable="true" text="AppLang.Navigator.lblETA" />
+        <CONTROL type="Label" id="DataETA"      	 bounds="280;220;320;22" enabled="true"  fontclass="DataText"  fontstyle="" textenable="true" text="" />
+        <CONTROL type="Label" id="lblGPSTime"            bounds="  0;250;270;22" enabled="true"  fontclass="LabelText" fontstyle="" textenable="true" text="AppLang.Navigator.lblGPSTime" />
+        <CONTROL type="Label" id="DataGPSTime"           bounds="280;250;320;22" enabled="true"  fontclass="DataText"  fontstyle="" textenable="true" text="" />
       </CONTROLS>
       <HIDEMAINCONTROLS>
         <CONTROL type="DynButton" id="VolDown" />

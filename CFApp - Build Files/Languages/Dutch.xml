@@ -21,6 +21,7 @@
     <LBLETA>Aankomsttijd:</LBLETA>
     <LBLREMAININGDISTANCE>Resterende afstand:</LBLREMAININGDISTANCE>
     <LBLNEXTTURN>Volgende afslag:</LBLNEXTTURN>
+    <LBLSTREET>Dichtstbijzijnde straat:</LBLSTREET>
     <LBLINROUTE>Op de route:</LBLINROUTE>
     <LBLGPSTIME>GPS-tijd:</LBLGPSTIME>
     <TCPFAILED>Navigator: TCP-verbinding mislukt</TCPFAILED>

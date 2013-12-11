@@ -53,6 +53,7 @@ namespace Navigator
         public double TimeSecondsDestination;
         public string GPSDate;
         public string GPSTime;
+        public string Street;
     }
 
     public enum TCPCommand : int

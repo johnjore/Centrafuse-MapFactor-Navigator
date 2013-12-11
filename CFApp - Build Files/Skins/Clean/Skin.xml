@@ -42,8 +42,9 @@
         <CONTROL type="Label" id="lblETA" bounds="10;210;330;22" fontclass="LabelText" fontstyle="" textenable="true" text="AppLang.Navigator.lblETA" enabled="true"/>
         <CONTROL type="Label" id="lblRemainingDistance" bounds="10;235;330;22" fontclass="LabelText" fontstyle="" textenable="true" text="AppLang.Navigator.lblRemainingDistance" enabled="true"/>
         <CONTROL type="Label" id="lblNextTurn" bounds="10;260;330;22" fontclass="LabelText" fontstyle="" textenable="true" text="AppLang.Navigator.lblNextTurn" enabled="true"/>
-        <CONTROL type="Label" id="lblInRoute" bounds="10;285;330;22" fontclass="LabelText" fontstyle="" textenable="true" text="AppLang.Navigator.lblInRoute" enabled="true"/>
-        <CONTROL type="Label" id="lblGPSTime" bounds="10;310;330;22" fontclass="LabelText" fontstyle="" textenable="true" text="AppLang.Navigator.lblGPSTime" enabled="true"/>
+	<CONTROL type="Label" id="lblStreet" bounds="10;285;330;22" fontclass="LabelText" fontstyle="" textenable="true" text="AppLang.Navigator.lblStreet" enabled="true"/>
+        <CONTROL type="Label" id="lblInRoute" bounds="10;310;330;22" fontclass="LabelText" fontstyle="" textenable="true" text="AppLang.Navigator.lblInRoute" enabled="true"/>
+        <CONTROL type="Label" id="lblGPSTime" bounds="10;335;330;22" fontclass="LabelText" fontstyle="" textenable="true" text="AppLang.Navigator.lblGPSTime" enabled="true"/>
 
         <CONTROL type="Label" id="DataLongitude" bounds="345;10;240;22" fontclass="DataText" fontstyle="" textenable="true" text="" enabled="true"/>
         <CONTROL type="Label" id="DataLatitude" bounds="345;35;240;22" fontclass="DataText" fontstyle="" textenable="true" text="" enabled="true"/>
@@ -56,8 +57,9 @@
         <CONTROL type="Label" id="DataETA" bounds="345;210;320;22" fontclass="DataText" fontstyle="" textenable="true" text="" enabled="true"/>
         <CONTROL type="Label" id="DataRemainingDistance" bounds="345;235;320;22" fontclass="DataText" fontstyle="" textenable="true" text="" enabled="true"/>
         <CONTROL type="Label" id="DataNextTurn" bounds="345;260;320;22" fontclass="DataText" fontstyle="" textenable="true" text="" enabled="true"/>
-        <CONTROL type="Label" id="DataInRoute" bounds="345;285;320;22" fontclass="DataText" fontstyle="" textenable="true" text="" enabled="true"/>
-        <CONTROL type="Label" id="DataGPSTime" bounds="345;310;320;22" fontclass="DataText" fontstyle="" textenable="true" text="" enabled="true"/>
+        <CONTROL type="Label" id="DataStreet" bounds="345;285;320;22" fontclass="DataText" fontstyle="" textenable="true" text="" enabled="true"/>
+        <CONTROL type="Label" id="DataInRoute" bounds="345;310;320;22" fontclass="DataText" fontstyle="" textenable="true" text="" enabled="true"/>
+        <CONTROL type="Label" id="DataGPSTime" bounds="345;335;320;22" fontclass="DataText" fontstyle="" textenable="true" text="" enabled="true"/>
 
         <CONTROL type="DynButton" id="MinMax"      bounds="710;009;080;058" fullbounds="710;097;080;058" tabindex="1" enabled="true"  action="ToggleMinMax"                   off="ResizeOff"      down="ResizeDown"     fontclass="Standard12" />
         <CONTROL type="DynButton" id="GPSStatus"   bounds="710;075;080;058" fullbounds="710;163;080;058" tabindex="2" enabled="true"  action="GotoStatus"                     off="Gps"            down="Gps"            fontclass="Standard12" />

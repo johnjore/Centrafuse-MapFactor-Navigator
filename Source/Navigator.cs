@@ -206,11 +206,12 @@ namespace Navigator
                 // Creates new events to catch power mode change
                 this.CF_events.CFPowerModeChanged += OnPowerModeChanged;
 
-                //If not navigating, clear these
+                //Start with blank values
                 _navStats.DistanceDestination = 0;
                 _navStats.DistanceNextWaypoint = 0;
                 _navStats.TimeSecondsDestination = 0;
-                _navStats.TimeSecondsNextWaypoint = 0;               
+                _navStats.TimeSecondsNextWaypoint = 0;
+                _navStats.Street = "";
 
                 //Check if already running
                 if (TerminateOrphanedProcess(true))
