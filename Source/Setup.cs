@@ -21,6 +21,7 @@
  *  Requires CF to fix the issue
  */
 
+//Include OSM license text when changing to Yes on OSM license
 using System;
 using System.Windows.Forms;
 using System.Xml;
@@ -396,6 +397,15 @@ namespace Navigator
         private void AcceptedOSM(ref object value)
         {
             this.configReader.WriteField("/APPCONFIG/OSMOK", value.ToString());
+
+            try
+            {
+                if (bool.Parse(value.ToString()) == true)
+                {
+                    mainForm.CF_systemDisplayDialog(CF_Dialogs.OkBox, mainForm.pluginLang.ReadField("/APPLANG/SETUP/OSMMESSAGE"));
+                }
+            }
+            catch (Exception errmsg) { CFTools.writeError(errmsg.Message, errmsg.StackTrace); }                        
         }
 
         //Enable alert status when Navigator is NOT active plugin?

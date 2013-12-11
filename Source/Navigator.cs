@@ -102,7 +102,7 @@ namespace Navigator
         Timer CallStatusTimer = new System.Windows.Forms.Timer();    // timer for checking if a call is in progress
         Timer NavDestinationTimer = new System.Windows.Forms.Timer();    // timer for checking for destination proximity if not active plugin
         Timer NavStatustimer = new System.Windows.Forms.Timer();        //timer for updating GPS status screen
-
+       
         //From Mark
         public override event CFNavVoiceEventHandler CF_navVoiceEvent;
         private delegate void VoidDelegate();
@@ -205,6 +205,12 @@ namespace Navigator
                 
                 // Creates new events to catch power mode change
                 this.CF_events.CFPowerModeChanged += OnPowerModeChanged;
+
+                //If not navigating, clear these
+                _navStats.DistanceDestination = 0;
+                _navStats.DistanceNextWaypoint = 0;
+                _navStats.TimeSecondsDestination = 0;
+                _navStats.TimeSecondsNextWaypoint = 0;               
 
                 //Check if already running
                 if (TerminateOrphanedProcess(true))
@@ -681,9 +687,26 @@ namespace Navigator
             }
         }
 
+        delegate void pNavigator_ExitedDelegate(object sender, System.EventArgs e);
+
         // Handle Navigator Exited event
         private void pNavigator_Exited(object sender, System.EventArgs e)
         {
+            //LK, 9-dec-2013: Handle async invocation
+            try
+            {
+                if (InvokeRequired)
+                {
+                    WriteLog("Invoking");
+                    BeginInvoke(new pNavigator_ExitedDelegate(pNavigator_Exited), sender, e);
+                    return;
+                }
+            }
+            catch (Exception ex)
+            {
+                WriteLog("Restart of PC_Navigator failed: '" + ex.Message); //LK, 28-nov-2013: Text adjusted
+            }
+
             try
             {
                 //User really wants to exit Navigator...

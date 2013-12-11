@@ -31,7 +31,7 @@ namespace Navigator
     {
         private readonly CfNavData _currentPosition = new CfNavData();
         private readonly double meter_To_ft = 3.2808399;
-        private readonly double knots_To_kmh = 1.94384449244;
+        private readonly double knots_To_kmh = 1.852;
         private readonly double knots_To_mph = 1.1507794480136;
 
         // Event to get CF to ask for stats
@@ -143,9 +143,13 @@ namespace Navigator
                     break;
             }
 
+            
             try
-            {               
-                CF_updateText("DataETR", CF_navGetInfo(CFNavInfo.ETR) + " seconds");
+            {
+                string tmpETR = CF_navGetInfo(CFNavInfo.ETR);
+
+                if (tmpETR != "") CF_updateText("DataETR", tmpETR + " seconds"); else CF_updateText("DataETR", "");
+
                 
                 /*double tmpETR = System.Math.Floor(double.Parse(CF_navGetInfo(CFNavInfo.ETR)) / 60);
 

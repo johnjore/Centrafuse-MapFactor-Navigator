@@ -61,6 +61,7 @@
     <CFREFRESHBUG>Opm.: Het scherm bevat niet de meest recente informatie als gevolg van een bug in CF</CFREFRESHBUG>
     <LICENSED>Do NOT enable this, if you're using free (OSM) version of Navigator</LICENSED>
     <LOCALIZE>Localize GPS Status screen (. vs ,)</LOCALIZE>
+    <OSMMESSAGE>Note: The OpenStreetMap startup message from Navigator will be supressed.</OSMMESSAGE>
   </SETUP>
 </APPLANG>
 
