@@ -60,9 +60,9 @@
     <SETTINGSXMLSWAP>Specifiek bestand Settings.XML voor Navigator</SETTINGSXMLSWAP>
     <TRIMDIGITS>Decimalen trimmen</TRIMDIGITS>
     <CFREFRESHBUG>Opm.: Het scherm bevat niet de meest recente informatie als gevolg van een bug in CF</CFREFRESHBUG>
-    <LICENSED>Do NOT enable this, if you're using free (OSM) version of Navigator</LICENSED>
-    <LOCALIZE>Localize GPS Status screen (. vs ,)</LOCALIZE>
-    <OSMMESSAGE>Note: The OpenStreetMap startup message from Navigator will be supressed.</OSMMESSAGE>
+    <LICENSED>Zet deze optie niet aan bij gebruik van de gratis (OSM) versie van Navigator</LICENSED>
+    <LOCALIZE>Lokaliseer data op het GPS statusscherm (. versus ,)</LOCALIZE>
+    <OSMMESSAGE>Opm.: De OpenStreetMap licentievermelding bij het starten van Navigator, wordt hiermee onderdrukt.</OSMMESSAGE>
   </SETUP>
 </APPLANG>
 

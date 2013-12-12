@@ -23,11 +23,13 @@
     <FILENAME register="false" overwrite="true" source="Skins\Clean\ButtonImages\volup_down.png" destination="[CFAPPDIR]\Plugins\Navigator\Skins\Clean\ButtonImages\volup_down.png" />
     <FILENAME register="false" overwrite="true" source="Skins\Clean\ButtonImages\volup_off.png" destination="[CFAPPDIR]\Plugins\Navigator\Skins\Clean\ButtonImages\volup_off.png" />
     <FILENAME register="false" overwrite="true" source="Skins\Clean\ButtonImages\gps.png" destination="[CFAPPDIR]\Plugins\Navigator\Skins\Clean\ButtonImages\gps.png" />
+    <FILENAME register="false" overwrite="true" source="Skins\Clean\ButtonImages\CFConnect.png" destination="[CFAPPDIR]\Plugins\Navigator\Skins\Clean\ButtonImages\CFConnect.png" />
     <FILENAME register="false" overwrite="true" source="Skins\Fresh Air\Skin.xml" destination="[CFAPPDIR]\Plugins\Navigator\Skins\Fresh Air\Skin.xml" />
     <FILENAME register="false" overwrite="true" source="Skins\Fresh Air\Screen\Background.png" destination="[CFAPPDIR]\Plugins\Navigator\Skins\Fresh Air\Screen\Background.png" />
     <FILENAME register="false" overwrite="true" source="Skins\Fresh Air\ButtonImages\btn_gps_down.png" destination="[CFAPPDIR]\Plugins\Navigator\Skins\Fresh Air\ButtonImages\btn_gps_down.png" />
     <FILENAME register="false" overwrite="true" source="Skins\Fresh Air\ButtonImages\btn_gps_off.png" destination="[CFAPPDIR]\Plugins\Navigator\Skins\Fresh Air\ButtonImages\btn_gps_off.png" />
     <FILENAME register="false" overwrite="true" source="Skins\Fresh Air\ButtonImages\btn_resize_down.png" destination="[CFAPPDIR]\Plugins\Navigator\Skins\Fresh Air\ButtonImages\btn_resize_down.png" />
     <FILENAME register="false" overwrite="true" source="Skins\Fresh Air\ButtonImages\btn_resize_off.png" destination="[CFAPPDIR]\Plugins\Navigator\Skins\Fresh Air\ButtonImages\btn_resize_off.png" />
+    <FILENAME register="false" overwrite="true" source="Skins\Fresh Air\ButtonImages\CFConnect.png" destination="[CFAPPDIR]\Plugins\Navigator\Skins\Fresh Air\ButtonImages\CFConnect.png" />
   </APPFILES>
 </CFAPP>

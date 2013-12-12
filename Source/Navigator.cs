@@ -20,8 +20,8 @@
  * 
  * Move SendCommand and receive to its own thread?
  * Parse TCP responses from Navigator... counter++ for each SendCommand. Create FIFO buffer? Create thread?
- * 
  * Horizontal / vertical Skins
+ * Audio?
  * 
  * Resolve all /**/
 
@@ -709,60 +709,69 @@ namespace Navigator
             }
 
             try
-            {
-                //User really wants to exit Navigator...
+            {                
+                //User really wants to exit Navigator?
                 if (!boolExit)
                 {
-                    WriteLog("Navigator no longer running. Exit code: " + pNavigator.ExitCode.ToString());
-
-                    //Get current timer status
-                    bool nightTimer_Status = nightTimer.Enabled;
-                    bool muteCFTimer_Status = muteCFTimer.Enabled;
-
-                    //Stop all timers. Call back does not work and causes grief...
-                    nightTimer.Enabled = false;
-                    muteCFTimer.Enabled = false;
-                    CallStatusTimer.Enabled = false;
-                    NavDestinationTimer.Enabled = false;
-
-                    //Disconnect the TCP connection so it can be re-established                
-                    WriteLog("Disconnecting TCP connection for reuse");
-                    try
+                    //Restart Navigator?       
+                    if (CF_systemDisplayDialog(CF_Dialogs.YesNo, this.pluginLang.ReadField("/APPLANG/NAVIGATOR/RESTARTNAVIGATOR")) == DialogResult.OK)
                     {
-                        //Disconnect the TCP connection so it can be re-established                    
+                        WriteLog("Navigator no longer running. Exit code: " + pNavigator.ExitCode.ToString());
+
+                        //Get current timer status
+                        bool nightTimer_Status = nightTimer.Enabled;
+                        bool muteCFTimer_Status = muteCFTimer.Enabled;
+
+                        //Stop all timers. Call back does not work and causes grief...
+                        nightTimer.Enabled = false;
+                        muteCFTimer.Enabled = false;
+                        CallStatusTimer.Enabled = false;
+                        NavDestinationTimer.Enabled = false;
+
+                        //Disconnect the TCP connection so it can be re-established                
+                        WriteLog("Disconnecting TCP connection for reuse");
                         try
                         {
-                            //This is known to fail on WinXP, so provide an alternative
-                            if (CF_getConfigSetting(CF_ConfigSettings.OSVersion).ToString().ToUpper() != "XP".ToUpper()) server.Disconnect(true); else server.Close();
+                            //Disconnect the TCP connection so it can be re-established                    
+                            try
+                            {
+                                //This is known to fail on WinXP, so provide an alternative
+                                if (CF_getConfigSetting(CF_ConfigSettings.OSVersion).ToString().ToUpper() != "XP".ToUpper()) server.Disconnect(true); else server.Close();
+                            }
+                            catch (Exception errMsg) { WriteLog("Failed to disconnect: " + errMsg.Message); }
                         }
-                        catch (Exception errMsg) { WriteLog("Failed to disconnect: " + errMsg.Message); }
-                    }
-                    catch (Exception errMsg)
-                    {
-                        WriteLog("Failed to disconnect :" + errMsg.Message);
-                    }
-                    finally
-                    {
-                        boolConnecting = false;
-                    }
+                        catch (Exception errMsg)
+                        {
+                            WriteLog("Failed to disconnect :" + errMsg.Message);
+                        }
+                        finally
+                        {
+                            boolConnecting = false;
+                        }
 
-                    //Modify Navigator's Settings XML file...
-                    ConfigureNavigatorXML();
+                        //Modify Navigator's Settings XML file...
+                        ConfigureNavigatorXML();
 
-                    //Start  Navigator
-                    StartNavigator();
+                        //Start  Navigator
+                        StartNavigator();
 
-                    //If user exited Navigator manually, then plugin is visible
-                    if (this.Visible == true)
-                    {
-                        thepanel.Visible = true; // Make sure its visible, and not behind stats screen
-                        thepanel.Focus(); //Give it focus
-                        SendCommand("$maximize\r\n", false, TCPCommand.Maximize);
+                        //If user exited Navigator manually, then plugin is visible
+                        if (this.Visible == true)
+                        {
+                            thepanel.Visible = true; // Make sure its visible, and not behind stats screen
+                            thepanel.Focus(); //Give it focus
+                            SendCommand("$maximize\r\n", false, TCPCommand.Maximize);
+                        }
+
+                        //Set timers back the way they were
+                        nightTimer.Enabled = nightTimer_Status;
+                        muteCFTimer.Enabled = muteCFTimer_Status;
                     }
-
-                    //Set timers back the way they were
-                    nightTimer.Enabled = nightTimer_Status;
-                    muteCFTimer.Enabled = muteCFTimer_Status;
+                }
+                else
+                {
+                    WriteLog("User does not want Navigator to restart");
+                    boolExit = true;
                 }
             }
             catch (Exception ex)
@@ -1530,6 +1539,7 @@ namespace Navigator
 
                 //Repos buttons
                 RePosbutton("GPSStatus", "fullbounds");
+                RePosbutton("CFConnect", "fullbounds");
                 RePosbutton("VolDown", "fullbounds");
                 RePosbutton("VolUp", "fullbounds");
                 RePosbutton("PlayPause", "fullbounds");
@@ -1573,6 +1583,7 @@ namespace Navigator
 
                 //Repos buttons
                 RePosbutton("GPSStatus", "bounds");
+                RePosbutton("CFConnect", "bounds");
                 RePosbutton("VolDown", "bounds");
                 RePosbutton("VolUp", "bounds");
                 RePosbutton("PlayPause", "bounds");
