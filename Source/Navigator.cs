@@ -969,12 +969,12 @@ namespace Navigator
                         if (GetProductKey(strFolder + "\\atlas_pcn_free.idc") == true)
                         {
                             WriteLog("Using FREE edition");
-                            strEXEParameters = strEXEParameters + " --atlas=" + strFolder + "\\atlas_pcn_free.idc";
+                            strEXEParameters = strEXEParameters + " --atlas=" + strFolder + "\\atlas_pcn_free.idc";                            
                         }
                         else
                         {
-                            WriteLog("FREE edition selected, but no product key in file");
-                            CF_systemDisplayDialog(CF_Dialogs.OkBox, this.pluginLang.ReadField("/APPLANG/NAVIGATOR/NOIDCFILE"));
+                            WriteLog("FREE edition selected, but no product key in file");                            
+                            CF_systemDisplayDialog(CF_Dialogs.OkBox, this.pluginLang.ReadField("/APPLANG/NAVIGATOR/NOIDCFILE"));                            
                         }
                     }
                     else
@@ -991,6 +991,7 @@ namespace Navigator
                             {
                                 WriteLog("Using FREE edition");
                                 strEXEParameters = strEXEParameters + " --atlas=" + strFolder + "\\atlas_pcn_free.idc";
+                                boolFREE = true;
                             }
                             else
                             {
