@@ -167,7 +167,9 @@ namespace Navigator
                     ButtonText[i] = this.langReader.ReadField("/APPLANG/SETUP/LOCALIZE");
                     ButtonValue[i++] = this.configReader.ReadField("/APPCONFIG/LOCALIZE");
 
-                    ButtonHandler[i] = null; ButtonText[i] = ""; ButtonValue[i++] = "";
+                    ButtonHandler[i] = new CFSetupHandler(SetTrafficURL);
+                    ButtonText[i] = this.langReader.ReadField("/APPLANG/SETUP/TRAFFICURL");
+                    ButtonValue[i++] = this.configReader.ReadField("/APPCONFIG/TRAFFICURL");
 
                     // BOOL BUTTONS (5-8)
                     ButtonHandler[i] = new CFSetupHandler(SetNamedPipeStatus);
@@ -562,8 +564,40 @@ namespace Navigator
             }
             catch (Exception errmsg) { CFTools.writeError(errmsg.Message, errmsg.StackTrace); }
         }
-        
 
+        //Traffic information URL
+        /**/ //This could be updated with a set of default URLs and allow user to add/remove
+        //http://www.tomtom.com/livetraffic/
+        //?
+        private void SetTrafficURL(ref object value)
+        {
+            try
+            {
+                if (value.GetType().Equals(typeof(CFSetupHandlerParams)))
+                {
+                    if (((CFSetupHandlerParams)value).result.ok)
+                        this.configReader.WriteField("/APPCONFIG/TRAFFICURL", ((CFSetupHandlerParams)value).result.value);
+
+                    ((CFSetupHandlerParams)value).requesttype = CFSetupHandlerRequest.None; //Get out of loop
+
+                    return;
+                }
+
+                CFSetupHandlerParams internalhandler = new CFSetupHandlerParams();
+                internalhandler.requesttype = CFSetupHandlerRequest.ShowDialog;
+                internalhandler.button = (int)value;
+                internalhandler.dialogtype = CF_Dialogs.OSK;
+                internalhandler.listviewitems = null;
+                internalhandler.writebutton = true;
+                internalhandler.writebuttonwithvalue = true;
+                internalhandler.title = this.langReader.ReadField("APPLANG/SETUP/TRAFFICURL");
+                internalhandler.listheader = this.configReader.ReadField("/APPCONFIG/TRAFFICURL");
+                value = internalhandler;
+            }
+            catch (Exception errmsg) { CFTools.writeError(errmsg.Message, errmsg.StackTrace); }
+        }
+
+        
         //Enable Sending Mute/Unmute on Sound alert?
         private void SetMuteUnmuteStatus(ref object value)
         {

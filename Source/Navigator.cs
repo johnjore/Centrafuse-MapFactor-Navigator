@@ -93,6 +93,7 @@ namespace Navigator
         private NavStats _navStats = new NavStats();        // Navigation statistics
         private Unit SpeedUnit = Unit.UNKNOWN;              // Default to unknown unit
         private Unit DistUnit = Unit.UNKNOWN;               // Default to unknown unit
+        private string strTrafficURL = "http://www.tomtom.com/livetraffic/"; // URL for traffic information
         
         //Timers
         Timer nightTimer = new System.Windows.Forms.Timer(); // timer for switching day/night skin      
@@ -812,6 +813,10 @@ namespace Navigator
                 case "TOGGLEMINMAX": //Flip full screen / Normal screen
                     btnMinMax_Click(null, null);
                     return true;
+                case "TRAFFICINFO": //Open page for traffic info
+                    CF_systemCommand(CF_Actions.PLUGIN, "WEB", "BROWSE", strTrafficURL, "FULLSCREEN");
+                    CF_systemCommand(CF_Actions.PLUGIN, "WEB");
+                    return true;
             }
 
             return false;
@@ -1184,6 +1189,29 @@ namespace Navigator
                 {
                     WriteLog("Trim digits: " + boolTRIMDIGITS.ToString());
                 }
+
+                //Traffic info URL
+                try
+                {
+                    string tmpStr = pluginConfig.ReadField("/APPCONFIG/TRAFFICURL");
+                    if (tmpStr.Length < 3)
+                    {
+                        pluginConfig.WriteField("/APPCONFIG/TRAFFICURL", strTrafficURL, true);
+                    }
+                    else
+                    {
+                        strTrafficURL = tmpStr;
+                    }
+                }
+                catch
+                {
+                    pluginConfig.WriteField("/APPCONFIG/TRAFFICURL", strTrafficURL, true);
+                }
+                finally
+                {
+                    WriteLog("Traffic info URL: " + strTrafficURL);
+                }
+                
 
                 // CF Settings
                 try
