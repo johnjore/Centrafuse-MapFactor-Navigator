@@ -20,8 +20,6 @@
  * 
  * Move SendCommand and receive to its own thread?
  * Parse TCP responses from Navigator... counter++ for each SendCommand. Create FIFO buffer? Create thread?
- * Horizontal / vertical Skins
- * Audio?
  * 
  * Resolve all /**/
 
@@ -125,6 +123,9 @@ namespace Navigator
         [DllImport("user32.dll")]
         private static extern bool ShowWindow(IntPtr hWnd, int nCmdShow);
 
+        /**/
+        //Remove later if not used
+
         //Placeholders
         //[DllImport("user32.dll")]
         //static extern int SetWindowLong(IntPtr hWnd, int nIndex, int dwNewLong);
@@ -134,9 +135,8 @@ namespace Navigator
 
         //[DllImport("user32.dll")]
         //private static extern bool SetForegroundWindow(IntPtr hWnd);
-        
-        /**/ //Remove later if not used
-        ////LK, 20-nov-2013: Experimental
+                
+        //LK, 20-nov-2013: Experimental
         //[DllImport("user32.dll")]
         //private static extern IntPtr GetForegroundWindow();        
 #endregion
@@ -221,7 +221,7 @@ namespace Navigator
 
                 /**/
                 //Force logging...
-                this.pluginConfig.WriteField("/APPCONFIG/LOGEVENTS", "True", true);
+                //this.pluginConfig.WriteField("/APPCONFIG/LOGEVENTS", "True", true);
 
                 // Active navigation engine?
                 if (ReadCFValue("/APPCONFIG/NAVENGINE", "NAVIGATOR", configPath))
@@ -478,6 +478,23 @@ namespace Navigator
 		public override void CF_pluginCommand(string command, string param1, string param2)
 		{
             WriteLog("CF_pluginCommand: " + command + " " + param1 + ", " + param2);
+
+            //Capture and act upon the hotkeys
+            try
+            {
+                switch (command)
+                {
+                    case "MINMAX":
+                        WriteLog("MINMAX command");
+                        //Set correct size
+                        this.btnMinMax_Click(null, null);
+                        break;
+                    default:
+                        WriteLog("Unknown command");
+                        break;
+                }
+            }
+            catch (Exception errMsg) { WriteLog("Failed to handle pluginCommand: " + errMsg.Message);  }
 		}
 
 
@@ -521,7 +538,7 @@ namespace Navigator
             //Launch Navigator                    
             try
             {
-                /**/ //This check is redundant. No paths lead to this without this already checked
+                //This check is redundant. No paths lead to this without this already checked
                 if (ReadCFValue("/APPCONFIG/NAVENGINE", "NAVIGATOR", configPath))
                 {
                     pNavigator = new Process();
@@ -600,15 +617,7 @@ namespace Navigator
                             System.Threading.Thread.Sleep(500); // Allow the process to open it's window
                             WriteLog("Sending ENTER");
 
-                            /**/ //TBD...
-                            //LK, 29-nov-2013: Under construction...
-                            //PostMessage(pNavigator.MainWindowHandle, (int)WindowManagerEvents.WM_KEYDOWN, (short)VK.VK_RETURN, 1); //LK,29-nov-2013: Send 1 Return (0x13)
-                            //PostMessage(pNavigator.MainWindowHandle, (int)WindowManagerEvents.WM_KEYUP, (short)VK.VK_RETURN, 1); //LK,29-nov-2013: Send 1 Return (0x13)
-                            ////PostMessage(pNavigator.MainWindowHandle, (int)WindowManagerEvents.WM_CHAR, 0x13, 1); //LK,29-nov-2013: Send 1 Return (0x13)
-                            //LK, 29-nov-2013: This command will send the key to the top window, not always to PC_Navigator:
-                            //---thepanel.Focus(); //Give it focus
-
-                            //JJ: Just send 'Enter' until a new message system works...
+                            //Send 'Enter' until a new message system works
                             SendKeys.SendWait("{ENTER}");
                         }
                     }

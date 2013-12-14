@@ -73,26 +73,49 @@ namespace Navigator
         {
             WriteLog("Timer over. Play Audio");
 
-            if (bool.Parse(this.pluginConfig.ReadField("/APPCONFIG/MUTEUNMUTESTATUS")) == false)    //LK, 30-nov-2013: Distinguish between real and simulated mutes
+            //If MediaPlayer is active, it uses BASS and can process native CF commands correctly
+            if (ReadCFValue("SETTINGS/CURRENT/MUSICMODE", "1", settingsPath))
             {
-                //Mute/unmute
-                //LK, 24-nov-2013: Added UnMuteAudio if ATT mode is not enabled
-                //JJ: This prevents users from configuring "No action" if Navigator speaks while music plays...
-                /**/
+                //ATT Mute/UnMute
                 if (CF_getConfigFlag(CF_ConfigFlags.GPSAttMute))
+                {
+                    WriteLog("UnMute (GPS ATT) CF Audio, using DISABLEATT");
                     CF_systemCommand(CF_Actions.DISABLEATT);
+                }
+                //Don't use ATT mute/unmute, but use MUTE/UnMute
                 else
+                {
+                    WriteLog("CF GPS ATT not enabled, using UNMUTEAUDIO");
                     CF_systemCommand(CF_Actions.UNMUTEAUDIO);
+                }
             }
-            else
+            //3rd party plugin is active. Can't use CF_Actions.ATT
+            else if (ReadCFValue("SETTINGS/CURRENT/MUSICMODE", "3", settingsPath))
             {
-                //Mute/Unmute
+                //Raise an event and hope for the best
+                //ATT Mute/unmute
+                if (CF_getConfigFlag(CF_ConfigFlags.GPSAttMute))
+                {
+                    WriteLog("Raising Event: " + PluginName.ToUpper() + " AUDIO DISABLEATT");
+                    CF3_raisePluginEvent(new CFPluginEventArgs(PluginName.ToUpper(), "AUDIO", "DISABLEATT"));
+                }
+                //Don't use ATT mute/unmute, but use Mute/UnMute
+                else
+                {
+                    WriteLog("Raising Event: " + PluginName.ToUpper() + " AUDIO UNMUTE");
+                    CF3_raisePluginEvent(new CFPluginEventArgs(PluginName.ToUpper(), "AUDIO", "UNMUTE"));
+                }
+
+                //Has user enabled CF fake Mute/Unmute?
                 if (bool.Parse(this.pluginConfig.ReadField("/APPCONFIG/MUTEUNMUTESTATUS")) == true)
                 {
+                    // Use simulated (ATT) mutes to be used when an audio source does not support proper (ATT) mute functions
+                    WriteLog("CF Fake MuteUnmute Enabled.");
+
                     //Restore CF volume level
                     WriteLog("Current CF Volume Level: " + GetVolume().ToString());
                     SetVolume(intCFVolumeLevel);
-                    WriteLog("New CF Volume Level: " + GetVolume().ToString());
+                    WriteLog("New CF Volume Level: " + GetVolume().ToString());                   
                 }
             }
 
@@ -107,52 +130,65 @@ namespace Navigator
             //We're in a MUTE period
             this.BeginInvoke(new MethodInvoker(delegate { boolInMutePeriod = true; }));
 
-            if (bool.Parse(this.pluginConfig.ReadField("/APPCONFIG/MUTEUNMUTESTATUS")) == false)    //LK, 30-nov-2013: Distinguish between real and simulated mutes
+            //If MediaPlayer is active, it uses BASS and can process native CF commands correctly
+            if (ReadCFValue("SETTINGS/CURRENT/MUSICMODE", "1", settingsPath))
             {
                 //ATT Mute/unmute
                 if (CF_getConfigFlag(CF_ConfigFlags.GPSAttMute))
                 {
                     WriteLog("Mute (GPS ATT) CF Audio");
                     CF_systemCommand(CF_Actions.ATT);
-
                 }
+                //Don't use ATT mute/unmute, but use MUTE
                 else
                 {
                     WriteLog("CF GPS ATT not enabled");
-                    //LK, 24-nov-2013: If not in AttMode, use MuteAudio to stop the audio source
-                    //JJ: This prevents users from configuring "No action" if Navigator speaks while music plays...
-                    /**/
                     CF_systemCommand(CF_Actions.MUTEAUDIO);
                 }
-
-                //When not in named pipe mode, use an estimated fixed time to mute the audio source
-                //Can't enable timer in a non-UI thread. Only start timer if not using named pipe
-                if (!boolNamedPipes) this.BeginInvoke(new MethodInvoker(delegate { muteCFTimer.Interval = muteCFTimerInterval; muteCFTimer.Enabled = true; })); //LK,30-nov-2013: Timer interval cached in LoadSettings()
             }
-            else
+            //3rd party plugin is active. Can't use CF_Actions.ATT
+            //this else is redundant as musicmode can only be 1, 2 or 3. Keep 2 here as that's radios and they behave like plugins
+            else if (ReadCFValue("SETTINGS/CURRENT/MUSICMODE", "3", settingsPath) || ReadCFValue("SETTINGS/CURRENT/MUSICMODE", "2", settingsPath))
             {
-                // Use simulated (ATT) mutes to be used when an audio source does not support proper (ATT) mute functions
-                WriteLog("CF Fake MuteUnmute Enabled.");
-                
-                //Get current CF volume level
-                intCFVolumeLevel = GetVolume();
-                WriteLog("Current CF Volume Level: " + intCFVolumeLevel.ToString());
-
-                //Set to ATTMuteLevel   //LK, 30-nov-2013: select ATT mute / normal mute
-                //JJ: This prevents users from configuring "No action" if Navigator speaks while music plays...
-                /**/
+                //Raise an event and hope for the best
+                //ATT Mute/unmute
                 if (CF_getConfigFlag(CF_ConfigFlags.GPSAttMute))
                 {
-                    SetVolume(Convert.ToInt32(Math.Round(double.Parse(CF_getConfigSetting(CF_ConfigSettings.AttMuteLevel)) / 10, MidpointRounding.AwayFromZero)));
-                    WriteLog("New CF Volume Level: " + GetVolume().ToString());
+                    CF3_raisePluginEvent(new CFPluginEventArgs(PluginName.ToUpper(), "AUDIO", "ATT"));
                 }
+                //Don't use ATT mute/unmute, but use MUTE
                 else
-                    CF_systemCommand(CF_Actions.MUTEAUDIO);
+                {
+                    CF3_raisePluginEvent(new CFPluginEventArgs(PluginName.ToUpper(), "AUDIO", "MUTE"));
+                }
 
-                //When not in named pipe mode, use an estimated fixed time to mute the audio source
-                //Can't enable timer in a non-UI thread. Only start timer if not using named pipe
-                if (!boolNamedPipes) this.BeginInvoke(new MethodInvoker(delegate { muteCFTimer.Interval = muteCFTimerInterval; muteCFTimer.Enabled = true; })); //LK, 30-nov-2013: Timer interval cached in LoadSettings()
+                //Has user enabled CF fake Mute/Unmute?
+                if (bool.Parse(this.pluginConfig.ReadField("/APPCONFIG/MUTEUNMUTESTATUS")) == true)
+                {
+                    // Use simulated (ATT) mutes to be used when an audio source does not support proper (ATT) mute functions
+                    WriteLog("CF Fake MuteUnmute Enabled.");
+                
+                    //Get current CF volume level
+                    intCFVolumeLevel = GetVolume();
+                    WriteLog("Current CF Volume Level: " + intCFVolumeLevel.ToString());
+
+                    //ATT Mute/unmute
+                    if (CF_getConfigFlag(CF_ConfigFlags.GPSAttMute))
+                    {
+                        SetVolume(Convert.ToInt32(Math.Round(double.Parse(CF_getConfigSetting(CF_ConfigSettings.AttMuteLevel)) / 10, MidpointRounding.AwayFromZero)));
+                        WriteLog("New CF Volume Level: " + GetVolume().ToString());
+                    }
+                    //Don't use ATT mute/unmute, but use MUTE
+                    else
+                    {
+                        CF_systemCommand(CF_Actions.MUTEAUDIO);
+                    }
+                }
             }
+
+            //When not in named pipe mode, use an estimated fixed time to mute the audio source
+            //Can't enable timer in a non-UI thread. Only start timer if not using named pipe
+            if (!boolNamedPipes) this.BeginInvoke(new MethodInvoker(delegate { muteCFTimer.Interval = muteCFTimerInterval; muteCFTimer.Enabled = true; })); 
         }
 
 
