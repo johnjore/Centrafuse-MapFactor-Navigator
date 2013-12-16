@@ -27,6 +27,7 @@ using System.Windows.Forms;
 using System.Xml;
 using System.Web;
 using centrafuse.Plugins;
+using System.Reflection;
 
 namespace Navigator
 {
@@ -120,7 +121,7 @@ namespace Navigator
                 {
                     // TEXT BUTTONS (1-4)
                     ButtonHandler[i] = new CFSetupHandler(SetExePath);
-                    ButtonText[i] = this.langReader.ReadField("/APPLANG/SETUP/EXEPATH");
+                    ButtonText[i] = this.langReader.ReadField("/APPLANG/SETUP/EXEPATH") + " (" + Assembly.GetExecutingAssembly().GetName().Version.ToString() + ")";
                     ButtonValue[i++] = this.configReader.ReadField("/APPCONFIG/EXEPATH");
 
                     ButtonHandler[i] = new CFSetupHandler(SetExeParameters);

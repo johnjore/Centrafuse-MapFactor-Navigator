@@ -123,6 +123,9 @@ namespace Navigator
 
         [DllImport("user32.dll")]
         private static extern bool ShowWindow(IntPtr hWnd, int nCmdShow);
+        
+        [DllImport("user32.dll")]
+        private static extern bool BlockInput(bool block);
 
         /**/
         //Remove later if not used
@@ -563,6 +566,14 @@ namespace Navigator
                     //LK, 18-nov-2013: Avoid flickering windows at startup
                     pNavigator.StartInfo.WindowStyle = ProcessWindowStyle.Hidden;
 
+                    //Make sure keyboard and mouse inputs are not working while Navigator starts
+                    //Prevents user from pressing OK to the OSM License dialog and the subsequent 'Enter' opens up Menu
+                    try
+                    {
+                        if (boolOSMOK && boolFREE) BlockInput(true);
+                    }
+                    catch (Exception errMsg) { WriteLog("Failed to disable mouse/keyboard input: " + errMsg.Message); }
+
                     //Start the EXE
                     pNavigator.Start();
                     
@@ -618,7 +629,7 @@ namespace Navigator
                             System.Threading.Thread.Sleep(500); // Allow the process to open it's window
                             WriteLog("Sending ENTER");
 
-                            //Send 'Enter' until a new message system works
+                            //Send 'Enter' until a new message system works                            
                             SendKeys.SendWait("{ENTER}");
                         }
                     }
@@ -632,6 +643,13 @@ namespace Navigator
                     //LK, 29-nov-2013: Last parameter of SendMessage and PostMessage is LWord (int), not string
                     //PostMessage(pNavigator.MainWindowHandle, (int)WindowManagerEvents.WM_COMMAND, unchecked((short)SC.SC_MINIMIZE), 0);
                     ShowWindow(pNavigator.MainWindowHandle, (int)showWindowAttribute.SW_MINIMIZE);
+
+                    //Make sure mouse and keyboard work again
+                    try
+                    {
+                        if (boolOSMOK && boolFREE) BlockInput(false);
+                    }
+                    catch (Exception errMsg) { WriteLog("Failed to re-enable mouse/keyboard input: " + errMsg.Message); }
 
                     //Navigator should be launched and running
                     return true;
@@ -648,7 +666,6 @@ namespace Navigator
             //Didn't launch Navigator
             return false;
         }
-
 
         //Configure Navigator after launching it
         private void ConfigureNavigator()
@@ -814,8 +831,9 @@ namespace Navigator
                     btnMinMax_Click(null, null);
                     return true;
                 case "TRAFFICINFO": //Open page for traffic info
-                    CF_systemCommand(CF_Actions.PLUGIN, "WEB", "BROWSE", strTrafficURL, "FULLSCREEN");
-                    CF_systemCommand(CF_Actions.PLUGIN, "WEB");
+                    //CF_systemCommand(CF_Actions.PLUGIN, "WEB", "BROWSE", strTrafficURL, "FULLSCREEN");
+                    //CF_systemCommand(CF_Actions.PLUGIN, "WEB");
+                    this.CF_systemCommand(CF_Actions.PLUGIN, "TrafficCopLite".ToUpper());
                     return true;
             }
 
