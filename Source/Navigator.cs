@@ -493,6 +493,11 @@ namespace Navigator
                         //Set correct size
                         this.btnMinMax_Click(null, null);
                         break;
+                    case "TOGGLESCREEN":
+                        WriteLog("TOGGLESCREEN command");
+                        //Toggle GPS Status and Navigator sections
+                        btnSectionStatus_Click(null, null);
+                        break;
                     default:
                         WriteLog("Unknown command");
                         break;
@@ -1593,20 +1598,9 @@ namespace Navigator
                 //Resize panel
                 this.thepanel.Bounds = base.CF_createRect(SkinReader.ParseBounds(SkinReader.GetControlAttribute("Navigator", "PanelNavigator", ("fullbounds").ToLower(), base.pluginSkinReader)));
 
-                //Repos buttons
-                RePosbutton("GPSStatus", "fullbounds");
-                RePosbutton("CFConnect", "fullbounds");
-                RePosbutton("VolDown", "fullbounds");
-                RePosbutton("VolUp", "fullbounds");
-                RePosbutton("PlayPause", "fullbounds");
-                RePosbutton("Rewind", "fullbounds");
-                RePosbutton("FastForward", "fullbounds");
-                RePosbutton("MinMax", "fullbounds");
-                RePosbutton("NowPlaying", "fullbounds");
-                RePosbutton("Exit", "fullbounds");
-
-                //Repos label
-                RePosLabel("DateTime", "fullbounds");	//LK,24-nov-2013: Simular to RePosbutton
+                //Repos buttons and labels
+                for (int i = 0; i < buttonArray.Length; i++) RePosButton(buttonArray[i].Name, "fullbounds");
+                for (int i = 0; i < labelArray.Length; i++) RePosLabel(labelArray[i].Name, "fullbounds");
 
                 //Configure screen size. Use the panel size            
                 SendCommand("$window=0,0," + thepanel.Bounds.Width.ToString() + "," + thepanel.Bounds.Height.ToString() + ",noborder\r\n", false, TCPCommand.Window);
@@ -1637,20 +1631,9 @@ namespace Navigator
                 //Resize panel
                 thepanel.Bounds = base.CF_createRect(SkinReader.ParseBounds(SkinReader.GetControlAttribute("Navigator", "PanelNavigator", ("bounds").ToLower(), base.pluginSkinReader)));
 
-                //Repos buttons
-                RePosbutton("GPSStatus", "bounds");
-                RePosbutton("CFConnect", "bounds");
-                RePosbutton("VolDown", "bounds");
-                RePosbutton("VolUp", "bounds");
-                RePosbutton("PlayPause", "bounds");
-                RePosbutton("Rewind", "bounds");
-                RePosbutton("FastForward", "bounds");
-                RePosbutton("MinMax", "bounds");
-                RePosbutton("NowPlaying", "bounds");
-                RePosbutton("Exit", "bounds");
-
-                //Reposition label
-                RePosLabel("DateTime", "bounds");	//LK,24-nov-2013: Simular to RePosbutton
+                //Repos buttons and labels
+                for (int i = 0; i < buttonArray.Length; i++) RePosButton(buttonArray[i].Name, "bounds");
+                for (int i = 0; i < labelArray.Length; i++) RePosLabel(labelArray[i].Name, "bounds");
 
                 //Configure screen size. Use the panel size              
                 SendCommand("$window=0,0," + thepanel.Bounds.Width.ToString() + "," + thepanel.Bounds.Height.ToString() + ",noborder\r\n", false, TCPCommand.Window);
@@ -1670,7 +1653,7 @@ namespace Navigator
 
 
         //Reposition buttons when changing skin size
-        private void RePosbutton(string strID, string strSize)
+        private void RePosButton(string strID, string strSize)
         {
             try
             {

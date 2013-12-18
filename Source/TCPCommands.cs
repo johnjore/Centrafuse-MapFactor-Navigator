@@ -291,11 +291,11 @@ namespace Navigator
                                             switch (SpeedUnit)
                                             {
                                                 case Unit.METRIC:
-                                                    try { _currentPosition.Speed = double.Parse(rmCdata[7], CultureInfo.InvariantCulture) * knots_To_kmh; }
+                                                    try { _currentPosition.Speed = double.Parse(rmCdata[7], CultureInfo.InvariantCulture) * knot_To_kmh; }
                                                     catch { _currentPosition.Speed = 0; }
                                                     break;
                                                 case Unit.IMPERIAL:
-                                                    try { _currentPosition.Speed = double.Parse(rmCdata[7], CultureInfo.InvariantCulture) * knots_To_mph; }
+                                                    try { _currentPosition.Speed = double.Parse(rmCdata[7], CultureInfo.InvariantCulture) * knot_To_mph; }
                                                     catch { _currentPosition.Speed = 0; }
                                                     break;
                                                 default:

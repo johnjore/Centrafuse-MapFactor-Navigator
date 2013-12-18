@@ -31,8 +31,8 @@ namespace Navigator
     {
         private readonly CfNavData _currentPosition = new CfNavData();
         private readonly double meter_To_ft = 3.2808399;
-        private readonly double knots_To_kmh = 1.852;
-        private readonly double knots_To_mph = 1.1507794480136;
+        private readonly double knot_To_kmh = 1.852;
+        private readonly double knot_To_mph = 1.1507794480136;
 
         // Event to get CF to ask for stats
         private void NavStatustimer_Tick(object sender, EventArgs e)
@@ -311,6 +311,9 @@ namespace Navigator
                     break;
                 case "INROUTE":
                     retvalue = CF_navGetInfo(CFNavInfo.InRoute);
+                    break;
+                case "SCREENSIZE":
+                    if (boolFullScreen) retvalue = "FULL"; else retvalue = "NORMAL";
                     break;
             }
 
