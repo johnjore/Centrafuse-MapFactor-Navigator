@@ -200,13 +200,22 @@ namespace Navigator
                 CF_updateText("DataAzimuth", "");
             }
 
-            try
-            {                
-                CF_updateText("DataStreet", CF_navGetInfo(CFNavInfo.Street));
-            }
-            catch
+
+            //Ask Navigator for nearest street, but only if Navigator version is 12.4 or higher as previous versions crash
+            if (decimal.Compare(decNavigatorVersion, new decimal(12.4)) >= 0)
             {
-                CF_updateText("Street", "");
+                try
+                {
+                    CF_updateText("DataStreet", CF_navGetInfo(CFNavInfo.Street));
+                }
+                catch
+                {
+                    CF_updateText("Street", "");
+                }
+            }
+            else
+            {
+                CF_updateText("Street", pluginLang.ReadField("/APPLANG/NAVIGATOR/NEARESTSTREET"));
             }
 
             try
@@ -609,8 +618,8 @@ namespace Navigator
             //Ask Navigator for navigation statistics
             SendCommand("$navigation_statistics\r\n", false, TCPCommand.Statistics);
 
-            //Ask Navigator for nearest street
-            if ((CF_navGetInfo(CFNavInfo.Latitude) != "0.00000") && (CF_navGetInfo(CFNavInfo.Longitude) != "0.00000"))
+            //Ask Navigator for nearest street, but only if Navigator version is 12.4 or higher as previous versions crash
+            if ((CF_navGetInfo(CFNavInfo.Latitude) != "0.00000") && (CF_navGetInfo(CFNavInfo.Longitude) != "0.00000") && (decimal.Compare(decNavigatorVersion, new decimal(12.4)) >= 0))
             {
                 SendCommand("$nearest_streets=" + CF_navGetInfo(CFNavInfo.Latitude) + "," + CF_navGetInfo(CFNavInfo.Longitude) + ";1;50\r\n", false, TCPCommand.NearestStreets);
             }

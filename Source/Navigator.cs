@@ -88,13 +88,15 @@ namespace Navigator
         Process pNavigator = null;                          // Navigator's process
         private bool boolCurrentNightMode = false;          // Are we currently in night mode? (We don't actually know this)
         private bool boolCurrentCallMode = false;           // Are we currently on the phone?
+        private bool boolSuspend = false;                   // Are we currently suspending?
         private string strAppDataPath = "";                 // Path to Navigator's XML file
         private CFNavLocation navCurrentLocation = new CFNavLocation();       // Navigator's current location
         private NavStats _navStats = new NavStats();        // Navigation statistics
         private Unit SpeedUnit = Unit.UNKNOWN;              // Default to unknown unit
         private Unit DistUnit = Unit.UNKNOWN;               // Default to unknown unit
-        private string strTrafficURL = "http://www.tomtom.com/livetraffic/"; // URL for traffic information
-        
+        private decimal decNavigatorVersion = new decimal(0.0);  // Navigator version
+        private string strProtocolVersion = "";             // Navigator TCP Protocol version
+                
         //Timers
         Timer nightTimer = new System.Windows.Forms.Timer(); // timer for switching day/night skin      
         Timer muteCFTimer = new System.Windows.Forms.Timer();    // timer for mute'ing CF
@@ -139,7 +141,7 @@ namespace Navigator
 
         //[DllImport("user32.dll")]
         //private static extern bool SetForegroundWindow(IntPtr hWnd);
-                
+
         //LK, 20-nov-2013: Experimental
         //[DllImport("user32.dll")]
         //private static extern IntPtr GetForegroundWindow();        
@@ -579,6 +581,9 @@ namespace Navigator
                     }
                     catch (Exception errMsg) { WriteLog("Failed to disable mouse/keyboard input: " + errMsg.Message); }
 
+                    //In some, rare, instances, it could already be running. Terminate it now as we're about to start it
+                    TerminateOrphanedProcess(true);
+
                     //Start the EXE
                     pNavigator.Start();
                     
@@ -745,8 +750,19 @@ namespace Navigator
                 //User really wants to exit Navigator?
                 if (!boolExit)
                 {
-                    //Restart Navigator?       
-                    if (CF_systemDisplayDialog(CF_Dialogs.YesNo, this.pluginLang.ReadField("/APPLANG/NAVIGATOR/RESTARTNAVIGATOR")) == DialogResult.OK)
+                    //Only prompt for restart if not resuming from suspend
+                    DialogResult result;
+                    if (boolSuspend == false)
+                    {
+                        result = CF_systemDisplayDialog(CF_Dialogs.YesNo, this.pluginLang.ReadField("/APPLANG/NAVIGATOR/RESTARTNAVIGATOR"));
+                    }
+                    else
+                    {
+                        result = DialogResult.OK;
+                    }
+                                                
+                    //Restart Navigator?
+                    if (result == DialogResult.OK)
                     {
                         WriteLog("Navigator no longer running. Exit code: " + pNavigator.ExitCode.ToString());
 
@@ -835,11 +851,6 @@ namespace Navigator
                 case "TOGGLEMINMAX": //Flip full screen / Normal screen
                     btnMinMax_Click(null, null);
                     return true;
-                case "TRAFFICINFO": //Open page for traffic info
-                    //CF_systemCommand(CF_Actions.PLUGIN, "WEB", "BROWSE", strTrafficURL, "FULLSCREEN");
-                    //CF_systemCommand(CF_Actions.PLUGIN, "WEB");
-                    this.CF_systemCommand(CF_Actions.PLUGIN, "TrafficCopLite".ToUpper());
-                    return true;
             }
 
             return false;
@@ -896,7 +907,17 @@ namespace Navigator
                 }
                 catch
                 {
-                    boolFREE = true;
+                    //Ask what edition to use
+                    if (CF_systemDisplayDialog(CF_Dialogs.YesNo, this.pluginLang.ReadField("/APPLANG/NAVIGATOR/DISPLAYNAME") + " " + this.pluginLang.ReadField("/APPLANG/SETUP/FREEEDITION")) == DialogResult.OK)
+                    {
+                        boolFREE = true;
+                    }
+                    else
+                    {
+                        boolFREE = false;
+                    }
+                                        
+                    //Write edition to disk
                     this.pluginConfig.WriteField("/APPCONFIG/FREEEDITION", boolFREE.ToString(), true);
                 }
                 finally
@@ -1213,29 +1234,6 @@ namespace Navigator
                     WriteLog("Trim digits: " + boolTRIMDIGITS.ToString());
                 }
 
-                //Traffic info URL
-                try
-                {
-                    string tmpStr = pluginConfig.ReadField("/APPCONFIG/TRAFFICURL");
-                    if (tmpStr.Length < 3)
-                    {
-                        pluginConfig.WriteField("/APPCONFIG/TRAFFICURL", strTrafficURL, true);
-                    }
-                    else
-                    {
-                        strTrafficURL = tmpStr;
-                    }
-                }
-                catch
-                {
-                    pluginConfig.WriteField("/APPCONFIG/TRAFFICURL", strTrafficURL, true);
-                }
-                finally
-                {
-                    WriteLog("Traffic info URL: " + strTrafficURL);
-                }
-                
-
                 // CF Settings
                 try
                 {
@@ -1551,9 +1549,6 @@ namespace Navigator
                 NavDestinationTimer.Interval = 1000; // Increase freqency of updates from Navigator
                 NavStatustimer_Tick(null, null); //Make first update now
                 NavStatustimer.Enabled = true;               
-
-                //Make button hidden
-                this.CF_setButtonEnableFlag("MinMax", false);
             }
             else
             {
@@ -1566,9 +1561,6 @@ namespace Navigator
                 thepanel.Visible = true;
                 
                 SendCommand("$maximize\r\n", false, TCPCommand.Maximize);
-
-                //Make it visible
-                this.CF_setButtonEnableFlag("MinMax", true);
             }
         }
 
@@ -1785,10 +1777,9 @@ namespace Navigator
                     //LK, 29-nov-2014: Use the applications main window handle instead of the panel handle mHandlePtr
                     try
                     {
-                        if (boolFREE)
-                            ClickOnPoint(mainWindowHandle, new Point(100, 200));
-                        pNavigator.WaitForExit(500);    //LK, 29-nov-2014: Don;t wait longer then required//---   System.Threading.Thread.Sleep(200); //was 20
-                        //JJ: Changed from 1000. Too long to wait... I'll meet you half way. Check every 500ms
+                        //All versions (Paid and OSM) have the Ad screen at the end when closing
+                        ClickOnPoint(mainWindowHandle, new Point(100, 200));
+                        pNavigator.WaitForExit(500);
                     }
                     catch (Exception errMsg) { WriteLog("Failed to stop application: " + errMsg.Message); } //LK,28-nov-2013: Catch unhandled pointer exceptions
                 }
@@ -1818,6 +1809,9 @@ namespace Navigator
             if (e.Mode == CFPowerModes.Suspend)
             {
                 CloseNavigator();
+
+                //Make sure user is not prompted to restart Navigator
+                boolSuspend = true;
             }
 
             //If resuming from sleep
@@ -1831,6 +1825,9 @@ namespace Navigator
 
                 //If exit, restart Navigator
                 boolExit = false;
+
+                //User can be prompted to restart Navigator again
+                boolSuspend = false;
 
                 //If suspend was initiated when plugin active, we need to ensure CF_pluginShow() is called
                 if (this.Visible == true) CF_pluginShow();

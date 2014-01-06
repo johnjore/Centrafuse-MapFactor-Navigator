@@ -185,7 +185,7 @@ namespace Navigator
                             //This is messy as there's no "standard" way Navigator provides the messages
                             foreach (string strCommands in strParse)
                             {
-                                if (strCommands.Contains("SOUND"))
+                                if (strCommands.ToUpper().Contains("SOUND"))
                                 {
                                     //Only do this if we're not using named pipes
                                     if (!boolNamedPipes)
@@ -194,7 +194,7 @@ namespace Navigator
                                         NavigatorStopCFAudio();
                                     }
                                 }
-                                else if (strCommands.Contains("WAYPOINT"))
+                                else if (strCommands.ToUpper().Contains("WAYPOINT"))
                                 {
                                     if (this.Visible == true)
                                     {
@@ -206,7 +206,7 @@ namespace Navigator
                                         this.CF_systemCommand(CF_Actions.SHOWINFO, this.pluginLang.ReadField("/APPLANG/NAVIGATOR/WAYPOINT"), "AUTOHIDE");
                                     }
                                 }
-                                else if (strCommands.Contains("RECALCULATING"))
+                                else if (strCommands.ToUpper().Contains("RECALCULATING"))
                                 {
                                     if (this.Visible == true)
                                     {
@@ -218,7 +218,7 @@ namespace Navigator
                                         this.CF_systemCommand(CF_Actions.SHOWINFO, this.pluginLang.ReadField("/APPLANG/NAVIGATOR/RECALCULATING"), "AUTOHIDE");
                                     }
                                 }
-                                else if (strCommands.Contains("LOST"))
+                                else if (strCommands.ToUpper().Contains("LOST"))
                                 {
                                     if (this.Visible == true)
                                     {
@@ -230,7 +230,7 @@ namespace Navigator
                                         this.CF_systemCommand(CF_Actions.SHOWINFO, this.pluginLang.ReadField("/APPLANG/NAVIGATOR/LOST"), "AUTOHIDE");
                                     }
                                 }
-                                else if (strCommands.Contains("DESTINATIONREACHED"))
+                                else if (strCommands.ToUpper().Contains("DESTINATIONREACHED"))
                                 {
                                     if (this.Visible == true)
                                     {
@@ -242,7 +242,7 @@ namespace Navigator
                                         this.CF_systemCommand(CF_Actions.SHOWINFO, this.pluginLang.ReadField("/APPLANG/NAVIGATOR/DESTINATION"), "AUTOHIDE");
                                     }
                                 }
-                                else if (strCommands.Contains("$GPRMC"))
+                                else if (strCommands.ToUpper().Contains("$GPRMC"))
                                 {
                                     //WriteLog("GPRMC sentence");
                                     try
@@ -356,7 +356,7 @@ namespace Navigator
                                         //WriteLog("Current Direction: '" + CF_navGetInfo(CFNavInfo.Direction) + "'");
                                     }
                                 }
-                                else if (strCommands.Contains("$GPGGA"))
+                                else if (strCommands.ToUpper().Contains("$GPGGA"))
                                 {
                                     //WriteLog("GPGGA sentence");
                                     try
@@ -410,24 +410,24 @@ namespace Navigator
                                         //WriteLog("Current Direction: '" + CF_navGetInfo(CFNavInfo.Direction) + "'");
                                     }
                                 }
-                                else if (strCommands.Contains("OK"))
+                                else if (strCommands.ToUpper().Contains("OK"))
                                 {
                                     //strCommands will always be 'OK'
                                     WriteLog("Ack message... for which command is not known....");
                                 }
-                                else if (strCommands.Contains("BUSY"))
+                                else if (strCommands.ToUpper().Contains("BUSY"))
                                 {
                                     //strCommands will always be 'BUSY'
                                     WriteLog("Failed to ask Navigator to do something... for which command is not known....");
                                     this.CF_systemCommand(CF_Actions.SHOWINFO, this.pluginLang.ReadField("/APPLANG/NAVIGATOR/BUSY"), "AUTOHIDE");
                                 }
-                                else if (strCommands.Contains("ERROR"))
+                                else if (strCommands.ToUpper().Contains("ERROR"))
                                 {
                                     //strCommands will always be 'ERROR'
                                     WriteLog("Asked Navigator to do something it can't do... which command is not known....");
                                     this.CF_systemCommand(CF_Actions.SHOWINFO, this.pluginLang.ReadField("/APPLANG/NAVIGATOR/ERROR"), "AUTOHIDE");
                                 }
-                                else if (strCommands.Contains("NOTNAVIGATING"))
+                                else if (strCommands.ToUpper().Contains("NOTNAVIGATING"))
                                 {
                                     //If not navigating, clear these
                                     _navStats.DistanceDestination = 0;
@@ -538,8 +538,23 @@ namespace Navigator
                                         
                                     }
                                     catch (Exception errMsg) { _navStats.Street = ""; WriteLog("Unable to parse Street: " + errMsg.Message); }
-                                    
+                                }
+                                else if (strCommands.ToUpper().Contains("V."))
+                                {
+                                    //V.12.4.3 => 12.4
+                                    try
+                                    {                                        
+                                        decNavigatorVersion = decimal.Parse(strCommands.Substring(2, 4));
+                                    }
+                                    catch (Exception errMsg) { WriteLog("Error Parsing Navigator Version: " + errMsg.Message); }
 
+                                    WriteLog("Navigator Version: '" + decNavigatorVersion.ToString() + "'");
+                                }
+                                else if (strCommands.Split('.').Length == 3)
+                                {
+                                    //2.2.0
+                                    strProtocolVersion = strCommands;
+                                    WriteLog("Navigator TCP Protocol Version: '" + strProtocolVersion + "'");
                                 }
                                 else if (strCommands != "")
                                 {

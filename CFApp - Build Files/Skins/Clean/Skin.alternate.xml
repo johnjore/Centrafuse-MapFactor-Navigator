@@ -4,16 +4,20 @@
     <FONTCLASS id="DataText" font="HelveticaNeueLT Std" case="Initial" color="#FFFFFF" color2="#333333" size="16" style="" align="Left" wrap="False" xoffset="0" yoffset="0" />
   </FONTCLASSES>
   <BUTTONIMAGES>
-    <BUTTONIMAGE id="VolumeUpOff"    path="buttonimages/volup_off.png" />
-    <BUTTONIMAGE id="VolumeUpDown"   path="buttonimages/volup_down.png" />
-    <BUTTONIMAGE id="VolumeDownOff"  path="buttonimages/voldown_off.png" />
-    <BUTTONIMAGE id="VolumeDownDown" path="buttonimages/voldown_down.png" />
-    <BUTTONIMAGE id="ResizeOff"      path="buttonimages/resize_off.png" />
-    <BUTTONIMAGE id="ResizeDown"     path="buttonimages/resize_down.png" />
+    <BUTTONIMAGE id="VolumeUpOff"     path="buttonimages/volup_off.png" />
+    <BUTTONIMAGE id="VolumeUpDown"    path="buttonimages/volup_down.png" />
+    <BUTTONIMAGE id="VolumeDownOff"   path="buttonimages/voldown_off.png" />
+    <BUTTONIMAGE id="VolumeDownDown"  path="buttonimages/voldown_down.png" />
+    <BUTTONIMAGE id="ResizeOff"       path="buttonimages/resize_off.png" />
+    <BUTTONIMAGE id="ResizeDown"      path="buttonimages/resize_down.png" />
     <BUTTONIMAGE id="gps_down"        path="buttonimages/gps_down.png" />
     <BUTTONIMAGE id="gps_off"         path="buttonimages/gps_off.png" />
     <BUTTONIMAGE id="cfconnect_down"  path="buttonimages/cfconnect_down.png" />
     <BUTTONIMAGE id="cfconnect_off"   path="buttonimages/cfconnect_off.png" />
+    <BUTTONIMAGE id="trafficcop_down" path="buttonimages/trafficcop_down.png" />
+    <BUTTONIMAGE id="trafficcop_off"  path="buttonimages/trafficcop_off.png" />
+    <BUTTONIMAGE id="cfcam_down"      path="buttonimages/cfcam_down.png" />
+    <BUTTONIMAGE id="cfcam_off"       path="buttonimages/cfcam_off.png" />
   </BUTTONIMAGES>
   <IMAGES>
     <IMAGE id="background" path="screen/background.png" />
@@ -21,14 +25,22 @@
   <SECTIONS>
     <SECTION id="Navigator" effect="ToApp" bounds="0;88;800;392" fullbounds="0;0;800;480" off="background" down="background">
       <CONTROLS>
-        <CONTROL type="Panel" 	  id="PanelNavigator" bounds="000;000;700;392" fullbounds="000;000;700;480" enabled="true" fontclass="" fontstyle="" />
-        <CONTROL type="DynButton" id="MinMax"      bounds="710;000;080;058" fullbounds="710;088;080;058" tabindex="1" enabled="true"  action="ToggleMinMax"                   			off="ResizeOff"      down="ResizeDown" />
-        <CONTROL type="DynButton" id="CFConnect"   bounds="710;058;080;058" fullbounds="710;146;080;058" tabindex="2" enabled="true"  cmlaction="Centrafuse.CFActions.Plugin:CentrafuseConnect" off="cfconnect_off"  down="cfconnect_down" />
-        <CONTROL type="DynButton" id="GPSStatus"   bounds="710;116;080;058" fullbounds="710;204;080;058" tabindex="3" enabled="true"  action="GotoStatus"                     			off="gps_off"        down="gps_down" />
-        <CONTROL type="DynButton" id="VolUp"       bounds="710;175;080;058" fullbounds="710;263;080;058" tabindex="4" enabled="true"  cmlaction="Centrafuse.Main.VolumeUp"    			off="VolumeUpOff"    down="VolumeUpDown"   forcemouseup="true" />
-        <CONTROL type="DynButton" id="VolDown"     bounds="710;233;080;058" fullbounds="710;321;080;058" tabindex="5" enabled="true"  cmlaction="Centrafuse.Main.VolumeDown"  			off="VolumeDownOff"  down="VolumeDownDown" forcemouseup="true" />
-        <CONTROL type="Label"     id="DateTime"    bounds="700;293;100;035" fullbounds="700;381;100;035" tabindex="6" enabled="true"  cmlaction="Centrafuse.Main.DateTime"    			off="NowPlayingOff"  down="NowPlayingDown" fontclass="DateTime" holdcmlaction="Centrafuse.CFActions.DateTime" holdtime="2" cmltext="Centrafuse.Main.DateTime"  />
-        <CONTROL type="DynButton" id="Exit"        bounds="709;324;081;058" fullbounds="709;412;081;058" tabindex="7" enabled="true"  cmlaction="Centrafuse.Main.MainMenu"    			off="MainBackOff"    down="MainBackDown" />
+        <CONTROL type="Panel" 	  id="PanelNavigator" bounds="000;000;620;392" fullbounds="000;000;700;480" enabled="true" fontclass="" fontstyle="" />
+
+        <CONTROL type="DynButton" id="CFTrafficCams"  bounds="625;194;080;058" fullbounds="710;030;080;050" tabindex="1" enabled="true"  cmlaction="Centrafuse.CFActions.Plugin:CFTrafficCams"        off="cfcam_off"       down="cfcam_down" />
+
+        <CONTROL type="DynButton" id="CFConnect"      bounds="625;010;080;058" fullbounds="710;080;080;050" tabindex="2" enabled="true"  cmlaction="Centrafuse.CFActions.Plugin:CentrafuseConnect"    off="cfconnect_off"   down="cfconnect_down" />
+        <CONTROL type="DynButton" id="TrafficInfo"    bounds="625;072;080;058" fullbounds="710;180;080;050" tabindex="3" enabled="true"  cmlaction="Centrafuse.CFActions.Plugin:TrafficCopLite"       off="trafficcop_off"  down="trafficcop_down" />
+
+        <CONTROL type="DynButton" id="MinMax"         bounds="710;010;080;058" fullbounds="710;130;080;050" tabindex="4" enabled="true"  action="ToggleMinMax"                   off="ResizeOff"      down="ResizeDown" />
+        <CONTROL type="DynButton" id="GPSStatus"      bounds="710;072;080;058" fullbounds="710;230;080;050" tabindex="5" enabled="true"  action="GotoStatus"                     off="gps_off"        down="gps_down" />
+
+        <CONTROL type="Label"     id="DateTime"       bounds="605;140;195;045" fullbounds="700;000;100;035" tabindex="6" enabled="true"  cmlaction="Centrafuse.Main.DateTime"    off="NowPlayingOff"  down="NowPlayingDown" fontclass="DateTime" holdcmlaction="Centrafuse.CFActions.DateTime" holdtime="2" cmltext="Centrafuse.Main.DateTime"  />
+
+        <CONTROL type="DynButton" id="VolUp"          bounds="710;194;080;058" fullbounds="710;282;080;058" tabindex="7" enabled="true"  cmlaction="Centrafuse.Main.VolumeUp"    off="VolumeUpOff"    down="VolumeUpDown"   forcemouseup="true" />
+        <CONTROL type="DynButton" id="VolDown"        bounds="710;252;080;058" fullbounds="710;340;080;058" tabindex="8" enabled="true"  cmlaction="Centrafuse.Main.VolumeDown"  off="VolumeDownOff"  down="VolumeDownDown" forcemouseup="true" />
+        <CONTROL type="DynButton" id="Exit"           bounds="709;314;081;068" fullbounds="709;402;081;068" tabindex="9" enabled="true"  cmlaction="Centrafuse.Main.MainMenu"    off="MainBackOff"    down="MainBackDown" />
+
       </CONTROLS>
     </SECTION>
 
@@ -64,13 +76,20 @@
         <CONTROL type="Label" id="DataInRoute" bounds="345;310;320;22" fontclass="DataText" fontstyle="" textenable="true" text="" enabled="true"/>
         <CONTROL type="Label" id="DataGPSTime" bounds="345;335;320;22" fontclass="DataText" fontstyle="" textenable="true" text="" enabled="true"/>
 
-        <CONTROL type="DynButton" id="MinMax"      bounds="710;000;080;058" fullbounds="710;088;080;058" tabindex="1" enabled="true"  action="ToggleMinMax"                   			off="ResizeOff"      down="ResizeDown" />
-        <CONTROL type="DynButton" id="CFConnect"   bounds="710;058;080;058" fullbounds="710;146;080;058" tabindex="2" enabled="true"  cmlaction="Centrafuse.CFActions.Plugin:CentrafuseConnect" off="cfconnect_off"  down="cfconnect_down" />
-        <CONTROL type="DynButton" id="GPSStatus"   bounds="710;116;080;058" fullbounds="710;204;080;058" tabindex="3" enabled="true"  action="GotoStatus"                     			off="gps_off"        down="gps_down" />
-        <CONTROL type="DynButton" id="VolUp"       bounds="710;175;080;058" fullbounds="710;263;080;058" tabindex="4" enabled="true"  cmlaction="Centrafuse.Main.VolumeUp"    			off="VolumeUpOff"    down="VolumeUpDown"   forcemouseup="true" />
-        <CONTROL type="DynButton" id="VolDown"     bounds="710;233;080;058" fullbounds="710;321;080;058" tabindex="5" enabled="true"  cmlaction="Centrafuse.Main.VolumeDown"  			off="VolumeDownOff"  down="VolumeDownDown" forcemouseup="true" />
-        <CONTROL type="Label"     id="DateTime"    bounds="700;293;100;035" fullbounds="700;381;100;035" tabindex="6" enabled="true"  cmlaction="Centrafuse.Main.DateTime"    			off="NowPlayingOff"  down="NowPlayingDown" fontclass="DateTime" holdcmlaction="Centrafuse.CFActions.DateTime" holdtime="2" cmltext="Centrafuse.Main.DateTime"  />
-        <CONTROL type="DynButton" id="Exit"        bounds="709;324;081;058" fullbounds="709;412;081;058" tabindex="7" enabled="true"  cmlaction="Centrafuse.Main.MainMenu"    			off="MainBackOff"    down="MainBackDown" />
+        <CONTROL type="DynButton" id="CFTrafficCams"  bounds="625;194;080;058" fullbounds="710;030;080;050" tabindex="1" enabled="true"  cmlaction="Centrafuse.CFActions.Plugin:CFTrafficCams"        off="cfcam_off"       down="cfcam_down" />
+
+        <CONTROL type="DynButton" id="CFConnect"      bounds="625;010;080;058" fullbounds="710;080;080;050" tabindex="2" enabled="true"  cmlaction="Centrafuse.CFActions.Plugin:CentrafuseConnect"    off="cfconnect_off"   down="cfconnect_down" />
+        <CONTROL type="DynButton" id="TrafficInfo"    bounds="625;072;080;058" fullbounds="710;180;080;050" tabindex="3" enabled="true"  cmlaction="Centrafuse.CFActions.Plugin:TrafficCopLite"       off="trafficcop_off"  down="trafficcop_down" />
+
+        <CONTROL type="DynButton" id="MinMax"         bounds="710;010;080;058" fullbounds="710;130;080;050" tabindex="4" enabled="true"  action="ToggleMinMax"                   off="ResizeOff"      down="ResizeDown" />
+        <CONTROL type="DynButton" id="GPSStatus"      bounds="710;072;080;058" fullbounds="710;230;080;050" tabindex="5" enabled="true"  action="GotoStatus"                     off="gps_off"        down="gps_down" />
+
+        <CONTROL type="Label"     id="DateTime"       bounds="605;140;195;045" fullbounds="700;000;100;035" tabindex="6" enabled="true"  cmlaction="Centrafuse.Main.DateTime"    off="NowPlayingOff"  down="NowPlayingDown" fontclass="DateTime" holdcmlaction="Centrafuse.CFActions.DateTime" holdtime="2" cmltext="Centrafuse.Main.DateTime"  />
+
+        <CONTROL type="DynButton" id="VolUp"          bounds="710;194;080;058" fullbounds="710;282;080;058" tabindex="7" enabled="true"  cmlaction="Centrafuse.Main.VolumeUp"    off="VolumeUpOff"    down="VolumeUpDown"   forcemouseup="true" />
+        <CONTROL type="DynButton" id="VolDown"        bounds="710;252;080;058" fullbounds="710;340;080;058" tabindex="8" enabled="true"  cmlaction="Centrafuse.Main.VolumeDown"  off="VolumeDownOff"  down="VolumeDownDown" forcemouseup="true" />
+        <CONTROL type="DynButton" id="Exit"           bounds="709;314;081;068" fullbounds="709;402;081;068" tabindex="9" enabled="true"  cmlaction="Centrafuse.Main.MainMenu"    off="MainBackOff"    down="MainBackDown" />
+
       </CONTROLS>
     </SECTION>
   </SECTIONS>

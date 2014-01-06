@@ -36,7 +36,7 @@
     <FALSE>Niet waar</FALSE>
     <NAMEDPIPEPATCHFAILED>Het veranderen van de named pipe status is mislukt</NAMEDPIPEPATCHFAILED>
     <NOIDCFILE>Fatal error: No IDC file. Navigator will not launch!</NOIDCFILE>
-    <TRAFFICURL>http://www.tomtom.com/livetraffic/|www.bbc.co.uk</TRAFFICURL>
+    <NEARESTSTREET>Upgrade Navigator to support this field</NEARESTSTREET>
   </NAVIGATOR>
   <SETUP>
     <DESCRIPTION>Configuren Mapfactor Navigator Plugin</DESCRIPTION>
@@ -64,6 +64,5 @@
     <LICENSED>Zet deze optie niet aan bij gebruik van de gratis (OSM) versie van Navigator</LICENSED>
     <LOCALIZE>Lokaliseer data op het GPS statusscherm (. versus ,)</LOCALIZE>
     <OSMMESSAGE>Opm.: De OpenStreetMap licentievermelding bij het starten van Navigator, wordt hiermee onderdrukt.</OSMMESSAGE>
-    <TRAFFICURL>URL for traffic information</TRAFFICURL>
   </SETUP>
 </APPLANG>

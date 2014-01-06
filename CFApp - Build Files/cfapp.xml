@@ -15,6 +15,7 @@
     <FILENAME register="false" overwrite="true" source="Languages\English.xml" destination="[CFAPPDIR]\Plugins\Navigator\Languages\English.xml" />
     <FILENAME register="false" overwrite="true" source="Languages\Dutch.xml" destination="[CFAPPDIR]\Plugins\Navigator\Languages\Dutch.xml" />
     <FILENAME register="false" overwrite="true" source="Skins\Clean\Skin.xml" destination="[CFAPPDIR]\Plugins\Navigator\Skins\Clean\Skin.xml" />
+    <FILENAME register="false" overwrite="true" source="Skins\Clean\Skin.Alternate.xml" destination="[CFAPPDIR]\Plugins\Navigator\Skins\Clean\Skin.Alternate.xml" />
     <FILENAME register="false" overwrite="true" source="Skins\Clean\Screen\Background.png" destination="[CFAPPDIR]\Plugins\Navigator\Skins\Clean\Screen\Background.png" />
     <FILENAME register="false" overwrite="true" source="Skins\Clean\ButtonImages\resize_down.png" destination="[CFAPPDIR]\Plugins\Navigator\Skins\Clean\ButtonImages\resize_down.png" />
     <FILENAME register="false" overwrite="true" source="Skins\Clean\ButtonImages\resize_off.png" destination="[CFAPPDIR]\Plugins\Navigator\Skins\Clean\ButtonImages\resize_off.png" />
@@ -28,6 +29,8 @@
     <FILENAME register="false" overwrite="true" source="Skins\Clean\ButtonImages\gps_off.png" destination="[CFAPPDIR]\Plugins\Navigator\Skins\Clean\ButtonImages\gps_off.png" />
     <FILENAME register="false" overwrite="true" source="Skins\Clean\ButtonImages\trafficcop_down.png" destination="[CFAPPDIR]\Plugins\Navigator\Skins\Clean\ButtonImages\trafficcop_down.png" />
     <FILENAME register="false" overwrite="true" source="Skins\Clean\ButtonImages\trafficcop_off.png" destination="[CFAPPDIR]\Plugins\Navigator\Skins\Clean\ButtonImages\trafficcop_off.png" />
+    <FILENAME register="false" overwrite="true" source="Skins\Clean\ButtonImages\cfcam_down.png" destination="[CFAPPDIR]\Plugins\Navigator\Skins\Clean\ButtonImages\cfcam_down.png" />
+    <FILENAME register="false" overwrite="true" source="Skins\Clean\ButtonImages\cfcam_off.png" destination="[CFAPPDIR]\Plugins\Navigator\Skins\Clean\ButtonImages\cfcam_off.png" />
     <FILENAME register="false" overwrite="true" source="Skins\Fresh Air\Skin.xml" destination="[CFAPPDIR]\Plugins\Navigator\Skins\Fresh Air\Skin.xml" />
     <FILENAME register="false" overwrite="true" source="Skins\Fresh Air\Screen\Background.png" destination="[CFAPPDIR]\Plugins\Navigator\Skins\Fresh Air\Screen\Background.png" />
     <FILENAME register="false" overwrite="true" source="Skins\Fresh Air\ButtonImages\btn_gps_down.png" destination="[CFAPPDIR]\Plugins\Navigator\Skins\Fresh Air\ButtonImages\btn_gps_down.png" />

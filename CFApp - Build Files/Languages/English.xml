@@ -36,7 +36,7 @@
     <FALSE>False</FALSE>
     <NAMEDPIPEPATCHFAILED>Failed to change named pipe patch status</NAMEDPIPEPATCHFAILED>
     <NOIDCFILE>Fatal error: No IDC file. Navigator will not launch!</NOIDCFILE>
-    <TRAFFICURL>http://www.tomtom.com/livetraffic/|www.bbc.co.uk</TRAFFICURL>
+    <NEARESTSTREET>Upgrade Navigator to support this field</NEARESTSTREET>
   </NAVIGATOR>
   <SETUP>
     <DESCRIPTION>Configure mapFactor Navigator Plugin</DESCRIPTION>
@@ -64,6 +64,5 @@
     <LICENSED>Warning: Do not set to 'Off' if using OSM/Free version</LICENSED>
     <LOCALIZE>Localize GPS Status screen (. vs ,)</LOCALIZE>
     <OSMMESSAGE>Note: The OpenStreetMap startup message from Navigator will be suppressed.</OSMMESSAGE>
-    <TRAFFICURL>URL for traffic information</TRAFFICURL>
   </SETUP>
 </APPLANG>

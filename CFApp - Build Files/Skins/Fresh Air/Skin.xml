@@ -34,8 +34,8 @@
         <CONTROL type="DynButton" id="PlayPause"   bounds="253;404;74;64" fullbounds="243;404;74;64" tabindex="4" enabled="true"  cmlaction="Centrafuse.Main.PlayPause"   		    off="PlayOff"        down="PlayDown" />
         <CONTROL type="DynButton" id="Rewind"      bounds="327;404;74;64" fullbounds="317;404;74;64" tabindex="5" enabled="true"  cmlaction="Centrafuse.Main.Rewind"      		    off="RewindOff"      down="RewindDown" />
         <CONTROL type="DynButton" id="FastForward" bounds="401;404;74;64" fullbounds="391;404;74;64" tabindex="6" enabled="true"  cmlaction="Centrafuse.Main.FastForward" 		    off="FastForwardOff" down="FastForwardDown" />
-        <CONTROL type="DynButton" id="GPSStatus"   bounds="475;404;74;64" fullbounds="465;404;74;64" tabindex="7" enabled="true"  action="GotoStatus"                     		    off="GpsOff"         down="GpsDown"        fontclass="Standard12" />
-        <CONTROL type="DynButton" id="MinMax"      bounds="549;404;74;64" fullbounds="539;404;74;64" tabindex="8" enabled="true"  action="ToggleMinMax"                   		    off="ResizeOff"      down="ResizeDown"     fontclass="Standard12" />
+        <CONTROL type="DynButton" id="GPSStatus"   bounds="475;404;74;64" fullbounds="465;404;74;64" tabindex="7" enabled="true"  action="GotoStatus"                     		    off="GpsOff"         down="GpsDown" />
+        <CONTROL type="DynButton" id="MinMax"      bounds="549;404;74;64" fullbounds="539;404;74;64" tabindex="8" enabled="true"  action="ToggleMinMax"                   		    off="ResizeOff"      down="ResizeDown" />
         <CONTROL type="DynButton" id="NowPlaying"  bounds="623;404;82;64" fullbounds="613;404;82;64" tabindex="9" enabled="true"  cmlaction="Centrafuse.Main.NowPlaying"  		    off="NowPlayingOff"  down="NowPlayingDown" iconyoffset="-5" />
       </SHOWMAINCONTROLS>
     </SECTION>
@@ -89,8 +89,8 @@
         <CONTROL type="DynButton" id="PlayPause"   bounds="253;404;74;64" fullbounds="243;404;74;64" tabindex="4" enabled="true"  cmlaction="Centrafuse.Main.PlayPause"   off="PlayOff"        down="PlayDown" />
         <CONTROL type="DynButton" id="Rewind"      bounds="327;404;74;64" fullbounds="317;404;74;64" tabindex="5" enabled="true"  cmlaction="Centrafuse.Main.Rewind"      off="RewindOff"      down="RewindDown" />
         <CONTROL type="DynButton" id="FastForward" bounds="401;404;74;64" fullbounds="391;404;74;64" tabindex="6" enabled="true"  cmlaction="Centrafuse.Main.FastForward" off="FastForwardOff" down="FastForwardDown" />
-        <CONTROL type="DynButton" id="GPSStatus"   bounds="475;404;74;64" fullbounds="465;404;74;64" tabindex="7" enabled="true"  action="GotoStatus"                     off="GpsOff"         down="GpsDown"       fontclass="Standard12" />
-        <CONTROL type="DynButton" id="MinMax"      bounds="549;404;74;64" fullbounds="539;404;74;64" tabindex="8" enabled="true"  action="ToggleMinMax"                   off="ResizeOff"      down="ResizeDown" fontclass="Standard12" />
+        <CONTROL type="DynButton" id="GPSStatus"   bounds="475;404;74;64" fullbounds="465;404;74;64" tabindex="7" enabled="true"  action="GotoStatus"                     off="GpsOff"         down="GpsDown" />
+        <CONTROL type="DynButton" id="MinMax"      bounds="549;404;74;64" fullbounds="539;404;74;64" tabindex="8" enabled="true"  action="ToggleMinMax"                   off="ResizeOff"      down="ResizeDown" />
         <CONTROL type="DynButton" id="NowPlaying"  bounds="623;404;82;64" fullbounds="613;404;92;64" tabindex="9" enabled="true"  cmlaction="Centrafuse.Main.NowPlaying"  off="NowPlayingOff"  down="NowPlayingDown" iconyoffset="-5" />
       </SHOWMAINCONTROLS>
     </SECTION>
