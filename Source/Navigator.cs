@@ -1777,8 +1777,9 @@ namespace Navigator
                     //LK, 29-nov-2014: Use the applications main window handle instead of the panel handle mHandlePtr
                     try
                     {
-                        //All versions (Paid and OSM) have the Ad screen at the end when closing
-                        ClickOnPoint(mainWindowHandle, new Point(100, 200));
+                        //OSM version have the Ad screen at the end when closing
+                        if (boolFREE)
+                            ClickOnPoint(mainWindowHandle, new Point(100, 200));
                         pNavigator.WaitForExit(500);
                     }
                     catch (Exception errMsg) { WriteLog("Failed to stop application: " + errMsg.Message); } //LK,28-nov-2013: Catch unhandled pointer exceptions
