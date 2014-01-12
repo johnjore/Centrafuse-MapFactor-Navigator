@@ -74,7 +74,7 @@ namespace Navigator
         private bool boolFullScreen = false;                // Full screen?
         private bool boolTRIMDIGITS = false;                // Trim number of digits for speed etc?
         private bool boolLocalize = false;                  // Localize GPS Status screen
-        public bool boolExit = false;                       // Set True if hibernating
+        public bool boolExit = false;                       // Set True if hibernating or we want to exit
         private bool boolFREE = true;                       // Free edition?
         private bool boolOSMOK = false;                     // If true, supresses OSM License prompt
         private bool boolAlerts = false;                    // Show alerts if NOT active plugin?
@@ -83,7 +83,7 @@ namespace Navigator
         private bool boolInMutePeriod = false;              // True if already in MUTE period
         private int muteCFTimerInterval = 1800;             //LK, 30-nov-2013: Cache MuteCfTimer Interval (JJ: Value in milliseconds)
         private int intCFVolumeLevel = 0;                   // CF's volume level before "ATT"
-        private IntPtr mHandlePtr;                          // var for window handle number to catch
+        //private IntPtr mHandlePtr;                          // var for window handle number to catch
         CFControls.CFPanel thepanel = null;                 // The panel to 'project' Navigator into        
         Process pNavigator = null;                          // Navigator's process
         private bool boolCurrentNightMode = false;          // Are we currently in night mode? (We don't actually know this)
@@ -128,23 +128,6 @@ namespace Navigator
         
         [DllImport("user32.dll")]
         private static extern bool BlockInput(bool block);
-
-        /**/
-        //Remove later if not used
-
-        //Placeholders
-        //[DllImport("user32.dll")]
-        //static extern int SetWindowLong(IntPtr hWnd, int nIndex, int dwNewLong);
-        
-        //[DllImport("user32.dll")]
-        //static extern bool MoveWindow(IntPtr Handle, int x, int y, int w, int h, bool repaint);
-
-        //[DllImport("user32.dll")]
-        //private static extern bool SetForegroundWindow(IntPtr hWnd);
-
-        //LK, 20-nov-2013: Experimental
-        //[DllImport("user32.dll")]
-        //private static extern IntPtr GetForegroundWindow();        
 #endregion
 
 #region CFPlugin methods
@@ -225,10 +208,6 @@ namespace Navigator
                     if (TerminateOrphanedProcess(true)) this.CF_systemCommand(CF_Actions.SHOWINFO, this.pluginLang.ReadField("/APPLANG/NAVIGATOR/EMBEDDINGFAILED"), "AUTOHIDE");
                 }
 
-                /**/
-                //Force logging...
-                //this.pluginConfig.WriteField("/APPCONFIG/LOGEVENTS", "True", true);
-
                 // Active navigation engine?
                 if (ReadCFValue("/APPCONFIG/NAVENGINE", "NAVIGATOR", configPath))
                 {
@@ -265,7 +244,6 @@ namespace Navigator
                 WriteLog("skin setup failed: '" + ex.Message); //LK, 28-nov-2013: Text adjusted
             }
 
-
             //LK, 28-nov-2013: Catch any errors (a lot can go wrong here)
             try
             {
@@ -294,7 +272,8 @@ namespace Navigator
                     thepanel.Name = "ThePanel";
 
                     //Get the handle so we can associate it with the process later
-                    mHandlePtr = thepanel.Handle;
+                    /**/ //Not using cached value, line 292 uses current/real value
+                    //mHandlePtr = thepanel.Handle;
 
                     //LK, 22-nov-2013: In the case of a skin change, adjust panel size.
                     if (thepanel != null)   //Anytime, but the first (when called from CF_pluginInit())
@@ -310,7 +289,7 @@ namespace Navigator
                         //LK, 30-nov-2013: Instead of keeping the old panels (leeds to trouble when changing sections), dock again
                         if (pNavigator != null)
                         {
-                            SetParent(pNavigator.MainWindowHandle, mHandlePtr);
+                            SetParent(pNavigator.MainWindowHandle, thepanel.Handle);
                             WriteLog("Connected to new panel again");
 
                             if (boolFullScreen)
@@ -574,7 +553,7 @@ namespace Navigator
                     pNavigator.StartInfo.WindowStyle = ProcessWindowStyle.Hidden;
 
                     //Make sure keyboard and mouse inputs are not working while Navigator starts
-                    //Prevents user from pressing OK to the OSM License dialog and the subsequent 'Enter' opens up Menu
+                    //Prevents user from pressing OK to the OSM License dialog and the subsequent 'Enter' opens up Menu in Navigator
                     try
                     {
                         if (boolOSMOK && boolFREE) BlockInput(true);
@@ -612,12 +591,33 @@ namespace Navigator
 
                     WriteLog("MainWindowHandle before parenting = 0x" + pNavigator.MainWindowHandle.ToString("X"));
 
-                    if (SetParent(pNavigator.MainWindowHandle, mHandlePtr) == IntPtr.Zero)
+                    //Is Navigator running?
+                    TerminateOrphanedProcess(false);
+
+                    /**/ // Not using Cached value, use real value instead
+                    //if (SetParent(pNavigator.MainWindowHandle, mHandlePtr) == IntPtr.Zero)
+                    if (SetParent(pNavigator.MainWindowHandle, thepanel.Handle) == IntPtr.Zero)
                     {
                         int lastError = Marshal.GetLastWin32Error();
                         WriteLog("Docking failed, last error = 0x" + lastError.ToString("X"));  //LK, 29-nov-2013: Display Hex value
                         System.Threading.Thread.Sleep(500);
+
+                        //Make sure mouse and keyboard work again
+                        try
+                        {
+                            if (boolOSMOK && boolFREE) BlockInput(true);
+                        }
+                        catch (Exception errMsg) { WriteLog("Failed to disable mouse/keyboard input: " + errMsg.Message); }
+
+                        //Let the user know it failed
                         CF_systemDisplayDialog(CF_Dialogs.OkBox, pluginLang.ReadField("/APPLANG/NAVIGATOR/FAILEDTODOCK"));
+
+                        //Make sure keyboard and mouse inputs are not working while Navigator starts
+                        try
+                        {
+                            if (boolOSMOK && boolFREE) BlockInput(true);
+                        }
+                        catch (Exception errMsg) { WriteLog("Failed to disable mouse/keyboard input: " + errMsg.Message); }
                     }
                     else
                         WriteLog("Connected to panel");
@@ -748,7 +748,7 @@ namespace Navigator
             try
             {                
                 //User really wants to exit Navigator?
-                if (!boolExit)
+                if (boolExit == false)
                 {
                     //Only prompt for restart if not resuming from suspend
                     DialogResult result;
@@ -760,7 +760,7 @@ namespace Navigator
                     {
                         result = DialogResult.OK;
                     }
-                                                
+
                     //Restart Navigator?
                     if (result == DialogResult.OK)
                     {
@@ -815,11 +815,15 @@ namespace Navigator
                         nightTimer.Enabled = nightTimer_Status;
                         muteCFTimer.Enabled = muteCFTimer_Status;
                     }
+                    else
+                    {
+                        WriteLog("User does not want Navigator to restart");
+                        boolExit = true;
+                    }
                 }
                 else
                 {
-                    WriteLog("User does not want Navigator to restart");
-                    boolExit = true;
+                    WriteLog("BoolExit is " + boolExit.ToString() + ". No autostart of navigator");
                 }
             }
             catch (Exception ex)
@@ -1718,7 +1722,7 @@ namespace Navigator
         {
             //User really wants to exit Navigator...
             boolExit = true;
-
+            
             //LK, 25-nov-2013: Only close when started
             if (pNavigator != null)
             {
@@ -1779,7 +1783,9 @@ namespace Navigator
                     {
                         //OSM version have the Ad screen at the end when closing
                         if (boolFREE)
+                        {
                             ClickOnPoint(mainWindowHandle, new Point(100, 200));
+                        }
                         pNavigator.WaitForExit(500);
                     }
                     catch (Exception errMsg) { WriteLog("Failed to stop application: " + errMsg.Message); } //LK,28-nov-2013: Catch unhandled pointer exceptions
@@ -1811,7 +1817,8 @@ namespace Navigator
             {
                 CloseNavigator();
 
-                //Make sure user is not prompted to restart Navigator
+                //Make sure user is not prompted to restart Navigator and make sure we're in Suspend mode
+                boolExit = true;
                 boolSuspend = true;
             }
 
@@ -1824,10 +1831,10 @@ namespace Navigator
                 CallStatusTimer.Enabled = true;
                 NavDestinationTimer.Enabled = true;
 
-                //If exit, restart Navigator
+                //User can be prompted to restart Navigator again
                 boolExit = false;
 
-                //User can be prompted to restart Navigator again
+                //No longer in suspend mode
                 boolSuspend = false;
 
                 //If suspend was initiated when plugin active, we need to ensure CF_pluginShow() is called
