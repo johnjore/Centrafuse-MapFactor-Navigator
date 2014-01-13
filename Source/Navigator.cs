@@ -74,6 +74,7 @@ namespace Navigator
         private bool boolFullScreen = false;                // Full screen?
         private bool boolTRIMDIGITS = false;                // Trim number of digits for speed etc?
         private bool boolLocalize = false;                  // Localize GPS Status screen
+        private int intExitCounter = 20;                    // Number of retries before Navigator is forcefully closed
         public bool boolExit = false;                       // Set True if hibernating or we want to exit
         private bool boolFREE = true;                       // Free edition?
         private bool boolOSMOK = false;                     // If true, supresses OSM License prompt
@@ -213,10 +214,14 @@ namespace Navigator
                 {
                     //Modify Navigator's Settings XML file...
                     ConfigureNavigatorXML();
-                                   
+
                     //Launch navigator
                     //LK, 30-nov-2013: Moved common code to new method  
                     StartNavigator();
+                }
+                else
+                {
+                    WriteLog("Not active CFNav engine");
                 }
 			}
 			catch(Exception errmsg) { CFTools.writeError(errmsg.ToString()); }
@@ -366,6 +371,18 @@ namespace Navigator
                 }
             }
 
+            WriteLog("Remove PowerModeChange event handler...");
+            CF_events.CFPowerModeChanged -= OnPowerModeChanged;
+
+            WriteLog("Remove NavigatorExit event handler...");
+            pNavigator.Exited -= pNavigator_Exited;
+
+            WriteLog("Remove timer event handlers...");
+            nightTimer.Tick -= nightTimer_Tick;
+            muteCFTimer.Tick -= muteCFTimer_Tick;
+            NavDestinationTimer.Tick -= NavDestinationTimer_Tick;
+            NavStatustimer.Tick -= NavStatustimer_Tick;
+
             base.CF_pluginClose(); // calls form Dispose() method
             //This works on W7?!?
             WriteLog("CF_pluginClose() - End");
@@ -390,6 +407,10 @@ namespace Navigator
 
                     //Start Navigator
                     StartNavigator();
+                }
+                else
+                {
+                    WriteLog("Not active CFNav engine");
                 }
 
                 if (boolMainScreen) //LK, 30-nov-2013: Aonly do this when in the main screen (not the status screen)
@@ -548,7 +569,7 @@ namespace Navigator
                     pNavigator.EnableRaisingEvents = true;
                     //Ensure Navigator is restarted if it crashes, or user manages to close it. No Navigator => no Nav data in CF
                     pNavigator.Exited += new EventHandler(pNavigator_Exited);
-                    
+
                     //LK, 18-nov-2013: Avoid flickering windows at startup
                     pNavigator.StartInfo.WindowStyle = ProcessWindowStyle.Hidden;
 
@@ -565,7 +586,7 @@ namespace Navigator
 
                     //Start the EXE
                     pNavigator.Start();
-                    
+
                     //Wait for Navigator to start
                     TimeSpan totalProcessorTime = new TimeSpan();
                     totalProcessorTime = pNavigator.TotalProcessorTime;
@@ -592,9 +613,10 @@ namespace Navigator
                     WriteLog("MainWindowHandle before parenting = 0x" + pNavigator.MainWindowHandle.ToString("X"));
 
                     //Is Navigator running?
-                    TerminateOrphanedProcess(false);
+                    if (TerminateOrphanedProcess(false)) WriteLog("Navigator process exists"); else WriteLog("Warning - Can't find navigator process");
 
-                    /**/ // Not using Cached value, use real value instead
+                    /**/
+                    // Not using Cached value, use real value instead
                     //if (SetParent(pNavigator.MainWindowHandle, mHandlePtr) == IntPtr.Zero)
                     if (SetParent(pNavigator.MainWindowHandle, thepanel.Handle) == IntPtr.Zero)
                     {
@@ -626,7 +648,7 @@ namespace Navigator
 
                     //JJ: Why is this set to AboveNormal and not Normal?!?
                     pNavigator.PriorityClass = ProcessPriorityClass.AboveNormal;    //LK, 24-nov-2013: Lower the priority to "normal"
-                    
+
                     //Hide panel                                      
                     thepanel.Visible = false;
                     WriteLog("Panel hidden");
@@ -663,6 +685,10 @@ namespace Navigator
 
                     //Navigator should be launched and running
                     return true;
+                }
+                else
+                {
+                    WriteLog("Not active CFNav engine");
                 }
             }
             catch (Exception ex)
@@ -1223,6 +1249,21 @@ namespace Navigator
                     WriteLog("Localize GPS Status screen: : " + boolLocalize.ToString());
                 }
 
+                // Number of retries before force shutdown of Navigator
+                try
+                {
+                    intExitCounter = int.Parse(this.pluginConfig.ReadField("/APPCONFIG/EXITCOUNTER"));
+                }
+                catch
+                {
+                    this.pluginConfig.WriteField("/APPCONFIG/EXITCOUNTER", intExitCounter.ToString(), true);
+                }
+                finally
+                {
+                    WriteLog("intExitCounter: " + intExitCounter.ToString());
+                }
+
+
                 // Trim number of digits?
                 try
                 {
@@ -1770,7 +1811,7 @@ namespace Navigator
                 else WriteLog("Can't stop a non-running pipe-server");
                 
                 //Wait for Navigator to close before swapping XML files around
-                for (int loop = 20; loop > 0; loop--)   //LK, 29-nov-2013: count down...    //was 100
+                for (int loop = intExitCounter; loop > 0; loop--)   //LK, 29-nov-2013: count down...    //was 100
                 {
                     if (TerminateOrphanedProcess(false) == false)
                     {

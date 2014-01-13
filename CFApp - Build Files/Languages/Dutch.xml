@@ -64,5 +64,6 @@
     <LICENSED>Zet deze optie niet aan bij gebruik van de gratis (OSM) versie van Navigator</LICENSED>
     <LOCALIZE>Lokaliseer data op het GPS statusscherm (. versus ,)</LOCALIZE>
     <OSMMESSAGE>Opm.: De OpenStreetMap licentievermelding bij het starten van Navigator, wordt hiermee onderdrukt.</OSMMESSAGE>
+    <EXITCOUNTER>Retries before force closing Navigator</EXITCOUNTER>
   </SETUP>
 </APPLANG>

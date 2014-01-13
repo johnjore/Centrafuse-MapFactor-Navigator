@@ -64,5 +64,6 @@
     <LICENSED>Warning: Do not set to 'Off' if using OSM/Free version</LICENSED>
     <LOCALIZE>Localize GPS Status screen (. vs ,)</LOCALIZE>
     <OSMMESSAGE>Note: The OpenStreetMap startup message from Navigator will be suppressed.</OSMMESSAGE>
+    <EXITCOUNTER>Retries before force closing Navigator</EXITCOUNTER>
   </SETUP>
 </APPLANG>

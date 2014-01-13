@@ -168,7 +168,9 @@ namespace Navigator
                     ButtonText[i] = this.langReader.ReadField("/APPLANG/SETUP/LOCALIZE");
                     ButtonValue[i++] = this.configReader.ReadField("/APPCONFIG/LOCALIZE");
 
-                    ButtonHandler[i] = null; ButtonText[i] = ""; ButtonValue[i++] = "";
+                    ButtonHandler[i] = new CFSetupHandler(SetExitCounter);
+                    ButtonText[i] = this.langReader.ReadField("/APPLANG/SETUP/EXITCOUNTER");
+                    ButtonValue[i++] = this.configReader.ReadField("/APPCONFIG/EXITCOUNTER");                    
 
                     // BOOL BUTTONS (5-8)
                     ButtonHandler[i] = new CFSetupHandler(SetNamedPipeStatus);
@@ -563,6 +565,53 @@ namespace Navigator
             }
             catch (Exception errmsg) { CFTools.writeError(errmsg.Message, errmsg.StackTrace); }
         }
+
+        //Number of retries before Navigator is forced closed 
+        private void SetExitCounter(ref object value)
+        {
+            try
+            {                
+                int button;
+                if (value.GetType().Equals(typeof(CFSetupHandlerParams)))
+                {
+                    button = ((CFSetupHandlerParams)value).button;
+                    if (((CFSetupHandlerParams)value).result.ok)
+                    {
+                        int iTemp = 0;
+                        try { iTemp = Int32.Parse(((CFSetupHandlerParams)value).result.value); }
+                        catch { iTemp = -1; }
+
+                        //Sanity check it and set to its extremes.
+                        if (iTemp < 30 && iTemp > 0)
+                        {
+                            ((CFSetupHandlerParams)value).requesttype = CFSetupHandlerRequest.None; //Get out of loop
+                            this.configReader.WriteField("/APPCONFIG/EXITCOUNTER", iTemp.ToString());
+                            return;
+                        }
+                    }
+                    else
+                    {
+                        ((CFSetupHandlerParams)value).requesttype = CFSetupHandlerRequest.None; //Get out of loop
+                        return;
+                    }
+                }
+                else
+                    button = (int)value;
+
+                CFSetupHandlerParams internalhandler = new CFSetupHandlerParams();
+                internalhandler.requesttype = CFSetupHandlerRequest.ShowDialog;
+                internalhandler.button = button;
+                internalhandler.dialogtype = CF_Dialogs.NumberPad;
+                internalhandler.listviewitems = null;
+                internalhandler.writebutton = true;
+                internalhandler.writebuttonwithvalue = false;
+                internalhandler.title = this.langReader.ReadField("APPLANG/SETUP/EXITCOUNTER");
+                internalhandler.listheader = "";
+                value = internalhandler;
+            }
+            catch (Exception errmsg) { CFTools.writeError(errmsg.Message, errmsg.StackTrace); }
+        }
+
        
         //Enable Sending Mute/Unmute on Sound alert?
         private void SetMuteUnmuteStatus(ref object value)
