@@ -427,6 +427,12 @@ namespace Navigator
                                     WriteLog("Asked Navigator to do something it can't do... which command is not known....");
                                     this.CF_systemCommand(CF_Actions.SHOWINFO, this.pluginLang.ReadField("/APPLANG/NAVIGATOR/ERROR"), "AUTOHIDE");
                                 }
+                                else if (strCommands.ToUpper().Contains("LICENSEERROR"))
+                                {
+                                    //strCommands will always be 'LICENSEERROR'
+                                    WriteLog("Failed to ask Navigator to do something due to the lack of a license... for which command is not known....");
+                                    this.CF_systemCommand(CF_Actions.SHOWINFO, this.pluginLang.ReadField("/APPLANG/NAVIGATOR/LICENSEERROR"), "AUTOHIDE");
+                                }
                                 else if (strCommands.ToUpper().Contains("NOTNAVIGATING"))
                                 {
                                     //If not navigating, clear these

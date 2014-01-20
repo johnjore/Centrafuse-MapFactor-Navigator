@@ -32,6 +32,7 @@
     <USESETUP>Use Setup to reconfigure Navigator plugin</USESETUP>
     <BUSY>Navigator too busy to perform request. Try again</BUSY>
     <ERROR>Navigator can't perform requested task</ERROR>
+    <LICENSEERROR>Navigator can't perform requested task due to lack of license</LICENSEERROR>
     <TRUE>True</TRUE>
     <FALSE>False</FALSE>
     <NAMEDPIPEPATCHFAILED>Failed to change named pipe patch status</NAMEDPIPEPATCHFAILED>

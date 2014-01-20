@@ -32,6 +32,7 @@
     <USESETUP>Gebruik Setup om Navigator app opnieuw te configureren</USESETUP>
     <BUSY>Navigator is te druk om aan het verzoek te voldoen. Probeer het nogmaals</BUSY>
     <ERROR>Navigator kan deze taak niet uitvoeren</ERROR>
+    <LICENSEERROR>Navigator can't perform requested task due to lack of license</LICENSEERROR>
     <TRUE>Waar</TRUE>
     <FALSE>Niet waar</FALSE>
     <NAMEDPIPEPATCHFAILED>Het veranderen van de named pipe status is mislukt</NAMEDPIPEPATCHFAILED>

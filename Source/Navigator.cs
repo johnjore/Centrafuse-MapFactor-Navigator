@@ -57,9 +57,6 @@ namespace Navigator
         private const string REGNavigator = "SOFTWARE\\MapFactor\\set\\pcnavigator_12";
         //public static string PluginXmlElement = "Navigator";
         private const string PluginPath = @"plugins\" + PluginName + @"\";
-		//private const string PluginPathSkins = PluginPath + @"Skins\";
-		//private const string PluginPathLanguages = PluginPath + @"Languages\";
-		//private const string PluginPathIcons = PluginPath + @"Icons\";
         private const string ConfigurationFile = "config.xml";
 		private const string LogFile= "Navigator.log";        
         public static string LogFilePath = CFTools.AppDataPath + "\\Plugins\\" + PluginName + "\\" + LogFile;
@@ -260,8 +257,6 @@ namespace Navigator
                 {
                     WriteLog("Configure for Navigator (Not GPSStatus)");
                     CF3_initSection("Navigator");
-                    // Set display hook so that future CF3_initSection() calls will not clear the panels array
-                    //+++ CF_displayHooks.clearControl.panels = false;
 
                     WriteLog("Create and configure Panel");
                     //Associate 'thepanel' with the panel defined in the skin.xml
@@ -276,32 +271,36 @@ namespace Navigator
                     thepanel.Visible = true;
                     thepanel.Name = "ThePanel";
 
-                    //Get the handle so we can associate it with the process later
-                    /**/ //Not using cached value, line 292 uses current/real value
-                    //mHandlePtr = thepanel.Handle;
-
                     //LK, 22-nov-2013: In the case of a skin change, adjust panel size.
                     if (thepanel != null)   //Anytime, but the first (when called from CF_pluginInit())
                     {
                         WriteLog("Panel configured. Configure screen-size");
-                        ////LK, 22-nov-2013: Experimental
-                        //CFControls.CFPanel tmpPanel = new CFControls.CFPanel();
-                        //tmpPanel = panelArray[CF_getPanelID("PanelNavigator")];
-                        //tmpPanel.Visible = false;
-                        //tmpPanel.Enabled = false;
-                        //tmpPanel.ForeColor = Color.Blue;
 
                         //LK, 30-nov-2013: Instead of keeping the old panels (leeds to trouble when changing sections), dock again
                         if (pNavigator != null)
                         {
-                            SetParent(pNavigator.MainWindowHandle, thepanel.Handle);
-                            WriteLog("Connected to new panel again");
+                            try
+                            {
+                                WriteLog("thepanel.Handle: 0x" + thepanel.Handle.ToString("X") + ", pNavigator.MainWindowHandle 0x" + pNavigator.MainWindowHandle.ToString("X"));
+                                SetParent(pNavigator.MainWindowHandle, thepanel.Handle);
+                                WriteLog("Connected to new panel again");
+                            }
+                            catch (Exception errMsg) { WriteLog("Failed to SetParent(): " + errMsg.Message); }
 
+                            //Set screen size
                             if (boolFullScreen)
                                 SetFullScreen();
                             else
                                 SetNonFullScreen();
                         }
+                        else
+                        {
+                            WriteLog("pNavigator == null");
+                        }
+                    }
+                    else
+                    {
+                        WriteLog("thepanel == null");
                     }
                 }
                 else
@@ -410,7 +409,7 @@ namespace Navigator
                 }
                 else
                 {
-                    WriteLog("Not active CFNav engine");
+                    WriteLog("Not active CFNav engine or Navigator already initialized");
                 }
 
                 if (boolMainScreen) //LK, 30-nov-2013: Aonly do this when in the main screen (not the status screen)
@@ -428,6 +427,7 @@ namespace Navigator
                 base.CF_pluginShow(); // sets form Visible property
             }
             catch (Exception errMsg) { WriteLog("Failed to show navigation window: " + errMsg.Message); }  //30-nov-2013: Added reason for exception
+            
 		}
 
         /// <summary>
@@ -603,6 +603,7 @@ namespace Navigator
                         totalProcessorTime = pNavigator.TotalProcessorTime;
                         WriteLog("Waiting for Navigator to get idle... (totalProcessorTime used = " + totalProcessorTime);
 
+                        //Max 10 seconds wait
                         if (iRetry++ > 20)
                             break;
 
@@ -610,14 +611,20 @@ namespace Navigator
                         pNavigator.WaitForInputIdle();
                     };
 
-                    WriteLog("MainWindowHandle before parenting = 0x" + pNavigator.MainWindowHandle.ToString("X"));
+                    //JJ: Re-run now, else panels not resized correctly
+                    CF_localskinsetup();
 
                     //Is Navigator running?
                     if (TerminateOrphanedProcess(false)) WriteLog("Navigator process exists"); else WriteLog("Warning - Can't find navigator process");
 
+                    try
+                    {
+                        WriteLog("MainWindowHandle before parenting = 0x" + pNavigator.MainWindowHandle.ToString("X"));
+                        WriteLog("thepanel.Handle = 0x" + thepanel.Handle.ToString("X"));
+                    }
+                    catch (Exception errMsg) { WriteLog("Failed to inspect the handles" + errMsg.Message); }
+
                     /**/
-                    // Not using Cached value, use real value instead
-                    //if (SetParent(pNavigator.MainWindowHandle, mHandlePtr) == IntPtr.Zero)
                     if (SetParent(pNavigator.MainWindowHandle, thepanel.Handle) == IntPtr.Zero)
                     {
                         int lastError = Marshal.GetLastWin32Error();
@@ -627,9 +634,9 @@ namespace Navigator
                         //Make sure mouse and keyboard work again
                         try
                         {
-                            if (boolOSMOK && boolFREE) BlockInput(true);
+                            if (boolOSMOK && boolFREE) BlockInput(false);
                         }
-                        catch (Exception errMsg) { WriteLog("Failed to disable mouse/keyboard input: " + errMsg.Message); }
+                        catch (Exception errMsg) { WriteLog("Failed to enable mouse/keyboard input: " + errMsg.Message); }
 
                         //Let the user know it failed
                         CF_systemDisplayDialog(CF_Dialogs.OkBox, pluginLang.ReadField("/APPLANG/NAVIGATOR/FAILEDTODOCK"));
@@ -824,7 +831,8 @@ namespace Navigator
                         }
 
                         //Modify Navigator's Settings XML file...
-                        ConfigureNavigatorXML();
+                        /**/ //Not needed here. Done during startup
+                        //ConfigureNavigatorXML();
 
                         //Start  Navigator
                         StartNavigator();
