@@ -41,8 +41,8 @@ namespace Navigator
         private bool boolAskNavigatorRestart = false;       //Ask if to restart Navigator?
 
         // Total configuration pages for each mode
-        public int nAdvancedSetupPages { get { return 2; } }
-        public int nBasicSetupPages { get { return 2; } }
+        public int nAdvancedSetupPages { get { return 3; } }
+        public int nBasicSetupPages { get { return 3; } }
 
         public int numAdvancedSetupPages { get { return nAdvancedSetupPages; } }
         public int numBasicSetupPages { get { return nBasicSetupPages; } }
@@ -160,17 +160,12 @@ namespace Navigator
                     ButtonText[i] = this.langReader.ReadField("/APPLANG/SETUP/AUDIODELAYAFTERMUTE");
                     ButtonValue[i++] = this.configReader.ReadField("/APPCONFIG/AUDIODELAYAFTERMUTE");
 
-                    ButtonHandler[i] = new CFSetupHandler(SetSettingsXMLSwap);
-                    ButtonText[i] = this.langReader.ReadField("/APPLANG/SETUP/SETTINGSXMLSWAP");
-                    ButtonValue[i++] = this.configReader.ReadField("/APPCONFIG/SETTINGSXMLSWAP");
-
-                    ButtonHandler[i] = new CFSetupHandler(SetLocalizeGPSStatus);
-                    ButtonText[i] = this.langReader.ReadField("/APPLANG/SETUP/LOCALIZE");
-                    ButtonValue[i++] = this.configReader.ReadField("/APPCONFIG/LOCALIZE");
-
                     ButtonHandler[i] = new CFSetupHandler(SetExitCounter);
                     ButtonText[i] = this.langReader.ReadField("/APPLANG/SETUP/EXITCOUNTER");
-                    ButtonValue[i++] = this.configReader.ReadField("/APPCONFIG/EXITCOUNTER");                    
+                    ButtonValue[i++] = this.configReader.ReadField("/APPCONFIG/EXITCOUNTER");
+
+                    ButtonHandler[i] = null; ButtonText[i] = ""; ButtonValue[i++] = "";
+                    ButtonHandler[i] = null; ButtonText[i] = ""; ButtonValue[i++] = "";
 
                     // BOOL BUTTONS (5-8)
                     ButtonHandler[i] = new CFSetupHandler(SetNamedPipeStatus);
@@ -187,7 +182,33 @@ namespace Navigator
 
                     ButtonHandler[i] = new CFSetupHandler(SetTrimDigits);
                     ButtonText[i] = this.langReader.ReadField("/APPLANG/SETUP/TRIMDIGITS");
-                    ButtonValue[i++] = this.configReader.ReadField("/APPCONFIG/TRIMDIGITS");                   
+                    ButtonValue[i++] = this.configReader.ReadField("/APPCONFIG/TRIMDIGITS");
+                }
+                else if (page == 3)
+                {
+                    // TEXT BUTTONS (1-4)
+                    ButtonHandler[i] = new CFSetupHandler(SetMCAPath);
+                    ButtonText[i] = this.langReader.ReadField("/APPLANG/SETUP/MCAPATH");
+                    ButtonValue[i++] = this.configReader.ReadField("/APPCONFIG/MCAPATH");
+
+                    ButtonHandler[i] = null; ButtonText[i] = ""; ButtonValue[i++] = "";
+                    ButtonHandler[i] = null; ButtonText[i] = ""; ButtonValue[i++] = "";
+                    ButtonHandler[i] = null; ButtonText[i] = ""; ButtonValue[i++] = "";
+
+                    // BOOL BUTTONS (5-8)
+                    ButtonHandler[i] = new CFSetupHandler(SetCFCamSupport);
+                    ButtonText[i] = this.langReader.ReadField("/APPLANG/SETUP/CFCAMSUPPORT");
+                    ButtonValue[i++] = this.configReader.ReadField("/APPCONFIG/CFCAMSUPPORT");
+
+                    ButtonHandler[i] = new CFSetupHandler(SetLocalizeGPSStatus);
+                    ButtonText[i] = this.langReader.ReadField("/APPLANG/SETUP/LOCALIZE");
+                    ButtonValue[i++] = this.configReader.ReadField("/APPCONFIG/LOCALIZE");
+
+                    ButtonHandler[i] = new CFSetupHandler(SetSettingsXMLSwap);
+                    ButtonText[i] = this.langReader.ReadField("/APPLANG/SETUP/SETTINGSXMLSWAP");
+                    ButtonValue[i++] = this.configReader.ReadField("/APPCONFIG/SETTINGSXMLSWAP");
+
+                    ButtonHandler[i] = null; ButtonText[i] = ""; ButtonValue[i++] = "";
                 }
             }
             catch (Exception errmsg) { CFTools.writeError(errmsg.Message, errmsg.StackTrace); }
@@ -465,107 +486,6 @@ namespace Navigator
             catch (Exception errmsg) { CFTools.writeError(errmsg.Message, errmsg.StackTrace); }                
         }
 
-
-        //Swap mapFactor Navigator Config XML files around
-        private void SetSettingsXMLSwap(ref object value)
-        {
-            try
-            {
-                if (value.GetType().Equals(typeof(CFSetupHandlerParams)))
-                {
-                    // Create a listview with the number of items in the Array
-                    CFControls.CFListViewItem[] textoptions = new CFControls.CFListViewItem[2];
-                    textoptions[0] = new CFControls.CFListViewItem(this.langReader.ReadField("/APPLANG/NAVIGATOR/TRUE"), true.ToString(), false);
-                    textoptions[1] = new CFControls.CFListViewItem(this.langReader.ReadField("/APPLANG/NAVIGATOR/FALSE"), false.ToString(), false);
-
-                    CFDialogParams dialogParams = new CFDialogParams(this.langReader.ReadField("/APPLANG/SETUP/SETTINGSXMLSWAP"), this.langReader.ReadField("/APPLANG/SETUP/SETTINGSXMLSWAP"));
-                    dialogParams.browseable = false;
-                    dialogParams.enablesubactions = false;
-                    dialogParams.showfiles = false;
-                    dialogParams.showextension = false;
-                    dialogParams.listitems = textoptions;
-                    
-                    CFDialogResults results = new CFDialogResults();
-                    if (mainForm.CF_displayDialog(CF_Dialogs.FileBrowser, dialogParams, results) == DialogResult.OK)
-                    {
-                        ((CFSetupHandlerParams)value).result.ok = true;
-                        ((CFSetupHandlerParams)value).result.pobject = results.resultobject;
-                        ((CFSetupHandlerParams)value).result.text = results.resulttext;
-                        ((CFSetupHandlerParams)value).result.value = results.resultvalue;
-
-                        this.configReader.WriteField("/APPCONFIG/SETTINGSXMLSWAP", bool.Parse(results.resultvalue).ToString());
-
-                        //Make sure user can opt to restart Navigator
-                        boolAskNavigatorRestart = true;
-                    }
-
-                    ((CFSetupHandlerParams)value).requesttype = CFSetupHandlerRequest.None; //Get out of loop
-                    return;
-                }
-
-                CFSetupHandlerParams internalhandler = new CFSetupHandlerParams();
-                internalhandler.requesttype = CFSetupHandlerRequest.None;
-                internalhandler.button = (int)value;
-                internalhandler.dialogtype = CF_Dialogs.OkBox;
-                internalhandler.listviewitems = null;
-                internalhandler.writebutton = true;
-                internalhandler.writebuttonwithvalue = true;
-                internalhandler.title = this.langReader.ReadField("APPLANG/SETUP/SETTINGSXMLSWAP");
-                internalhandler.listheader = this.langReader.ReadField("APPLANG/SETUP/SETTINGSXMLSWAP");
-                value = internalhandler;
-            }
-            catch (Exception errmsg) { CFTools.writeError(errmsg.Message, errmsg.StackTrace); }            
-        }
-
-
-        //Localize GPS Status page
-        private void SetLocalizeGPSStatus(ref object value)
-        {
-            try
-            {
-                if (value.GetType().Equals(typeof(CFSetupHandlerParams)))
-                {
-                    // Create a listview with the number of items in the Array
-                    CFControls.CFListViewItem[] textoptions = new CFControls.CFListViewItem[2];
-                    textoptions[0] = new CFControls.CFListViewItem(this.langReader.ReadField("/APPLANG/NAVIGATOR/TRUE"), true.ToString(), false);
-                    textoptions[1] = new CFControls.CFListViewItem(this.langReader.ReadField("/APPLANG/NAVIGATOR/FALSE"), false.ToString(), false);
-
-                    CFDialogParams dialogParams = new CFDialogParams(this.langReader.ReadField("/APPLANG/SETUP/LOCALIZE"), this.langReader.ReadField("/APPLANG/SETUP/LOCALIZE"));
-                    dialogParams.browseable = false;
-                    dialogParams.enablesubactions = false;
-                    dialogParams.showfiles = false;
-                    dialogParams.showextension = false;
-                    dialogParams.listitems = textoptions;
-
-                    CFDialogResults results = new CFDialogResults();
-                    if (mainForm.CF_displayDialog(CF_Dialogs.FileBrowser, dialogParams, results) == DialogResult.OK)
-                    {
-                        ((CFSetupHandlerParams)value).result.ok = true;
-                        ((CFSetupHandlerParams)value).result.pobject = results.resultobject;
-                        ((CFSetupHandlerParams)value).result.text = results.resulttext;
-                        ((CFSetupHandlerParams)value).result.value = results.resultvalue;
-
-                        this.configReader.WriteField("/APPCONFIG/LOCALIZE", bool.Parse(results.resultvalue).ToString());
-                    }
-
-                    ((CFSetupHandlerParams)value).requesttype = CFSetupHandlerRequest.None; //Get out of loop
-                    return;
-                }
-
-                CFSetupHandlerParams internalhandler = new CFSetupHandlerParams();
-                internalhandler.requesttype = CFSetupHandlerRequest.None;
-                internalhandler.button = (int)value;
-                internalhandler.dialogtype = CF_Dialogs.OkBox;
-                internalhandler.listviewitems = null;
-                internalhandler.writebutton = true;
-                internalhandler.writebuttonwithvalue = true;
-                internalhandler.title = this.langReader.ReadField("APPLANG/SETUP/LOCALIZE");
-                internalhandler.listheader = this.langReader.ReadField("APPLANG/SETUP/LOCALIZE");
-                value = internalhandler;
-            }
-            catch (Exception errmsg) { CFTools.writeError(errmsg.Message, errmsg.StackTrace); }
-        }
-
         //Number of retries before Navigator is forced closed 
         private void SetExitCounter(ref object value)
         {
@@ -662,7 +582,189 @@ namespace Navigator
             this.configReader.WriteField("/APPCONFIG/TRIMDIGITS", value.ToString());
         }
 
+        //Swap mapFactor Navigator Config XML files around
+        private void SetSettingsXMLSwap(ref object value)
+        {
+            this.configReader.WriteField("/APPCONFIG/SETTINGSXMLSWAP", value.ToString());
+
+            //Make sure user can opt to restart Navigator
+            boolAskNavigatorRestart = true;
+        }
+
+        //Localize GPS Status page
+        private void SetLocalizeGPSStatus(ref object value)
+        {
+            this.configReader.WriteField("/APPCONFIG/LOCALIZE", value.ToString());
+        }
+        
+        //Enable Traffic Camera support?
+        private void SetCFCamSupport(ref object value)
+        {
+            this.configReader.WriteField("/APPCONFIG/CFCAMSUPPORT", value.ToString());
+
+            //string boolButton = value.ToString();
+            if (bool.Parse(value.ToString()))
+            {
+                //Show minimum version requirement
+                mainForm.CF_systemDisplayDialog(CF_Dialogs.OkBox, mainForm.pluginLang.ReadField("/APPLANG/SETUP/CFCAMMINVERSTION"));
+            }
+
+            //Make sure user can opt to restart Navigator
+            boolAskNavigatorRestart = true;
+        }
+
+        //Folder with MCA files
+        private void SetMCAPath(ref object value)
+        {
+            try
+            {
+                if (value.GetType().Equals(typeof(CFSetupHandlerParams)))
+                {
+                    string location = this.configReader.ReadField("/APPCONFIG/MCAPATH");
+                    if (string.IsNullOrEmpty(location)) location = PluginPath;
+
+                    CFDialogParams dialogParams = new CFDialogParams(this.langReader.ReadField("/APPLANG/SETUP/MCAPATH"), location);
+                    dialogParams.browseable = true;
+                    dialogParams.enablesubactions = true;
+                    dialogParams.showfiles = false;
+                    dialogParams.showextension = true;
+
+                    CFDialogResults results = new CFDialogResults();
+                    if (mainForm.CF_displayDialog(CF_Dialogs.FileBrowser, dialogParams, results) == DialogResult.OK)
+                    {
+                        ((CFSetupHandlerParams)value).result.ok = true;
+                        ((CFSetupHandlerParams)value).result.pobject = results.resultobject;
+                        ((CFSetupHandlerParams)value).result.text = results.resulttext;
+                        ((CFSetupHandlerParams)value).result.value = results.resultvalue;
+                        this.configReader.WriteField("/APPCONFIG/MCAPATH", results.resultvalue);
+
+                        //Make sure user can opt to restart Navigator
+                        boolAskNavigatorRestart = true;
+                    }
+
+                    ((CFSetupHandlerParams)value).requesttype = CFSetupHandlerRequest.None; //Get out of loop
+                    return;
+                }
+
+                CFSetupHandlerParams internalhandler = new CFSetupHandlerParams();
+                internalhandler.requesttype = CFSetupHandlerRequest.None;
+                internalhandler.button = (int)value;
+                internalhandler.dialogtype = CF_Dialogs.OkBox;
+                internalhandler.listviewitems = null;
+                internalhandler.writebutton = true;
+                internalhandler.writebuttonwithvalue = true;
+                internalhandler.title = this.langReader.ReadField("APPLANG/SETUP/MCAPATH");
+                internalhandler.listheader = this.configReader.ReadField("/APPCONFIG/MCAPATH");
+                value = internalhandler;
+            }
+            catch (Exception errmsg) { CFTools.writeError(errmsg.Message, errmsg.StackTrace); }
+        }
+
+
 #endregion
 
     }
 }
+
+//Localize GPS Status page
+/*
+private void SetLocalizeGPSStatus(ref object value)
+{
+    try
+    {
+        if (value.GetType().Equals(typeof(CFSetupHandlerParams)))
+        {
+            // Create a listview with the number of items in the Array
+            CFControls.CFListViewItem[] textoptions = new CFControls.CFListViewItem[2];
+            textoptions[0] = new CFControls.CFListViewItem(this.langReader.ReadField("/APPLANG/NAVIGATOR/TRUE"), true.ToString(), false);
+            textoptions[1] = new CFControls.CFListViewItem(this.langReader.ReadField("/APPLANG/NAVIGATOR/FALSE"), false.ToString(), false);
+
+            CFDialogParams dialogParams = new CFDialogParams(this.langReader.ReadField("/APPLANG/SETUP/LOCALIZE"), this.langReader.ReadField("/APPLANG/SETUP/LOCALIZE"));
+            dialogParams.browseable = false;
+            dialogParams.enablesubactions = false;
+            dialogParams.showfiles = false;
+            dialogParams.showextension = false;
+            dialogParams.listitems = textoptions;
+
+            CFDialogResults results = new CFDialogResults();
+            if (mainForm.CF_displayDialog(CF_Dialogs.FileBrowser, dialogParams, results) == DialogResult.OK)
+            {
+                ((CFSetupHandlerParams)value).result.ok = true;
+                ((CFSetupHandlerParams)value).result.pobject = results.resultobject;
+                ((CFSetupHandlerParams)value).result.text = results.resulttext;
+                ((CFSetupHandlerParams)value).result.value = results.resultvalue;
+
+                this.configReader.WriteField("/APPCONFIG/LOCALIZE", bool.Parse(results.resultvalue).ToString());
+            }
+
+            ((CFSetupHandlerParams)value).requesttype = CFSetupHandlerRequest.None; //Get out of loop
+            return;
+        }
+
+        CFSetupHandlerParams internalhandler = new CFSetupHandlerParams();
+        internalhandler.requesttype = CFSetupHandlerRequest.None;
+        internalhandler.button = (int)value;
+        internalhandler.dialogtype = CF_Dialogs.OkBox;
+        internalhandler.listviewitems = null;
+        internalhandler.writebutton = true;
+        internalhandler.writebuttonwithvalue = true;
+        internalhandler.title = this.langReader.ReadField("APPLANG/SETUP/LOCALIZE");
+        internalhandler.listheader = this.langReader.ReadField("APPLANG/SETUP/LOCALIZE");
+        value = internalhandler;
+    }
+    catch (Exception errmsg) { CFTools.writeError(errmsg.Message, errmsg.StackTrace); }
+}
+*/
+
+/*
+        //Swap mapFactor Navigator Config XML files around
+        private void SetSettingsXMLSwap(ref object value)
+        {
+            try
+            {
+                if (value.GetType().Equals(typeof(CFSetupHandlerParams)))
+                {
+                    // Create a listview with the number of items in the Array
+                    CFControls.CFListViewItem[] textoptions = new CFControls.CFListViewItem[2];
+                    textoptions[0] = new CFControls.CFListViewItem(this.langReader.ReadField("/APPLANG/NAVIGATOR/TRUE"), true.ToString(), false);
+                    textoptions[1] = new CFControls.CFListViewItem(this.langReader.ReadField("/APPLANG/NAVIGATOR/FALSE"), false.ToString(), false);
+
+                    CFDialogParams dialogParams = new CFDialogParams(this.langReader.ReadField("/APPLANG/SETUP/SETTINGSXMLSWAP"), this.langReader.ReadField("/APPLANG/SETUP/SETTINGSXMLSWAP"));
+                    dialogParams.browseable = false;
+                    dialogParams.enablesubactions = false;
+                    dialogParams.showfiles = false;
+                    dialogParams.showextension = false;
+                    dialogParams.listitems = textoptions;
+                    
+                    CFDialogResults results = new CFDialogResults();
+                    if (mainForm.CF_displayDialog(CF_Dialogs.FileBrowser, dialogParams, results) == DialogResult.OK)
+                    {
+                        ((CFSetupHandlerParams)value).result.ok = true;
+                        ((CFSetupHandlerParams)value).result.pobject = results.resultobject;
+                        ((CFSetupHandlerParams)value).result.text = results.resulttext;
+                        ((CFSetupHandlerParams)value).result.value = results.resultvalue;
+
+                        this.configReader.WriteField("/APPCONFIG/SETTINGSXMLSWAP", bool.Parse(results.resultvalue).ToString());
+
+                        //Make sure user can opt to restart Navigator
+                        boolAskNavigatorRestart = true;
+                    }
+
+                    ((CFSetupHandlerParams)value).requesttype = CFSetupHandlerRequest.None; //Get out of loop
+                    return;
+                }
+
+                CFSetupHandlerParams internalhandler = new CFSetupHandlerParams();
+                internalhandler.requesttype = CFSetupHandlerRequest.None;
+                internalhandler.button = (int)value;
+                internalhandler.dialogtype = CF_Dialogs.OkBox;
+                internalhandler.listviewitems = null;
+                internalhandler.writebutton = true;
+                internalhandler.writebuttonwithvalue = true;
+                internalhandler.title = this.langReader.ReadField("APPLANG/SETUP/SETTINGSXMLSWAP");
+                internalhandler.listheader = this.langReader.ReadField("APPLANG/SETUP/SETTINGSXMLSWAP");
+                value = internalhandler;
+            }
+            catch (Exception errmsg) { CFTools.writeError(errmsg.Message, errmsg.StackTrace); }            
+        }
+*/

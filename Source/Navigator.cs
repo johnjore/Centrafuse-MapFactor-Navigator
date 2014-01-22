@@ -55,14 +55,16 @@ namespace Navigator
 		private const string PluginName = "Navigator";
         private const string EXEName = "PC_Navigator.exe";
         private const string REGNavigator = "SOFTWARE\\MapFactor\\set\\pcnavigator_12";
-        //public static string PluginXmlElement = "Navigator";
         private const string PluginPath = @"plugins\" + PluginName + @"\";
-        private const string ConfigurationFile = "config.xml";
-		private const string LogFile= "Navigator.log";        
+        //private const string ConfigurationFile = "config.xml";
+		private const string LogFile= PluginName + ".log";
         public static string LogFilePath = CFTools.AppDataPath + "\\Plugins\\" + PluginName + "\\" + LogFile;
         public static string settingsPath = CFTools.AppDataPath + "\\system\\settings.xml";
         public static string configPath = CFTools.AppDataPath + "\\system\\config.xml";	//LK, 20-nov-2013: Needed to check if this is the current navigation app
-                
+        private static string atlas_free = "atlas_pcn_free.idc"; //Move to config file? /**/
+        private static string atlas_paid = "atlas_pcn.idc";      //Move to config file /**/
+        private static string strCFCam = "LiveTraffic.mca";            //Database with traffic cameras
+                        
         /**/ //This should be moved to a AppConfiguration class?
         private string strTRUE = "True";                    // True
         private string strFALSE = "False";                  // False
@@ -92,7 +94,8 @@ namespace Navigator
         private NavStats _navStats = new NavStats();        // Navigation statistics
         private Unit SpeedUnit = Unit.UNKNOWN;              // Default to unknown unit
         private Unit DistUnit = Unit.UNKNOWN;               // Default to unknown unit
-        private decimal decNavigatorVersion = new decimal(0.0);  // Navigator version
+        private decimal decNavigatorVersion = new decimal(0.0);  // Navigator version, 12.4.4 => 12.4
+        private int intNavigatorRevision = 0;               // Navigator revision 12.4.5 => 5
         private string strProtocolVersion = "";             // Navigator TCP Protocol version
                 
         //Timers
@@ -611,7 +614,7 @@ namespace Navigator
                         pNavigator.WaitForInputIdle();
                     };
 
-                    //JJ: Re-run now, else panels not resized correctly
+                    //Re-run now, else thepanel does not have a handle when resuming...
                     CF_localskinsetup();
 
                     //Is Navigator running?
@@ -624,7 +627,7 @@ namespace Navigator
                     }
                     catch (Exception errMsg) { WriteLog("Failed to inspect the handles" + errMsg.Message); }
 
-                    /**/
+                    //Embed
                     if (SetParent(pNavigator.MainWindowHandle, thepanel.Handle) == IntPtr.Zero)
                     {
                         int lastError = Marshal.GetLastWin32Error();
@@ -763,6 +766,12 @@ namespace Navigator
         // Handle Navigator Exited event
         private void pNavigator_Exited(object sender, System.EventArgs e)
         {
+            if (boolExit == true) 
+            {
+                WriteLog("BoolExit is " + boolExit.ToString() + ". No autostart of navigator");
+                return;
+            }
+            
             //LK, 9-dec-2013: Handle async invocation
             try
             {
@@ -830,9 +839,7 @@ namespace Navigator
                             boolConnecting = false;
                         }
 
-                        //Modify Navigator's Settings XML file...
-                        /**/ //Not needed here. Done during startup
-                        //ConfigureNavigatorXML();
+                        // Don't call 'ConfigureNavigatorXML()' here. Called at Init and pluginclose()
 
                         //Start  Navigator
                         StartNavigator();
@@ -854,10 +861,6 @@ namespace Navigator
                         WriteLog("User does not want Navigator to restart");
                         boolExit = true;
                     }
-                }
-                else
-                {
-                    WriteLog("BoolExit is " + boolExit.ToString() + ". No autostart of navigator");
                 }
             }
             catch (Exception ex)
@@ -1062,10 +1065,10 @@ namespace Navigator
 
                     if (boolFREE)
                     {
-                        if (GetProductKey(strFolder + "\\atlas_pcn_free.idc") == true)
+                        if (GetProductKey(strFolder + "\\" + atlas_free) == true)
                         {
                             WriteLog("Using FREE edition");
-                            strEXEParameters = strEXEParameters + " --atlas=" + strFolder + "\\atlas_pcn_free.idc";                            
+                            strEXEParameters = strEXEParameters + " --atlas=" + strFolder + "\\" + atlas_free;
                         }
                         else
                         {
@@ -1075,18 +1078,18 @@ namespace Navigator
                     }
                     else
                     {
-                        if (GetProductKey(strFolder + "\\atlas_pcn.idc") == true)
+                        if (GetProductKey(strFolder + "\\" + atlas_paid) == true)
                         {
                             WriteLog("PAID edition selected");
-                            strEXEParameters = strEXEParameters + " --atlas=" + strFolder + "\\atlas_pcn.idc";
+                            strEXEParameters = strEXEParameters + " --atlas=" + strFolder + "\\" + atlas_paid;
                         }
                         else
                         {
                             WriteLog("PAID edition selected, but no product key in file. Trying FREE edition");
-                            if (GetProductKey(strFolder + "\\atlas_pcn_free.idc") == true)
+                            if (GetProductKey(strFolder + "\\" + atlas_free) == true)
                             {
                                 WriteLog("Using FREE edition");
-                                strEXEParameters = strEXEParameters + " --atlas=" + strFolder + "\\atlas_pcn_free.idc";
+                                strEXEParameters = strEXEParameters + " --atlas=" + strFolder + "\\" + atlas_free;
                                 boolFREE = true;
                             }
                             else
@@ -1100,7 +1103,7 @@ namespace Navigator
                 catch
                 {
                     //Default value if all goes wrong...
-                    strEXEParameters = strEXEParameters + " --atlas=C:\\ProgramData\\Navigator\\12.3\\atlas_pcn_free.idc";
+                    strEXEParameters = strEXEParameters + " --atlas=C:\\ProgramData\\Navigator\\12.4\\" + atlas_free;
                 }
                 finally
                 {
@@ -1131,7 +1134,6 @@ namespace Navigator
                 {                    
                     WriteLog("Window Size: " + strWindowSize);
                 }
-
                 
                 // TCP Port
                 try
@@ -1271,7 +1273,6 @@ namespace Navigator
                     WriteLog("intExitCounter: " + intExitCounter.ToString());
                 }
 
-
                 // Trim number of digits?
                 try
                 {
@@ -1287,6 +1288,172 @@ namespace Navigator
                     WriteLog("Trim digits: " + boolTRIMDIGITS.ToString());
                 }
 
+                // Enable inserting the LiveTraffic.mca file into navigator?
+                bool boolEnableCFCam = false;
+                try
+                {
+                    boolEnableCFCam = bool.Parse(this.pluginConfig.ReadField("/APPCONFIG/CFCAMSUPPORT"));
+                }
+                catch
+                {
+                    boolEnableCFCam = false;
+                    this.pluginConfig.WriteField("/APPCONFIG/CFCAMSUPPORT", boolEnableCFCam.ToString(), true);
+                }
+                finally
+                {
+                    WriteLog("CFCam Support : " + boolEnableCFCam.ToString());
+                }
+
+                // MCA path. Make sure this run's after setting boolFREE
+                string strMCAFolder = "";       //Navigators data folder
+                string strMCAFileCheck = "";    //Checkpoint file to look for to validate Navigators data folder
+                try
+                {
+                    //Get the path to IDC file from registry
+                    string strFolder = "";
+                    try
+                    {
+                        //Read from registry                     
+                        RegistryKey rk = Registry.LocalMachine;
+                        RegistryKey sk1 = rk.OpenSubKey(REGNavigator);
+
+                        string strTmp = sk1.GetValue("Atlas").ToString().ToUpper();
+                        strFolder = Path.GetDirectoryName(strTmp);
+                    }
+                    catch (Exception errmsg)
+                    {
+                        WriteLog("Failed to get Navigator data from from registry, " + errmsg.Message);
+                    }
+
+                    //Get the dataPath to mca files
+                    strMCAFolder = "";
+                    strMCAFileCheck = "earth_osm.mca";   //File to look for depends on edition of Navigator (Free or Paid)
+                    try
+                    {
+                        if (boolFREE)
+                        {
+                            strMCAFolder = GetDataPath(strFolder + "\\" + atlas_free);
+                            strMCAFileCheck = "earth_osm.mca";
+                        }
+                        else
+                        {
+                            strMCAFolder = GetDataPath(strFolder + "\\" + atlas_paid);
+                            strMCAFileCheck = "earth_ta.mca";
+                        }
+                    }
+                    catch (Exception errmsg)
+                    {
+                        WriteLog("Failed to get MCA folder from IDC file, " + errmsg.Message);
+                    }
+
+                    //If we dont have the mca data path, ask user
+                    if (strMCAFolder == "")
+                    {
+                        //Ask user for MCA location                        
+                        try
+                        {
+                            CF_systemDisplayDialog(CF_Dialogs.OkBox, this.pluginLang.ReadField("/APPLANG/NAVIGATOR/EXELOCATION") + " " + this.pluginLang.ReadField("/APPLANG/SETUP/MCAPATH"));
+
+                            string location = this.pluginConfig.ReadField("/APPCONFIG/MCAPATH");
+                            if (string.IsNullOrEmpty(location)) location = PluginPath;
+
+                            CFDialogParams dialogParams = new CFDialogParams(this.pluginLang.ReadField("/APPLANG/SETUP/MCAPATH"), location);
+                            dialogParams.browseable = true;
+                            dialogParams.enablesubactions = true;
+                            dialogParams.showfiles = true;
+
+                            CFDialogResults results = new CFDialogResults();
+                            if (CF_displayDialog(CF_Dialogs.FileBrowser, dialogParams, results) == DialogResult.OK)
+                            {
+                                WriteLog("Found :" + results.resulttext);
+                                FileInfo fi3 = new FileInfo(results.resultvalue);
+                                if (fi3.Exists)
+                                {
+                                    string strPath = Path.GetDirectoryName(results.resultvalue);
+                                    this.pluginConfig.WriteField("/APPCONFIG/MCAPATH", strPath, true);
+                                    strMCAFolder = strPath;
+                                    WriteLog("mca folder : '" + strMCAFolder + "'");
+                                }
+                                else
+                                {
+                                    CF_systemDisplayDialog(CF_Dialogs.OkBox, this.pluginLang.ReadField("/APPLANG/NAVIGATOR/UNABLE") + " " + this.pluginLang.ReadField("/APPLANG/NAVIGATOR/USESETUP"));
+                                    strMCAFolder = "";
+                                }
+                            }
+                            else
+                            {
+                                CF_systemDisplayDialog(CF_Dialogs.OkBox, this.pluginLang.ReadField("/APPLANG/NAVIGATOR/UNABLE") + " " + this.pluginLang.ReadField("/APPLANG/NAVIGATOR/USESETUP"));
+                                strMCAFolder = "";
+                            }
+                        }
+                        catch (Exception errmsg) { WriteLog("Unable to get mca folder, " + errmsg.ToString()); }
+                    }
+                }
+                catch (Exception errmsg) 
+                {
+                    WriteLog("Failed to get MCA folder, " + errmsg.ToString());
+                }
+
+                //Copy the mca file to the data folder, or remove it
+                if (strMCAFolder != "")
+                {
+                    if (boolEnableCFCam)
+                    {
+                        //Check if checkpoint file exists
+                        FileInfo fi3 = new FileInfo(strMCAFolder + "\\" + strMCAFileCheck);
+                        if (fi3.Exists)
+                        {
+                            WriteLog("Found mca data path, '" + strMCAFolder + "', write the mca file to Navigators data folder");
+                            string strSource = @PluginPath + "LiveTraffic\\" + strCFCam;
+                            string strDestination = strMCAFolder + strCFCam;
+                            WriteLog("Source: '" + strSource + "', Destination '" + strDestination + "'");
+                            try
+                            {
+                                System.IO.File.Copy(strSource, strDestination, true);
+                            }
+                            catch (Exception errmsg)
+                            {
+                                WriteLog("Failed to copy the mca file to Navigators data folder, " + errmsg.ToString());
+                            }
+                        }
+                        else
+                        {
+                            WriteLog("Checkpoint file does not exist. Failed to copy mca file");
+                            CF_systemDisplayDialog(CF_Dialogs.OkBox, this.pluginLang.ReadField("/APPLANG/NAVIGATOR/UNABLE") + " " + this.pluginLang.ReadField("/APPLANG/SETUP/MCAPATH"));
+                        }
+                    }
+                    else
+                    {
+                        //Remove the mca file
+                        //Check if checkpoint file exists
+                        string strSource = strMCAFolder + "\\" + strCFCam;
+                        FileInfo fi3 = new FileInfo(strSource);
+                        if (fi3.Exists)
+                        {
+                            WriteLog("Found mca data file, '" + strSource + "', write the mca file to Navigators data folder");
+                            WriteLog("Source: '" + strSource + "'");
+                            try
+                            {
+                                System.IO.File.Delete(strSource);
+                            }
+                            catch (Exception errmsg)
+                            {
+                                WriteLog("Failed to remove the mca file from Navigators data folder, " + errmsg.ToString());
+                            }
+                        }
+                        else
+                        {
+                            WriteLog("LiveTraffic MCA file does not exist. Failed to remove mca file");
+                        }
+                    }
+                }
+                else
+                {
+                    WriteLog("Unable to locate data folder for mca files.");
+                    CF_systemDisplayDialog(CF_Dialogs.OkBox, this.pluginLang.ReadField("/APPLANG/NAVIGATOR/UNABLE") + " " + this.pluginLang.ReadField("/APPLANG/SETUP/MCAPATH"));
+                }
+
+                
                 // CF Settings
                 try
                 {
@@ -1316,9 +1483,8 @@ namespace Navigator
             
             //bool boolTmp = ReadCFValue("/config/app/product_key", "", tmpIDCFile);
             //WriteLog("booltmp: " + boolTmp);
-                        
 
-            //XML File exists, and user wants to swap config files around
+            //XML File exists, get product key
             if (fiIDC.Exists)
             {
                 WriteLog("Reading product key from '" + tmpIDCFile + "'");
@@ -1346,7 +1512,48 @@ namespace Navigator
                 return false;
             }
         }
-        
+
+        //Get Navigator's data path from IDC file
+        private string GetDataPath(string tmpIDCFile)
+        {
+            string dataPath = "";
+            FileInfo fiIDC = new FileInfo(tmpIDCFile);
+           
+            //XML File exists, get the data
+            if (fiIDC.Exists)
+            {
+                WriteLog("Reading data path from '" + tmpIDCFile + "'");
+                try
+                {
+                    //Get Mapfactor license
+                    XmlDocument configxml = new XmlDocument();
+                    configxml.XmlResolver = null; //Ignore settings.dtd file not in same folder
+                    configxml.Load(tmpIDCFile);
+
+                    XmlNodeList xnList = configxml.SelectNodes("/config/atlas/sheet");
+                    foreach (XmlNode xn in xnList)
+                    {
+                        try 
+                        {
+                            dataPath = xn["data"].InnerText;
+                        }
+                        catch (Exception errmsg)
+                        { 
+                            WriteLog("Failed to get data folder from IDC file, " + errmsg.ToString());
+                        }
+                    }
+                }
+                catch (Exception errMsg) { WriteLog("Failed to read 'mainland' entry: " + errMsg.Message); }
+
+                //WriteLog("dataPath: '" + dataPath + "'");
+                return dataPath;
+            }
+            else
+            {
+                WriteLog("IDC file '" + tmpIDCFile + "' does not exist");
+                return "";
+            }
+        }
 
         //Manipulate Navigator's XML file
         public void ConfigureNavigatorXML()
@@ -1494,11 +1701,23 @@ namespace Navigator
                         configxml.Save(strAppDataPath + "\\settings.xml");
                     }
                     catch (Exception errMsg) { WriteLog("Failed to disable menu options: " + errMsg.Message); }
+
+                    //Allow suspend
+                    try
+                    {
+                        XmlNodeList xnList = configxml.SelectNodes("/settings/APP");
+                        foreach (XmlNode xn in xnList)
+                        {
+                            xn["allow_suspend"].InnerText = "yes";
+                            WriteLog("Suspend configured: " + xn["allow_suspend"].InnerText);
+                        }
+                        configxml.Save(strAppDataPath + "\\settings.xml");
+                    }
+                    catch (Exception errMsg) { WriteLog("Failed to set suspend setting: " + errMsg.Message); }
                 }
                 catch (Exception errMsg) { WriteLog("Failed to configure Navigator's settings.xml file: " + errMsg.Message); }
             }
         }
-
 
         private void SetDayNightToggle()
         {

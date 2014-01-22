@@ -66,5 +66,8 @@
     <LOCALIZE>Lokaliseer data op het GPS statusscherm (. versus ,)</LOCALIZE>
     <OSMMESSAGE>Opm.: De OpenStreetMap licentievermelding bij het starten van Navigator, wordt hiermee onderdrukt.</OSMMESSAGE>
     <EXITCOUNTER>Retries before force closing Navigator</EXITCOUNTER>
+    <CFCAMSUPPORT>Traffic Camera support</CFCAMSUPPORT>
+    <MCAPATH>Path to mca files</MCAPATH>
+    <CFCAMMINVERSTION>Navigator version 12.4.5 or higher required</CFCAMMINVERSTION>
   </SETUP>
 </APPLANG>

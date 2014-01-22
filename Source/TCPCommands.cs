@@ -541,20 +541,24 @@ namespace Navigator
                                     {
                                         _navStats.Street = sMessage.Split(';')[0].Replace("\"", "");
                                         //WriteLog("Street name: '" + _navStats.Street + "'");
-                                        
                                     }
                                     catch (Exception errMsg) { _navStats.Street = ""; WriteLog("Unable to parse Street: " + errMsg.Message); }
                                 }
                                 else if (strCommands.ToUpper().Contains("V."))
                                 {
-                                    //V.12.4.3 => 12.4
+                                    //V.12.4.3 => 12.4 / 3
                                     try
-                                    {                                        
-                                        decNavigatorVersion = decimal.Parse(strCommands.Substring(2, 4));
+                                    {
+                                        decNavigatorVersion = decimal.Parse(strCommands.Split('.')[1] + "." + strCommands.Split('.')[2]);
                                     }
                                     catch (Exception errMsg) { WriteLog("Error Parsing Navigator Version: " + errMsg.Message); }
-
-                                    WriteLog("Navigator Version: '" + decNavigatorVersion.ToString() + "'");
+                                    try
+                                    {
+                                        intNavigatorRevision = int.Parse(strCommands.Split('.')[3]);
+                                    }
+                                    catch (Exception errMsg) { WriteLog("Error Parsing Navigator Revision: " + errMsg.Message); }
+                                    
+                                    WriteLog("Navigator Version: '" + decNavigatorVersion.ToString() + "', revision '" + intNavigatorRevision.ToString() + "'");
                                 }
                                 else if (strCommands.Split('.').Length == 3)
                                 {

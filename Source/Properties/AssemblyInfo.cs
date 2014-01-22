@@ -35,6 +35,6 @@ using System.Runtime.CompilerServices;
 //      Minor Version 
 //      Build Number
 //      Revision
-[assembly: AssemblyVersion("2.0.4")]
+[assembly: AssemblyVersion("2.0.5")]
 [assembly: AssemblyDelaySign(false)]
-[assembly: AssemblyFileVersionAttribute("2.0.4")]
+[assembly: AssemblyFileVersionAttribute("2.0.5")]
