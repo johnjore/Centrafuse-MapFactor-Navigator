@@ -1032,7 +1032,6 @@ namespace Navigator
                 catch
                 {
                     strEXEPath = "C:\\Program Files\\Navigator12\\PC_Navigator";
-
                 }
                 finally
                 {
@@ -1404,6 +1403,7 @@ namespace Navigator
                         if (fi3.Exists)
                         {
                             WriteLog("Found mca data path, '" + strMCAFolder + "', write the mca file to Navigators data folder");
+
                             string strSource = @PluginPath + "LiveTraffic\\" + strCFCam;
                             string strDestination = strMCAFolder + strCFCam;
                             WriteLog("Source: '" + strSource + "', Destination '" + strDestination + "'");
