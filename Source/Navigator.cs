@@ -570,19 +570,9 @@ namespace Navigator
                     WriteLog("Launching Navigator using: '" + pNavigator.StartInfo.FileName + "'");
                     WriteLog("Parameters: '" + pNavigator.StartInfo.Arguments + "'");
                     pNavigator.EnableRaisingEvents = true;
-                    //Ensure Navigator is restarted if it crashes, or user manages to close it. No Navigator => no Nav data in CF
-                    pNavigator.Exited += new EventHandler(pNavigator_Exited);
-
+                    
                     //LK, 18-nov-2013: Avoid flickering windows at startup
                     pNavigator.StartInfo.WindowStyle = ProcessWindowStyle.Hidden;
-
-                    //Make sure keyboard and mouse inputs are not working while Navigator starts
-                    //Prevents user from pressing OK to the OSM License dialog and the subsequent 'Enter' opens up Menu in Navigator
-                    try
-                    {
-                        if (boolOSMOK && boolFREE) BlockInput(true);
-                    }
-                    catch (Exception errMsg) { WriteLog("Failed to disable mouse/keyboard input: " + errMsg.Message); }
 
                     //In some, rare, instances, it could already be running. Terminate it now as we're about to start it
                     TerminateOrphanedProcess(true);
@@ -590,12 +580,24 @@ namespace Navigator
                     //Start the EXE
                     pNavigator.Start();
 
+                    //Make sure keyboard and mouse inputs are not working while Navigator starts
+                    //Prevents user from pressing OK to the OSM License dialog and the subsequent 'Enter' opens up Menu in Navigator
+                    try
+                    {
+                        if (boolOSMOK && boolFREE)
+                        {
+                            WriteLog("Blocking input: True");
+                            BlockInput(true);
+                        }
+                    }
+                    catch (Exception errMsg) { WriteLog("Failed to disable mouse/keyboard input: " + errMsg.Message); }
+
                     //Wait for Navigator to start
                     TimeSpan totalProcessorTime = new TimeSpan();
                     totalProcessorTime = pNavigator.TotalProcessorTime;
                     pNavigator.PriorityClass = ProcessPriorityClass.High;   //LK, 24-nov-2013: Top priority while starting 
                     System.Threading.Thread.Sleep(500); // Allow the process to open it's window
-                    pNavigator.WaitForInputIdle();     //Dont use this, the window location is messed up. Can't press OK        
+                    pNavigator.WaitForInputIdle();     //Dont use this, the window location is messed up. Can't press OK
 
                     //LK, 18-nov-2013: Attach to hidden panel right away
                     int iRetry = 0;
@@ -616,7 +618,7 @@ namespace Navigator
 
                     //Re-run now, else thepanel does not have a handle when resuming...
                     CF_localskinsetup();
-
+                  
                     //Is Navigator running?
                     if (TerminateOrphanedProcess(false)) WriteLog("Navigator process exists"); else WriteLog("Warning - Can't find navigator process");
 
@@ -637,22 +639,24 @@ namespace Navigator
                         //Make sure mouse and keyboard work again
                         try
                         {
-                            if (boolOSMOK && boolFREE) BlockInput(false);
+                            if (boolOSMOK && boolFREE)
+                            {
+                                WriteLog("Blocking input: False");
+                                BlockInput(false);
+                            }
                         }
                         catch (Exception errMsg) { WriteLog("Failed to enable mouse/keyboard input: " + errMsg.Message); }
 
                         //Let the user know it failed
                         CF_systemDisplayDialog(CF_Dialogs.OkBox, pluginLang.ReadField("/APPLANG/NAVIGATOR/FAILEDTODOCK"));
-
-                        //Make sure keyboard and mouse inputs are not working while Navigator starts
-                        try
-                        {
-                            if (boolOSMOK && boolFREE) BlockInput(true);
-                        }
-                        catch (Exception errMsg) { WriteLog("Failed to disable mouse/keyboard input: " + errMsg.Message); }
                     }
                     else
+                    {
                         WriteLog("Connected to panel");
+
+                        //Ensure Navigator is restarted if it crashes, or user manages to close it. No Navigator => no Nav data in CF
+                        pNavigator.Exited += new EventHandler(pNavigator_Exited);
+                    }
 
                     WriteLog("MainWindowHandle after parenting = 0x" + pNavigator.MainWindowHandle.ToString("X"));
 
@@ -689,7 +693,11 @@ namespace Navigator
                     //Make sure mouse and keyboard work again
                     try
                     {
-                        if (boolOSMOK && boolFREE) BlockInput(false);
+                        if (boolOSMOK && boolFREE)
+                        {
+                            WriteLog("Blocking input: False");
+                            BlockInput(false);
+                        }                            
                     }
                     catch (Exception errMsg) { WriteLog("Failed to re-enable mouse/keyboard input: " + errMsg.Message); }
 
@@ -703,8 +711,21 @@ namespace Navigator
             }
             catch (Exception ex)
             {
+                try
+                {
+                    if (boolOSMOK && boolFREE)
+                    {
+                        WriteLog("Blocking input: False");
+                        BlockInput(false);
+                    }
+                }
+                catch (Exception errMsg) { WriteLog("Failed to re-enable mouse/keyboard input: " + errMsg.Message); }
+
                 WriteLog("Failed to launch Navigator: " + ex.Message);
                 CFTools.writeError(ex.Message, ex.StackTrace);
+
+                //Let the user know it failed
+                CF_systemDisplayDialog(CF_Dialogs.OkBox, pluginLang.ReadField("/APPLANG/NAVIGATOR/FAILEDTODOCK"));
 
                 return false;
             }
@@ -766,6 +787,8 @@ namespace Navigator
         // Handle Navigator Exited event
         private void pNavigator_Exited(object sender, System.EventArgs e)
         {
+            BlockInput(false);
+
             if (boolExit == true) 
             {
                 WriteLog("BoolExit is " + boolExit.ToString() + ". No autostart of navigator");
@@ -789,9 +812,19 @@ namespace Navigator
 
             try
             {                
-                //User really wants to exit Navigator?
+                //User really wants to exit Navigator?                
                 if (boolExit == false)
                 {
+                    //Make sure mouse and keyboard work again
+                    //Depending on the failure, this may be called, before unlocking in main thread is called.                    
+                    try
+                    {
+                        WriteLog("Blocking input: False");
+                        BlockInput(false);
+                    }
+                    catch (Exception errMsg) { WriteLog("Failed to enable mouse/keyboard input: " + errMsg.Message); }
+
+                    WriteLog("Restart Navigator?");
                     //Only prompt for restart if not resuming from suspend
                     DialogResult result;
                     if (boolSuspend == false)
