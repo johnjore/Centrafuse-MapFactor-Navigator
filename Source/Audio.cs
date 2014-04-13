@@ -74,7 +74,7 @@ namespace Navigator
             WriteLog("Timer over. Play Audio");
 
             //If MediaPlayer is active, it uses BASS and can process native CF commands correctly
-            if (ReadCFValue("SETTINGS/CURRENT/MUSICMODE", "1", settingsPath))
+            if (ReadCFValue("SETTINGS/CURRENT/MUSICMODE", "1", settingsPath) || (boolUseCFMixerforATT))
             {
                 //ATT Mute/UnMute
                 if (CF_getConfigFlag(CF_ConfigFlags.GPSAttMute))
@@ -130,8 +130,9 @@ namespace Navigator
             //We're in a MUTE period
             this.BeginInvoke(new MethodInvoker(delegate { boolInMutePeriod = true; }));
 
+            
             //If MediaPlayer is active, it uses BASS and can process native CF commands correctly
-            if (ReadCFValue("SETTINGS/CURRENT/MUSICMODE", "1", settingsPath))
+            if (ReadCFValue("SETTINGS/CURRENT/MUSICMODE", "1", settingsPath) || (boolUseCFMixerforATT))
             {
                 //ATT Mute/unmute
                 if (CF_getConfigFlag(CF_ConfigFlags.GPSAttMute))

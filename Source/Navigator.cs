@@ -97,6 +97,7 @@ namespace Navigator
         private decimal decNavigatorVersion = new decimal(0.0);  // Navigator version, 12.4.4 => 12.4
         private int intNavigatorRevision = 0;               // Navigator revision 12.4.5 => 5
         private string strProtocolVersion = "";             // Navigator TCP Protocol version
+        private bool boolUseCFMixerforATT = false;          // Use CF mixer for ATT, or use external commands
                 
         //Timers
         Timer nightTimer = new System.Windows.Forms.Timer(); // timer for switching day/night skin      
@@ -154,8 +155,9 @@ namespace Navigator
                 CFTools.writeModuleLog("startup", LogFilePath);
 
                 //Log current version of DLL for debug purposes
-                WriteLog("Assembly Version: '" + Assembly.GetExecutingAssembly().GetName().Version.ToString() + "'");
-
+                WriteLog("Plugin Version: '" + Assembly.GetExecutingAssembly().GetName().Version.ToString() + "'");
+                WriteLog("CF Version: '" + Assembly.GetCallingAssembly().GetName().Version.ToString() + "'");
+                             
                 // All controls should be created or Setup in CF_localskinsetup.
                 // This method is also called when the resolution or skin has changed.
                 CF_localskinsetup();
@@ -223,7 +225,7 @@ namespace Navigator
                 {
                     WriteLog("Not active CFNav engine");
                 }
-			}
+            }
 			catch(Exception errmsg) { CFTools.writeError(errmsg.ToString()); }
 		}
 
@@ -787,8 +789,6 @@ namespace Navigator
         // Handle Navigator Exited event
         private void pNavigator_Exited(object sender, System.EventArgs e)
         {
-            BlockInput(false);
-
             if (boolExit == true) 
             {
                 WriteLog("BoolExit is " + boolExit.ToString() + ". No autostart of navigator");
@@ -815,15 +815,6 @@ namespace Navigator
                 //User really wants to exit Navigator?                
                 if (boolExit == false)
                 {
-                    //Make sure mouse and keyboard work again
-                    //Depending on the failure, this may be called, before unlocking in main thread is called.                    
-                    try
-                    {
-                        WriteLog("Blocking input: False");
-                        BlockInput(false);
-                    }
-                    catch (Exception errMsg) { WriteLog("Failed to enable mouse/keyboard input: " + errMsg.Message); }
-
                     WriteLog("Restart Navigator?");
                     //Only prompt for restart if not resuming from suspend
                     DialogResult result;
@@ -1486,7 +1477,14 @@ namespace Navigator
                     CF_systemDisplayDialog(CF_Dialogs.OkBox, this.pluginLang.ReadField("/APPLANG/NAVIGATOR/UNABLE") + " " + this.pluginLang.ReadField("/APPLANG/SETUP/MCAPATH"));
                 }
 
-                
+
+                //How is ATT handled?
+                //If CF version 4.4.6 or higher then use internal CF mixer, like mediaplayer
+                Version CF_ver = Assembly.GetEntryAssembly().GetName().Version;               
+                Version CF_audio_mixer = new Version("4.4.6");      // This is the minimum required CF version to use internal CF mixer
+                if (CF_ver.CompareTo(CF_audio_mixer) == -1) boolUseCFMixerforATT = false; else boolUseCFMixerforATT = true;
+                WriteLog("boolUseCFMixerforATT: " + boolUseCFMixerforATT.ToString());
+
                 // CF Settings
                 try
                 {
