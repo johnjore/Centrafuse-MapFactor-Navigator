@@ -549,14 +549,14 @@ namespace Navigator
                                     //V.12.4.3 => 12.4 / 3
                                     try
                                     {
-                                        decNavigatorVersion = decimal.Parse(strCommands.Split('.')[1] + "." + strCommands.Split('.')[2]);
+                                        decNavigatorVersion = decimal.Parse(strCommands.Split('.')[1] + CultureInfo.CurrentCulture.NumberFormat.NumberDecimalSeparator + strCommands.Split('.')[2]);
                                     }
-                                    catch (Exception errMsg) { WriteLog("Error Parsing Navigator Version: " + errMsg.Message); }
+                                    catch (Exception errMsg) { WriteLog("Error Parsing Navigator Version: '" + strCommands + "', " + errMsg.Message); }
                                     try
                                     {
                                         intNavigatorRevision = int.Parse(strCommands.Split('.')[3]);
                                     }
-                                    catch (Exception errMsg) { WriteLog("Error Parsing Navigator Revision: " + errMsg.Message); }
+                                    catch (Exception errMsg) { WriteLog("Error Parsing Navigator Revision: '" +strCommands + "', " + errMsg.Message); }
                                     
                                     WriteLog("Navigator Version: '" + decNavigatorVersion.ToString() + "', revision '" + intNavigatorRevision.ToString() + "'");
                                 }

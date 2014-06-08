@@ -105,7 +105,16 @@ namespace Navigator
         Timer CallStatusTimer = new System.Windows.Forms.Timer();    // timer for checking if a call is in progress
         Timer NavDestinationTimer = new System.Windows.Forms.Timer();    // timer for checking for destination proximity if not active plugin
         Timer NavStatustimer = new System.Windows.Forms.Timer();        //timer for updating GPS status screen
-       
+
+        //Mouse constants
+        private const int MOUSEEVENTF_MOVE = 0x0001;
+        private const int MOUSEEVENTF_LEFTDOWN = 0x0002;
+        private const int MOUSEEVENTF_LEFTUP = 0x0004;
+        private const int MOUSEEVENTF_RIGHTDOWN = 0x0008;
+        private const int MOUSEEVENTF_RIGHTUP = 0x0010;
+        private const int MOUSEEVENTF_MIDDLEDOWN = 0x0020;
+        private const int MOUSEEVENTF_MIDDLEUP = 0x0040;      
+
         //From Mark
         public override event CFNavVoiceEventHandler CF_navVoiceEvent;
         private delegate void VoidDelegate();
@@ -114,7 +123,10 @@ namespace Navigator
         static extern IntPtr SetParent(IntPtr hWndChild, IntPtr hWndNewParent);
 
         [DllImport("user32.dll")]
-        static extern void mouse_event(uint dwFlags, uint dx, uint dy, uint dwData, UIntPtr dwExtraInfo);
+        static extern void mouse_event(int dwFlags, int dx, int dy, int dwData, UIntPtr dwExtraInfo);
+
+        [DllImport("user32.dll", SetLastError = true)]
+        public static extern bool SetCursorPos(int x, int y);
 
         [DllImport("user32.dll")]
         static extern bool ClientToScreen(IntPtr hWnd, ref Point lpPoint);
@@ -665,7 +677,7 @@ namespace Navigator
                     //JJ: Why is this set to AboveNormal and not Normal?!?
                     pNavigator.PriorityClass = ProcessPriorityClass.AboveNormal;    //LK, 24-nov-2013: Lower the priority to "normal"
 
-                    //Hide panel                                      
+                    //Hide panel
                     thepanel.Visible = false;
                     WriteLog("Panel hidden");
 
@@ -678,10 +690,25 @@ namespace Navigator
                             WriteLog("Sending ENTER");
 
                             //Send 'Enter' until a new message system works                            
-                            SendKeys.SendWait("{ENTER}");
+                            //SendKeys.SendWait("{ENTER}");
+
+                            WriteLog("Coordinates :" + this.pluginConfig.ReadField("/APPCONFIG/WINDOWSIZE"));
+                            string[] mCoordinates= this.pluginConfig.ReadField("/APPCONFIG/WINDOWSIZE").Split(',');
+                            int mWidth = int.Parse(mCoordinates[2]) / 2;
+                            int mHeight = int.Parse(mCoordinates[3]) / 100 * 90;
+                            WriteLog("Mouse mWidth: " + mWidth.ToString() + ", mHeight: " + mHeight.ToString());
+
+                            //Jump to location
+                            SetCursorPos(mWidth, mHeight);
+
+                            //Send click. Both left and right for swapped mouse buttons
+                            mouse_event(MOUSEEVENTF_LEFTDOWN, 0, 0, 0, UIntPtr.Zero);
+                            mouse_event(MOUSEEVENTF_LEFTUP, 0, 0, 0, UIntPtr.Zero);
+                            mouse_event(MOUSEEVENTF_RIGHTDOWN, 0, 0, 0, UIntPtr.Zero);
+                            mouse_event(MOUSEEVENTF_RIGHTUP, 0, 0, 0, UIntPtr.Zero);
                         }
                     }
-                    catch { WriteLog("Failed to send OK to OSM usage"); }
+                    catch { WriteLog("Failed to send OK (Mouse click) to OSM usage"); }
 
                     //JJ: Re-run now, else panels not resized correctly
                     CF_localskinsetup();

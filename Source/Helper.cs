@@ -191,9 +191,9 @@ namespace Navigator
         private void ClickOnPoint(IntPtr wndHandle, Point clientPoint)
         {
             WriteLog("Sending left mouse click to window with handle 0x" + wndHandle.ToString("X"));
-            int istat1 = PostMessage(wndHandle, (int)WindowManagerEvents.WM_LBUTTONDOWN, 1, (clientPoint.Y << 16) + clientPoint.X);  //
-            int istat2 = PostMessage(wndHandle, (int)WindowManagerEvents.WM_LBUTTONUP, 0, (clientPoint.Y << 16) + clientPoint.X);  //
-            WriteLog("Mouse click sent to wintdow with handle 0x" + wndHandle.ToString("X") + ", iStat1 = " + istat1 + ", iStat2 = " + istat2);
+            int istat1 = PostMessage(wndHandle, (int)WindowManagerEvents.WM_LBUTTONDOWN, 1, (clientPoint.Y << 16) + clientPoint.X);
+            int istat2 = PostMessage(wndHandle, (int)WindowManagerEvents.WM_LBUTTONUP, 0, (clientPoint.Y << 16) + clientPoint.X);
+            WriteLog("Mouse click sent to window with handle 0x" + wndHandle.ToString("X") + ", iStat1 = " + istat1 + ", iStat2 = " + istat2);
         }
     }
 
