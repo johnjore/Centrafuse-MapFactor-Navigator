@@ -54,8 +54,8 @@ namespace Navigator
 #region Variables
 		private const string PluginName = "Navigator";
         private const string EXEName = "PC_Navigator.exe";
-        private const string REGNavigator = "SOFTWARE\\MapFactor\\set\\pcnavigator_12";
         private const string PluginPath = @"plugins\" + PluginName + @"\";
+        private const string REGNavigatorBase = "SOFTWARE\\MapFactor\\set\\pcnavigator_";  // Updated to reflect correct version at runtime
         //private const string ConfigurationFile = "config.xml";
 		private const string LogFile= PluginName + ".log";
         public static string LogFilePath = CFTools.AppDataPath + "\\Plugins\\" + PluginName + "\\" + LogFile;
@@ -64,7 +64,8 @@ namespace Navigator
         private static string atlas_free = "atlas_pcn_free.idc"; //Move to config file? /**/
         private static string atlas_paid = "atlas_pcn.idc";      //Move to config file /**/
         private static string strCFCam = "LiveTraffic.mca";            //Database with traffic cameras
-                        
+        private string REGNavigator = REGNavigatorBase + "12";  // Updated to reflect correct version at runtime
+
         /**/ //This should be moved to a AppConfiguration class?
         private string strTRUE = "True";                    // True
         private string strFALSE = "False";                  // False
@@ -1101,7 +1102,22 @@ namespace Navigator
                 finally
                 {
                     WriteLog("strEXEParameters: " + strEXEParameters);
-                }                
+                }
+
+                // Get EXE version. Needed to read corect REG value
+                try {
+                    FileVersionInfo exeVer = FileVersionInfo.GetVersionInfo(strEXEPath + "\\" + EXEName);
+                    REGNavigator = REGNavigatorBase + exeVer.FileMajorPart.ToString();
+                }
+                catch 
+                {
+                    WriteLog("Unable to determine registry key to use. Defaulting to 12");
+                    REGNavigator = REGNavigatorBase + "_12";
+                }
+                finally
+                {
+                    WriteLog("REGNavigator: " + REGNavigator);
+                }
 
                 //Get correct atlas setting:
                 try
