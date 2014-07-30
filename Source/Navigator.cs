@@ -19,7 +19,6 @@
  * http://static.mapfactor.com/files/Navigator_RemoteCommands_-_KB_1.pdf
  * 
  * Move SendCommand and receive to its own thread?
- * Parse TCP responses from Navigator... counter++ for each SendCommand. Create FIFO buffer? Create thread?
  * 
  * Resolve all /**/
 
@@ -365,6 +364,20 @@ namespace Navigator
                 WriteLog("TCP connection closed ");
             }
             catch (Exception errMsg) { WriteLog("Failed to dispose of TCP connection: " + errMsg.Message); }
+
+            /**/ //Debug information for TCPCommandQueue
+            if (TCPCommandQueue.Count > 0)
+            {
+                WriteLog("TCPCommandQueue not empty, " + TCPCommandQueue.Count.ToString() + ", commands outstanding");
+                while (TCPCommandQueue.Count > 0)
+                {
+                    WriteLog("Outstanding in TCPCommandQueue: " + TCPCommandQueue.Dequeue().ToString());
+                }
+            }
+            else
+            {
+                WriteLog("Success - TCPCommandQueue empty");
+            }
 
             //Only put files back, if user wants to flip XML files around
             if (bool.Parse(this.pluginConfig.ReadField("/APPCONFIG/SETTINGSXMLSWAP")) == true)

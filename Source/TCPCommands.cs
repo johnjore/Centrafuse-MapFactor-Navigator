@@ -44,7 +44,7 @@ namespace Navigator
         private string strIP = "127.0.0.1";                 // Default IP port
         Socket server = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
         bool boolConnecting = false;                        // Are we trying to connect?
-        Queue<TCPCommand> TCPCommandQueue = new Queue<TCPCommand>();        //Keeps track of which command are sent. Not fully implemented yet
+        Queue<TCPCommand> TCPCommandQueue = new Queue<TCPCommand>();        //Keeps track of which command are sent to match up with the response
         # endregion
 
         /**/ //WaitForReply not implemented yet...
@@ -68,7 +68,7 @@ namespace Navigator
                     AsyncCallback onconnect = new AsyncCallback(OnConnect);
                     IAsyncResult serverResult = server.BeginConnect(IPAddress.Parse(strIP), intTCPPort, onconnect, server);
                     WriteLog("Trying to establish connection. BeginConnect() Started");
-                                        
+
                     bool success = serverResult.AsyncWaitHandle.WaitOne(500, true);
                     WriteLog("Success: " + success.ToString());
 
@@ -110,8 +110,7 @@ namespace Navigator
             {
                 WriteLog("Sending '" + strNavigatorCommand + "'");
                 server.Send(Encoding.ASCII.GetBytes(strNavigatorCommand));
-                /**/ //Not used yet
-                //TCPCommandQueue.Enqueue(tcpCommand);
+                TCPCommandQueue.Enqueue(tcpCommand);
             }
             else
             {
@@ -172,6 +171,16 @@ namespace Navigator
 
                     if (nBytesRec > 0)
                     {
+                        //Debug information for TCPCommandQueue
+                        if (TCPCommandQueue.Count > 0)
+                        {
+                            WriteLog("TCP response to the command ' " + TCPCommandQueue.Peek().ToString() + "' expected.");
+                        }
+                        else
+                        {
+                            WriteLog("Error - TCPCommandQueue was expecting to dequeue, but no items in queue.");
+                        }
+
                         // sMessage contains the message from navigator
                         string sMessage = Encoding.ASCII.GetString(m_byBuff, 0, nBytesRec);
 
@@ -187,6 +196,9 @@ namespace Navigator
                             {
                                 if (strCommands.ToUpper().Contains("SOUND"))
                                 {
+                                    WriteLog("TCPCommand '" + TCPCommand.SoundVolume.ToString() + "' arrived");
+                                    TCPCommandQueue.Dequeue();
+
                                     //Only do this if we're not using named pipes
                                     if (!boolNamedPipes)
                                     {
@@ -196,6 +208,9 @@ namespace Navigator
                                 }
                                 else if (strCommands.ToUpper().Contains("WAYPOINT"))
                                 {
+                                    WriteLog("TCPCommand '"  + TCPCommand.NavInfoWaypointInfo.ToString() + "' arrived");
+                                    TCPCommandQueue.Dequeue();
+
                                     if (this.Visible == true)
                                     {
                                         WriteLog("Waypoint reached. Do nothing as plugin is visible: '" + strCommands + "'");
@@ -208,6 +223,9 @@ namespace Navigator
                                 }
                                 else if (strCommands.ToUpper().Contains("RECALCULATING"))
                                 {
+                                    WriteLog("TCPCommand '" + TCPCommand.NavInfoRecalculationWarning.ToString() + "' arrived");
+                                    TCPCommandQueue.Dequeue();
+
                                     if (this.Visible == true)
                                     {
                                         WriteLog("Recalculating. Do nothing as plugin is visible: '" + strCommands + "'");
@@ -220,6 +238,9 @@ namespace Navigator
                                 }
                                 else if (strCommands.ToUpper().Contains("LOST"))
                                 {
+                                    WriteLog("TCPCommand '" + TCPCommand.NavInfoWaypointInfo.ToString() + "' arrived");
+                                    TCPCommandQueue.Dequeue();
+
                                     if (this.Visible == true)
                                     {
                                         WriteLog("Lost. Do nothing as plugin is visible: '" + strCommands + "'");
@@ -232,6 +253,9 @@ namespace Navigator
                                 }
                                 else if (strCommands.ToUpper().Contains("DESTINATIONREACHED"))
                                 {
+                                    WriteLog("TCPCommand '" + TCPCommand.NavInfoWaypointInfo.ToString() + "' arrived");
+                                    TCPCommandQueue.Dequeue();
+
                                     if (this.Visible == true)
                                     {
                                         WriteLog("Destination reached. Do nothing as plugin is visible: '" + strCommands + "'");
@@ -244,6 +268,8 @@ namespace Navigator
                                 }
                                 else if (strCommands.ToUpper().Contains("$GPRMC"))
                                 {
+                                    //Do not Dequeue for this response
+
                                     //WriteLog("GPRMC sentence");
                                     try
                                     {
@@ -358,6 +384,8 @@ namespace Navigator
                                 }
                                 else if (strCommands.ToUpper().Contains("$GPGGA"))
                                 {
+                                    //Do not Dequeue for this response
+
                                     //WriteLog("GPGGA sentence");
                                     try
                                     {
@@ -369,7 +397,7 @@ namespace Navigator
                                         {
                                             _currentPosition.LockedSatellites = int.Parse(ggaData[7], CultureInfo.InvariantCulture); 
                                         }
-                                        catch 
+                                        catch
                                         {
                                             _currentPosition.LockedSatellites = 0;
                                             //WriteLog("Failed to convert LockedSatellites"); }
@@ -413,24 +441,31 @@ namespace Navigator
                                 else if (strCommands.ToUpper().Contains("OK"))
                                 {
                                     //strCommands will always be 'OK'
-                                    WriteLog("Ack message... for which command is not known....");
+                                    WriteLog("Command for '" + TCPCommandQueue.Peek().ToString() + "' was successfull");
+                                    TCPCommandQueue.Dequeue();
                                 }
                                 else if (strCommands.ToUpper().Contains("BUSY"))
                                 {
                                     //strCommands will always be 'BUSY'
-                                    WriteLog("Failed to ask Navigator to do something... for which command is not known....");
+                                    WriteLog("Failed to ask Navigator to '" + TCPCommandQueue.Peek().ToString() + "'. System busy");
+                                    TCPCommandQueue.Dequeue();
+
                                     this.CF_systemCommand(CF_Actions.SHOWINFO, this.pluginLang.ReadField("/APPLANG/NAVIGATOR/BUSY"), "AUTOHIDE");
                                 }
                                 else if (strCommands.ToUpper().Contains("ERROR"))
                                 {
                                     //strCommands will always be 'ERROR'
-                                    WriteLog("Asked Navigator to do something it can't do... which command is not known....");
+                                    WriteLog("Error when asking Navigator to '" + TCPCommandQueue.Peek().ToString() + "'");
+                                    TCPCommandQueue.Dequeue();
+                                    
                                     this.CF_systemCommand(CF_Actions.SHOWINFO, this.pluginLang.ReadField("/APPLANG/NAVIGATOR/ERROR"), "AUTOHIDE");
                                 }
                                 else if (strCommands.ToUpper().Contains("LICENSEERROR"))
                                 {
                                     //strCommands will always be 'LICENSEERROR'
-                                    WriteLog("Failed to ask Navigator to do something due to the lack of a license... for which command is not known....");
+                                    WriteLog("Failed to ask Navigator to do something due to the lack of a license '" + TCPCommandQueue.Peek().ToString() + "'");
+                                    TCPCommandQueue.Dequeue();
+                                    
                                     this.CF_systemCommand(CF_Actions.SHOWINFO, this.pluginLang.ReadField("/APPLANG/NAVIGATOR/LICENSEERROR"), "AUTOHIDE");
                                 }
                                 else if (strCommands.ToUpper().Contains("NOTNAVIGATING"))
@@ -443,6 +478,9 @@ namespace Navigator
                                 }
                                 else if (strCommands.Split(',').Length == 4)
                                 {
+                                    WriteLog("TCPCommand '" + TCPCommand.NavInfoWaypointInfo.ToString() + "' arrived");
+                                    TCPCommandQueue.Dequeue();
+
                                     //Default from Navigator is Meters
                                     switch (DistUnit)
                                     {
@@ -537,6 +575,9 @@ namespace Navigator
                                 }
                                 else if (strCommands.Split(';').Length == 2)
                                 {
+                                    WriteLog("TCPCommand '" + TCPCommand.NearestStreets.ToString() + "' arrived");
+                                    TCPCommandQueue.Dequeue();
+
                                     try
                                     {
                                         _navStats.Street = sMessage.Split(';')[0].Replace("\"", "");
@@ -546,6 +587,9 @@ namespace Navigator
                                 }
                                 else if (strCommands.ToUpper().Contains("V."))
                                 {
+                                    WriteLog("TCPCommand '" + TCPCommand.SoftwareVersion.ToString() + "' arrived");
+                                    TCPCommandQueue.Dequeue();
+
                                     //V.12.4.3 => 12.4 / 3
                                     try
                                     {
@@ -562,12 +606,18 @@ namespace Navigator
                                 }
                                 else if (strCommands.Split('.').Length == 3)
                                 {
+                                    WriteLog("TCPCommand '" + TCPCommand.Protocol.ToString() + "' arrived");
+                                    TCPCommandQueue.Dequeue();
+
                                     //2.2.0
                                     strProtocolVersion = strCommands;
                                     WriteLog("Navigator TCP Protocol Version: '" + strProtocolVersion + "'");
                                 }
                                 else if (strCommands != "")
                                 {
+                                    WriteLog("TCPCommand 'Unknown/Not handled' arrived");
+                                    TCPCommandQueue.Dequeue();
+
                                     WriteLog("Not handled: '" + strCommands + "'");
                                 }
                             }
