@@ -99,7 +99,9 @@ namespace Navigator
         private int intNavigatorRevision = 0;               // Navigator revision 12.4.5 => 5
         private string strProtocolVersion = "";             // Navigator TCP Protocol version
         private bool boolUseCFMixerforATT = false;          // Use CF mixer for ATT, or use external commands
-                
+        private int intOSRMPort = 5000;                     // Default OSRM port number
+        private bool boolOSRMEnabled = false;               // OSRM is not enabled by default
+
         //Timers
         Timer nightTimer = new System.Windows.Forms.Timer(); // timer for switching day/night skin      
         Timer muteCFTimer = new System.Windows.Forms.Timer();    // timer for mute'ing CF
@@ -1520,6 +1522,35 @@ namespace Navigator
                     CF_systemDisplayDialog(CF_Dialogs.OkBox, this.pluginLang.ReadField("/APPLANG/NAVIGATOR/UNABLE") + " " + this.pluginLang.ReadField("/APPLANG/SETUP/MCAPATH"));
                 }
 
+                // OSRM Enabled?
+                try
+                {
+                    boolOSRMEnabled = bool.Parse(this.pluginConfig.ReadField("/APPCONFIG/OSRM_ENABLE"));
+                }
+                catch
+                {
+                    boolOSRMEnabled = false; //Don't enable OSRM by default
+                    this.pluginConfig.WriteField("/APPCONFIG/OSRM_ENABLE", boolOSRMEnabled.ToString(), true);
+                }
+                finally
+                {
+                    WriteLog("boolOSRMEnabled: " + boolOSRMEnabled.ToString());
+                }
+                
+                // OSRM TCP Port
+                try
+                {
+                    intOSRMPort = int.Parse(this.pluginConfig.ReadField("/APPCONFIG/OSRM_ENABLE"));
+                }
+                catch
+                {
+                    intOSRMPort = 5000; //Default OSRM port number
+                    this.pluginConfig.WriteField("/APPCONFIG/OSRM_TCP_PORT", intOSRMPort.ToString(), true);
+                }
+                finally
+                {
+                    WriteLog("intOSRMPort: " + intOSRMPort.ToString());
+                }
 
                 //How is ATT handled?
                 //If CF version 4.4.6 or higher then use internal CF mixer, like mediaplayer

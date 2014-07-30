@@ -139,4 +139,13 @@ namespace Navigator
         METRIC = 0,
         IMPERIAL = 1
     }
+
+    //JSON Response from OSRM
+    public struct OSRMResponse
+    {
+        public string status_message;
+        public string status;
+        public string[] route_geometry;
+    }
+
 }

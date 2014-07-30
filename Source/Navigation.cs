@@ -22,6 +22,9 @@
 using System;
 using centrafuse.Plugins;
 using System.Globalization;
+using System.Net;
+using System.IO;
+using Newtonsoft.Json;  // Used to parse OSRM responses
 
 namespace Navigator
 {
@@ -43,7 +46,6 @@ namespace Navigator
 
             try 
             { 
-                
                 if (boolLocalize)
                 {
                     CF_updateText("DataLongitude", CF_navGetInfo(CFNavInfo.Longitude).Replace(".", decimalSeparator));
@@ -499,28 +501,84 @@ namespace Navigator
         {
             WriteLog("CF_navSetDestination(1)");
 
-            //Clear current destination
-            SendCommand("$destination=clear\r\n", true, TCPCommand.Destination);
-
-            //Set new destination
-            SendCommand("$destination=" + navLocation.latitude.ToString(CultureInfo.InvariantCulture) + "," + navLocation.longitude.ToString(CultureInfo.InvariantCulture) + ";navigate;instant\r\n", true, TCPCommand.Destination);
+            //Set the navigation location
+            navSetDestination(navLocation);
         }
 
         // This method is called to pass a destination to your navigation engine. Read the parameters you need from the navLocation variable and act accordingly
         public override void CF_navSetDestination(CFNavLocation navLocation, bool openNav, bool openFullScreen)
         {
             WriteLog("CF_navSetDestination(3)");
-            //Clear current destination
-            SendCommand("$destination=clear\r\n", true, TCPCommand.Destination);
 
-            //Set new destination
-            SendCommand("$destination=" + navLocation.latitude.ToString(CultureInfo.InvariantCulture) + "," + navLocation.longitude.ToString(CultureInfo.InvariantCulture) + ";navigate;instant\r\n", true, TCPCommand.Destination);
+            //Set the navigation location
+            navSetDestination(navLocation);
 
             //Switch to Nav
             CF3_executeCMLAction("Centrafuse.CFActions.Nav");
 
             //Resize Nav screen
             if (openFullScreen) SetFullScreen(); else SetNonFullScreen();
+        }
+
+        //Called by CF_navSetDestination methods
+        private void navSetDestination(CFNavLocation navLocation)
+        {
+            //Clear current destination
+            SendCommand("$destination=clear\r\n", true, TCPCommand.Destination);
+
+            //Did OSRM Encounter an error?
+            bool boolOSRMError = false;
+
+            //If OSRM is enabled, get route from it
+            if (boolOSRMEnabled)
+            {
+                //Send command to OSRM
+                try
+                {
+                    WebClient client = new WebClient();
+                    Stream data = client.OpenRead("http://localhost:" + intOSRMPort.ToString() + "/viaroute?loc=" + CF_navGetInfo(CFNavInfo.Latitude).ToString() + "," + CF_navGetInfo(CFNavInfo.Longitude).ToString() + "&loc=" + navLocation.latitude.ToString() + "," + navLocation.longitude.ToString() + "&alt=true&instructions=true&compression=false");
+
+                    //Get the response
+                    StreamReader reader = new StreamReader(data);
+                    string strResponse = reader.ReadToEnd();
+                    data.Close();
+                    reader.Close();
+
+                    //Parse the response
+                    OSRMResponse OSRMData = JsonConvert.DeserializeObject<OSRMResponse>(strResponse);
+                    
+                    //Check if OSRM found a route
+                    if (OSRMData.status == "0")
+                    {
+                        string strRoutingTable = ""; // Start off empty
+
+                        //Loop the feedback from OSRM
+                        foreach (var routing_point in OSRMData.route_geometry)
+                        {
+                            strRoutingTable = strRoutingTable + routing_point + ";";
+                        }
+
+                        //Route
+                        SendCommand("$destination=" + strRoutingTable + "navigate;instant\r\n", true, TCPCommand.Destination);
+                    }
+                    else boolOSRMError = true;
+                }
+                catch
+                {
+                    //Let user know OSRM is not working
+                    this.CF_systemCommand(CF_Actions.SHOWINFO, this.pluginLang.ReadField("/APPLANG/NAVIGATOR/OSRMERROR"), "AUTOHIDE");
+
+                    //OSRM encountered an error
+                    boolOSRMError = true;
+                }
+            }
+
+            //Use Navigator Engine?
+            if (boolOSRMEnabled == false || boolOSRMError == true)
+            {
+                //Set new destination
+                SendCommand("$destination=" + navLocation.latitude.ToString(CultureInfo.InvariantCulture) + "," + navLocation.longitude.ToString(CultureInfo.InvariantCulture) + ";navigate;instant\r\n", true, TCPCommand.Destination);
+            }
         }
 
         // Called by Centrafuse to find out what the destination is. Set the navLocation variable with as much information as is relevant

@@ -38,6 +38,7 @@
     <NAMEDPIPEPATCHFAILED>Failed to change named pipe patch status</NAMEDPIPEPATCHFAILED>
     <NOIDCFILE>Fatal error: No IDC file. Navigator will not launch!</NOIDCFILE>
     <NEARESTSTREET>Upgrade Navigator to support this field</NEARESTSTREET>
+    <OSRMERROR>OSRM Not responding. Using native Navigator engine instead</OSRMERROR>
   </NAVIGATOR>
   <SETUP>
     <DESCRIPTION>Configure mapFactor Navigator Plugin</DESCRIPTION>
@@ -69,5 +70,7 @@
     <CFCAMSUPPORT>Traffic Camera support</CFCAMSUPPORT>
     <MCAPATH>mca folder</MCAPATH>
     <CFCAMMINVERSTION>Navigator version 12.4.5 or higher required</CFCAMMINVERSTION>
+    <OSRM_PORT>Port number (default is 5000)</OSRM_PORT>
+    <OSRM_ENABLE>Enable OSRM?</OSRM_ENABLE>
   </SETUP>
 </APPLANG>

@@ -46,7 +46,7 @@
     <TargetFrameworkProfile />
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
-    <OutputPath>..\..\..\..\Program Files %28x86%29\Centrafuse\Centrafuse Auto\Plugins\Navigator\</OutputPath>
+    <OutputPath>C:\Program Files %28x86%29\Centrafuse\Centrafuse Auto\Plugins\Navigator\</OutputPath>
     <AllowUnsafeBlocks>false</AllowUnsafeBlocks>
     <BaseAddress>285212672</BaseAddress>
     <CheckForOverflowUnderflow>false</CheckForOverflowUnderflow>
@@ -99,7 +99,11 @@
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="cfplugin">
-      <HintPath>..\..\..\..\Program Files (x86)\Centrafuse\Centrafuse 4 SDK Beta 1\CFPlugin\Win32\cfplugin.dll</HintPath>
+      <HintPath>..\..\..\Program Files (x86)\Centrafuse\Centrafuse Auto\cfplugin.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="Newtonsoft.Json">
+      <HintPath>..\CFApp - Build Files\DLLs\Newtonsoft.Json.dll</HintPath>
       <Private>False</Private>
     </Reference>
     <Reference Include="System">
