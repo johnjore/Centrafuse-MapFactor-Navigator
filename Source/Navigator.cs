@@ -19,7 +19,6 @@
  * http://static.mapfactor.com/files/Navigator_RemoteCommands_-_KB_1.pdf
  * 
  * Move SendCommand and receive to its own thread?
- * 
  * Resolve all /**/
 
 /* 
@@ -55,17 +54,16 @@ namespace Navigator
         private const string EXEName = "PC_Navigator.exe";
         private const string PluginPath = @"plugins\" + PluginName + @"\";
         private const string REGNavigatorBase = "SOFTWARE\\MapFactor\\set\\pcnavigator_";  // Updated to reflect correct version at runtime
-        //private const string ConfigurationFile = "config.xml";
 		private const string LogFile= PluginName + ".log";
         public static string LogFilePath = CFTools.AppDataPath + "\\Plugins\\" + PluginName + "\\" + LogFile;
         public static string settingsPath = CFTools.AppDataPath + "\\system\\settings.xml";
         public static string configPath = CFTools.AppDataPath + "\\system\\config.xml";	//LK, 20-nov-2013: Needed to check if this is the current navigation app
-        private static string atlas_free = "atlas_pcn_free.idc"; //Move to config file? /**/
-        private static string atlas_paid = "atlas_pcn.idc";      //Move to config file /**/
-        private static string strCFCam = "LiveTraffic.mca";            //Database with traffic cameras
-        private string REGNavigator = REGNavigatorBase + "12";  // Updated to reflect correct version at runtime
+        private static string atlas_free = "atlas_pcn_free.idc";            // Move to config file?
+        private static string atlas_paid = "atlas_pcn.idc";                 // Move to config file?
+        private static string strCFCam = "LiveTraffic.mca";                 // Database with traffic cameras
+        private string REGNavigator = REGNavigatorBase + "12";              // Updated to reflect correct version at runtime by comparing to version number in EXE file
 
-        /**/ //This should be moved to a AppConfiguration class?
+        //This should be moved to a AppConfiguration class?
         private string strTRUE = "True";                    // True
         private string strFALSE = "False";                  // False
         private string strEXEPath = "";                     // Folder and EXE name
@@ -83,7 +81,6 @@ namespace Navigator
         private bool boolInMutePeriod = false;              // True if already in MUTE period
         private int muteCFTimerInterval = 1800;             //LK, 30-nov-2013: Cache MuteCfTimer Interval (JJ: Value in milliseconds)
         private int intCFVolumeLevel = 0;                   // CF's volume level before "ATT"
-        //private IntPtr mHandlePtr;                          // var for window handle number to catch
         CFControls.CFPanel thepanel = null;                 // The panel to 'project' Navigator into        
         Process pNavigator = null;                          // Navigator's process
         private bool boolCurrentNightMode = false;          // Are we currently in night mode? (We don't actually know this)
@@ -357,7 +354,7 @@ namespace Navigator
             //We can discard the pipeServer here, but not in CloseNavigator() as CloseNavigator() is re-used to restart Navigator
             this.pipeServer = null;
 
-            //We can discard of the TCP server connection here
+            //We can discard the TCP server connection here
             try
             {
                 server.Close();
@@ -365,7 +362,7 @@ namespace Navigator
             }
             catch (Exception errMsg) { WriteLog("Failed to dispose of TCP connection: " + errMsg.Message); }
 
-            /**/ //Debug information for TCPCommandQueue
+            //Debug information for TCPCommandQueue
             if (TCPCommandQueue.Count > 0)
             {
                 WriteLog("TCPCommandQueue not empty, " + TCPCommandQueue.Count.ToString() + ", commands outstanding");
@@ -703,10 +700,6 @@ namespace Navigator
                         if (boolOSMOK && boolFREE)
                         {
                             System.Threading.Thread.Sleep(500); // Allow the process to open it's window
-                            WriteLog("Sending ENTER");
-
-                            //Send 'Enter' until a new message system works                            
-                            //SendKeys.SendWait("{ENTER}");
 
                             WriteLog("Coordinates :" + this.pluginConfig.ReadField("/APPCONFIG/WINDOWSIZE"));
                             string[] mCoordinates= this.pluginConfig.ReadField("/APPCONFIG/WINDOWSIZE").Split(',');
@@ -715,6 +708,7 @@ namespace Navigator
                             WriteLog("Mouse mWidth: " + mWidth.ToString() + ", mHeight: " + mHeight.ToString());
 
                             //Jump to location
+                            WriteLog("Sending Mouse Click");
                             SetCursorPos(mWidth, mHeight);
 
                             //Send click. Both left and right for swapped mouse buttons
@@ -1869,10 +1863,10 @@ namespace Navigator
         }
 
         //Background polling of Callstatus information
-        /**/ //This should be an event instead of polling a flag...
+        //This should be an event instead of polling a flag... CF to add/create
         private void CallStatusTimer_Tick(object sender, EventArgs e)
         {
-            //ATT Mute enabled. Lets do some wrk
+            //ATT Mute enabled. Lets do some work
             if (CF_getConfigFlag(CF_ConfigFlags.AttMute) == true)
             {
                 try

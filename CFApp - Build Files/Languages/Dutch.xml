@@ -70,7 +70,8 @@
     <CFCAMSUPPORT>Traffic Camera ondersteuning</CFCAMSUPPORT>
     <MCAPATH>Pad naar mca bestanden</MCAPATH>
     <CFCAMMINVERSTION>Navigator versie 12.4.5 of hoger vereist</CFCAMMINVERSTION>
-    <OSRM_PORT>Poortnummer (standaard is 5000)</OSRM_PORT>
+    <OSRM_PORT>OSRM Poortnummer (standaard is 5000)</OSRM_PORT>
     <OSRM_ENABLE>Enable OSRM?</OSRM_ENABLE>
+    <VERSIONS>Plugin/CF Versions</VERSIONS>
   </SETUP>
 </APPLANG>

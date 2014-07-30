@@ -121,7 +121,7 @@ namespace Navigator
                 {
                     // TEXT BUTTONS (1-4)
                     ButtonHandler[i] = new CFSetupHandler(SetExePath);
-                    ButtonText[i] = this.langReader.ReadField("/APPLANG/SETUP/EXEPATH") + " (" + Assembly.GetExecutingAssembly().GetName().Version.ToString() + ")";
+                    ButtonText[i] = this.langReader.ReadField("/APPLANG/SETUP/EXEPATH");
                     ButtonValue[i++] = this.configReader.ReadField("/APPCONFIG/EXEPATH");
 
                     ButtonHandler[i] = new CFSetupHandler(SetExeParameters);
@@ -191,17 +191,24 @@ namespace Navigator
                     ButtonText[i] = this.langReader.ReadField("/APPLANG/SETUP/MCAPATH");
                     ButtonValue[i++] = this.configReader.ReadField("/APPCONFIG/MCAPATH");
 
-                    ButtonHandler[i] = null; ButtonText[i] = ""; ButtonValue[i++] = "";
-                    ButtonHandler[i] = null; ButtonText[i] = ""; ButtonValue[i++] = "";
-
                     ButtonHandler[i] = new CFSetupHandler(SetOSRM_Port);
                     ButtonText[i] = this.langReader.ReadField("/APPLANG/SETUP/OSRM_PORT");
                     ButtonValue[i++] = this.configReader.ReadField("/APPCONFIG/OSRM_TCP_PORT");
+
+                    ButtonHandler[i] = null; ButtonText[i] = ""; ButtonValue[i++] = "";
+
+                    ButtonHandler[i] = null;
+                    ButtonText[i] = this.langReader.ReadField("APPLANG/SETUP/VERSIONS");
+                    ButtonValue[i++] = "Plugin v: " + System.Reflection.Assembly.GetExecutingAssembly().GetName().Version.ToString() + ". CF v: " + System.Reflection.Assembly.GetEntryAssembly().GetName().Version.ToString();
 
                     // BOOL BUTTONS (5-8)
                     ButtonHandler[i] = new CFSetupHandler(SetCFCamSupport);
                     ButtonText[i] = this.langReader.ReadField("/APPLANG/SETUP/CFCAMSUPPORT");
                     ButtonValue[i++] = this.configReader.ReadField("/APPCONFIG/CFCAMSUPPORT");
+
+                    ButtonHandler[i] = new CFSetupHandler(OSRM_Enable);
+                    ButtonText[i] = this.langReader.ReadField("/APPLANG/SETUP/OSRM_ENABLE");
+                    ButtonValue[i++] = this.configReader.ReadField("/APPCONFIG/OSRM_ENABLE");                    
 
                     ButtonHandler[i] = new CFSetupHandler(SetLocalizeGPSStatus);
                     ButtonText[i] = this.langReader.ReadField("/APPLANG/SETUP/LOCALIZE");
@@ -210,10 +217,6 @@ namespace Navigator
                     ButtonHandler[i] = new CFSetupHandler(SetSettingsXMLSwap);
                     ButtonText[i] = this.langReader.ReadField("/APPLANG/SETUP/SETTINGSXMLSWAP");
                     ButtonValue[i++] = this.configReader.ReadField("/APPCONFIG/SETTINGSXMLSWAP");
-
-                    ButtonHandler[i] = new CFSetupHandler(OSRM_Enable);
-                    ButtonText[i] = this.langReader.ReadField("/APPLANG/SETUP/OSRM_ENABLE");
-                    ButtonValue[i++] = this.configReader.ReadField("/APPCONFIG/OSRM_ENABLE");                    
                 }
             }
             catch (Exception errmsg) { CFTools.writeError(errmsg.Message, errmsg.StackTrace); }

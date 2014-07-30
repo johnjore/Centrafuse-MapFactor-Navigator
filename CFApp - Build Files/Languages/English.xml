@@ -47,7 +47,7 @@
     <EXEPATH>Path to PC_Navigator.exe</EXEPATH>
     <EXEPARAMETERS>Extra Parameters</EXEPARAMETERS>
     <TCPPORT>TCP Port</TCPPORT>
-    <FREEEDITION>OSM Edition?</FREEEDITION>
+    <FREEEDITION>OSM (Free) Edition?</FREEEDITION>
     <OSMOK>Accepted OSM License</OSMOK>
     <MUTE>Audio Pause on Instructions</MUTE>
     <GETGPS>Stream GPS information</GETGPS>
@@ -70,7 +70,8 @@
     <CFCAMSUPPORT>Traffic Camera support</CFCAMSUPPORT>
     <MCAPATH>mca folder</MCAPATH>
     <CFCAMMINVERSTION>Navigator version 12.4.5 or higher required</CFCAMMINVERSTION>
-    <OSRM_PORT>Port number (default is 5000)</OSRM_PORT>
+    <OSRM_PORT>OSRM Port number (default is 5000)</OSRM_PORT>
     <OSRM_ENABLE>Enable OSRM?</OSRM_ENABLE>
+    <VERSIONS>Plugin/CF Versions</VERSIONS>
   </SETUP>
 </APPLANG>

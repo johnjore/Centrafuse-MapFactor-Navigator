@@ -110,7 +110,9 @@ namespace Navigator
             {
                 WriteLog("Sending '" + strNavigatorCommand + "'");
                 server.Send(Encoding.ASCII.GetBytes(strNavigatorCommand));
-                TCPCommandQueue.Enqueue(tcpCommand);
+
+                //Statistics don't return a value if GPS is not working or receiving data
+                if (tcpCommand != TCPCommand.Statistics) TCPCommandQueue.Enqueue(tcpCommand);
             }
             else
             {
@@ -171,16 +173,6 @@ namespace Navigator
 
                     if (nBytesRec > 0)
                     {
-                        //Debug information for TCPCommandQueue
-                        if (TCPCommandQueue.Count > 0)
-                        {
-                            WriteLog("TCP response to the command ' " + TCPCommandQueue.Peek().ToString() + "' expected.");
-                        }
-                        else
-                        {
-                            WriteLog("Error - TCPCommandQueue was expecting to dequeue, but no items in queue.");
-                        }
-
                         // sMessage contains the message from navigator
                         string sMessage = Encoding.ASCII.GetString(m_byBuff, 0, nBytesRec);
 

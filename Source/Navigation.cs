@@ -543,6 +543,7 @@ namespace Navigator
                     string strResponse = reader.ReadToEnd();
                     data.Close();
                     reader.Close();
+                    client.Dispose();
 
                     //Parse the response
                     OSRMResponse OSRMData = JsonConvert.DeserializeObject<OSRMResponse>(strResponse);
