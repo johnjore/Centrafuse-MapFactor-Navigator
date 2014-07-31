@@ -4,11 +4,12 @@
     <APPNAME>Navigator</APPNAME>
     <APPLOCATION>[CFAPPDIR]\Plugins\Navigator</APPLOCATION>
     <APPTYPE>PLUGIN</APPTYPE>
-    <VERSION>2.0.8</VERSION>
+    <VERSION>2.0.9</VERSION>
     <REQUIRESRESTART>True</REQUIRESRESTART>
   </APPDATA>
   <APPFILES>
-    <FILENAME register="false" overwrite="true" source="Navigator.dll" destination="[CFAPPDIR]\Plugins\Navigator\Navigator.dll" />
+    <FILENAME register="false" overwrite="true" source="DLLs\Navigator.dll" destination="[CFAPPDIR]\Plugins\Navigator\Navigator.dll" />
+    <FILENAME register="false" overwrite="true" source="DLLs\Newtonsoft.Json.dll" destination="[CFAPPDIR]\Plugins\Navigator\Newtonsoft.Json.dll" />
     <FILENAME register="false" overwrite="true" source="LiveTraffic\LiveTraffic.mca" destination="[CFAPPDIR]\Plugins\Navigator\LiveTraffic\LiveTraffic.mca" />
     <FILENAME register="false" overwrite="true" source="LiveTraffic\NoURL.png" destination="[CFAPPDIR]\Plugins\Navigator\LiveTraffic\NoURL.png" />
     <FILENAME register="false" overwrite="true" source="Textfiles\lgpl.txt" destination="[CFAPPDIR]\Plugins\Navigator\Textfiles\lgpl.txt" />

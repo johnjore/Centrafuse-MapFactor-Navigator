@@ -189,8 +189,8 @@ namespace Navigator
                                 if (strCommands.ToUpper().Contains("SOUND"))
                                 {
                                     WriteLog("TCPCommand '" + TCPCommand.SoundVolume.ToString() + "' arrived");
-                                    TCPCommandQueue.Dequeue();
-
+                                    DeQueueTCPCommandQueue();
+                                    
                                     //Only do this if we're not using named pipes
                                     if (!boolNamedPipes)
                                     {
@@ -201,7 +201,7 @@ namespace Navigator
                                 else if (strCommands.ToUpper().Contains("WAYPOINT"))
                                 {
                                     WriteLog("TCPCommand '"  + TCPCommand.NavInfoWaypointInfo.ToString() + "' arrived");
-                                    TCPCommandQueue.Dequeue();
+                                    DeQueueTCPCommandQueue();
 
                                     if (this.Visible == true)
                                     {
@@ -216,7 +216,7 @@ namespace Navigator
                                 else if (strCommands.ToUpper().Contains("RECALCULATING"))
                                 {
                                     WriteLog("TCPCommand '" + TCPCommand.NavInfoRecalculationWarning.ToString() + "' arrived");
-                                    TCPCommandQueue.Dequeue();
+                                    DeQueueTCPCommandQueue();
 
                                     if (this.Visible == true)
                                     {
@@ -231,7 +231,7 @@ namespace Navigator
                                 else if (strCommands.ToUpper().Contains("LOST"))
                                 {
                                     WriteLog("TCPCommand '" + TCPCommand.NavInfoWaypointInfo.ToString() + "' arrived");
-                                    TCPCommandQueue.Dequeue();
+                                    DeQueueTCPCommandQueue();
 
                                     if (this.Visible == true)
                                     {
@@ -246,7 +246,7 @@ namespace Navigator
                                 else if (strCommands.ToUpper().Contains("DESTINATIONREACHED"))
                                 {
                                     WriteLog("TCPCommand '" + TCPCommand.NavInfoWaypointInfo.ToString() + "' arrived");
-                                    TCPCommandQueue.Dequeue();
+                                    DeQueueTCPCommandQueue();
 
                                     if (this.Visible == true)
                                     {
@@ -434,13 +434,13 @@ namespace Navigator
                                 {
                                     //strCommands will always be 'OK'
                                     WriteLog("Command for '" + TCPCommandQueue.Peek().ToString() + "' was successfull");
-                                    TCPCommandQueue.Dequeue();
+                                    DeQueueTCPCommandQueue();
                                 }
                                 else if (strCommands.ToUpper().Contains("BUSY"))
                                 {
                                     //strCommands will always be 'BUSY'
                                     WriteLog("Failed to ask Navigator to '" + TCPCommandQueue.Peek().ToString() + "'. System busy");
-                                    TCPCommandQueue.Dequeue();
+                                    DeQueueTCPCommandQueue();
 
                                     this.CF_systemCommand(CF_Actions.SHOWINFO, this.pluginLang.ReadField("/APPLANG/NAVIGATOR/BUSY"), "AUTOHIDE");
                                 }
@@ -448,7 +448,7 @@ namespace Navigator
                                 {
                                     //strCommands will always be 'ERROR'
                                     WriteLog("Error when asking Navigator to '" + TCPCommandQueue.Peek().ToString() + "'");
-                                    TCPCommandQueue.Dequeue();
+                                    DeQueueTCPCommandQueue();
                                     
                                     this.CF_systemCommand(CF_Actions.SHOWINFO, this.pluginLang.ReadField("/APPLANG/NAVIGATOR/ERROR"), "AUTOHIDE");
                                 }
@@ -456,7 +456,7 @@ namespace Navigator
                                 {
                                     //strCommands will always be 'LICENSEERROR'
                                     WriteLog("Failed to ask Navigator to do something due to the lack of a license '" + TCPCommandQueue.Peek().ToString() + "'");
-                                    TCPCommandQueue.Dequeue();
+                                    DeQueueTCPCommandQueue();
                                     
                                     this.CF_systemCommand(CF_Actions.SHOWINFO, this.pluginLang.ReadField("/APPLANG/NAVIGATOR/LICENSEERROR"), "AUTOHIDE");
                                 }
@@ -471,7 +471,7 @@ namespace Navigator
                                 else if (strCommands.Split(',').Length == 4)
                                 {
                                     WriteLog("TCPCommand '" + TCPCommand.NavInfoWaypointInfo.ToString() + "' arrived");
-                                    TCPCommandQueue.Dequeue();
+                                    DeQueueTCPCommandQueue();
 
                                     //Default from Navigator is Meters
                                     switch (DistUnit)
@@ -568,7 +568,7 @@ namespace Navigator
                                 else if (strCommands.Split(';').Length == 2)
                                 {
                                     WriteLog("TCPCommand '" + TCPCommand.NearestStreets.ToString() + "' arrived");
-                                    TCPCommandQueue.Dequeue();
+                                    DeQueueTCPCommandQueue();
 
                                     try
                                     {
@@ -580,7 +580,7 @@ namespace Navigator
                                 else if (strCommands.ToUpper().Contains("V."))
                                 {
                                     WriteLog("TCPCommand '" + TCPCommand.SoftwareVersion.ToString() + "' arrived");
-                                    TCPCommandQueue.Dequeue();
+                                    DeQueueTCPCommandQueue();
 
                                     //V.12.4.3 => 12.4 / 3
                                     try
@@ -599,7 +599,7 @@ namespace Navigator
                                 else if (strCommands.Split('.').Length == 3)
                                 {
                                     WriteLog("TCPCommand '" + TCPCommand.Protocol.ToString() + "' arrived");
-                                    TCPCommandQueue.Dequeue();
+                                    DeQueueTCPCommandQueue();
 
                                     //2.2.0
                                     strProtocolVersion = strCommands;
@@ -608,7 +608,7 @@ namespace Navigator
                                 else if (strCommands != "")
                                 {
                                     WriteLog("TCPCommand 'Unknown/Not handled' arrived");
-                                    TCPCommandQueue.Dequeue();
+                                    DeQueueTCPCommandQueue();
 
                                     WriteLog("Not handled: '" + strCommands + "'");
                                 }
@@ -631,6 +631,19 @@ namespace Navigator
             }
             //LK, 30-nov-2013: Added reason for exception
             catch (Exception errMsg) { WriteLog("Unusual error during recieve: " + errMsg.Message); }
+        }
+        
+        private void DeQueueTCPCommandQueue()
+        {
+            try
+            {
+                if (TCPCommandQueue.Count > 0) TCPCommandQueue.Dequeue(); 
+                else WriteLog("Failed to dequeue TCPCommandQueue. Navigator can send TCP responses without being queried like Waypoint and sound information");
+            }
+            catch
+            {
+                WriteLog("Failed to dequeue TCPCommandQueue. Navigator can send TCP responses without being queried like Waypoint and sound information");
+            }
         }
     }
 }

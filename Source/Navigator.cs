@@ -701,17 +701,17 @@ namespace Navigator
                         {
                             System.Threading.Thread.Sleep(500); // Allow the process to open it's window
 
-                            WriteLog("Coordinates :" + this.pluginConfig.ReadField("/APPCONFIG/WINDOWSIZE"));
+                            WriteLog("Coordinates : " + this.pluginConfig.ReadField("/APPCONFIG/WINDOWSIZE"));
                             string[] mCoordinates= this.pluginConfig.ReadField("/APPCONFIG/WINDOWSIZE").Split(',');
                             int mWidth = int.Parse(mCoordinates[2]) / 2;
-                            int mHeight = int.Parse(mCoordinates[3]) / 100 * 90;
-                            WriteLog("Mouse mWidth: " + mWidth.ToString() + ", mHeight: " + mHeight.ToString());
+                            int mHeight = int.Parse(mCoordinates[3]) / 100 * 95;
+                            WriteLog("Mouse Position mWidth: " + mWidth.ToString() + ", mHeight: " + mHeight.ToString());
 
                             //Jump to location
-                            WriteLog("Sending Mouse Click");
-                            SetCursorPos(mWidth, mHeight);
+                            WriteLog("Positioning Mouse Cursor: " + SetCursorPos(mWidth, mHeight).ToString());
 
                             //Send click. Both left and right for swapped mouse buttons
+                            WriteLog("Sending Mouse Clicks");
                             mouse_event(MOUSEEVENTF_LEFTDOWN, 0, 0, 0, UIntPtr.Zero);
                             mouse_event(MOUSEEVENTF_LEFTUP, 0, 0, 0, UIntPtr.Zero);
                             mouse_event(MOUSEEVENTF_RIGHTDOWN, 0, 0, 0, UIntPtr.Zero);

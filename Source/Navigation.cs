@@ -528,17 +528,19 @@ namespace Navigator
 
             //Did OSRM Encounter an error?
             bool boolOSRMError = false;
-
+            
             //If OSRM is enabled, get route from it
             if (boolOSRMEnabled)
             {
                 //Send command to OSRM
                 try
                 {
+                    WriteLog("Request route from OSRM");
                     WebClient client = new WebClient();
                     Stream data = client.OpenRead("http://localhost:" + intOSRMPort.ToString() + "/viaroute?loc=" + CF_navGetInfo(CFNavInfo.Latitude).ToString() + "," + CF_navGetInfo(CFNavInfo.Longitude).ToString() + "&loc=" + navLocation.latitude.ToString() + "," + navLocation.longitude.ToString() + "&alt=true&instructions=true&compression=false");
 
                     //Get the response
+                    WriteLog("Get route from OSRM");
                     StreamReader reader = new StreamReader(data);
                     string strResponse = reader.ReadToEnd();
                     data.Close();
@@ -551,6 +553,7 @@ namespace Navigator
                     //Check if OSRM found a route
                     if (OSRMData.status == "0")
                     {
+                        WriteLog("Route found. Generating route command for Navigator");
                         string strRoutingTable = ""; // Start off empty
 
                         //Loop the feedback from OSRM
@@ -560,6 +563,7 @@ namespace Navigator
                         }
 
                         //Route
+                        WriteLog("Request Navigator to route to destination");
                         SendCommand("$destination=" + strRoutingTable + "navigate;instant\r\n", true, TCPCommand.Destination);
                     }
                     else boolOSRMError = true;
@@ -567,6 +571,7 @@ namespace Navigator
                 catch
                 {
                     //Let user know OSRM is not working
+                    WriteLog("OSRM failed to provide routing information");
                     this.CF_systemCommand(CF_Actions.SHOWINFO, this.pluginLang.ReadField("/APPLANG/NAVIGATOR/OSRMERROR"), "AUTOHIDE");
 
                     //OSRM encountered an error
@@ -578,6 +583,7 @@ namespace Navigator
             if (boolOSRMEnabled == false || boolOSRMError == true)
             {
                 //Set new destination
+                WriteLog("Navigator generating route to destination");
                 SendCommand("$destination=" + navLocation.latitude.ToString(CultureInfo.InvariantCulture) + "," + navLocation.longitude.ToString(CultureInfo.InvariantCulture) + ";navigate;instant\r\n", true, TCPCommand.Destination);
             }
         }
