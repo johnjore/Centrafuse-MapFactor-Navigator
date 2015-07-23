@@ -1,5 +1,5 @@
 /*
- * Copyright 2013, 2014, John Jore
+ * Copyright 2013, 2014, 2015 John Jore
  * 
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser General Public License as published by
@@ -26,7 +26,7 @@ using System.Runtime.CompilerServices;
 [assembly: AssemblyConfiguration("")]
 [assembly: AssemblyCompany("Kala Solutions Pty Ltd")]
 [assembly: AssemblyProduct("mapFactor Navigator Launcher")]
-[assembly: AssemblyCopyright("Copyright \x00a9 2013, 2014 John Jore")]
+[assembly: AssemblyCopyright("Copyright \x00a9 2013, 2014, 2015 John Jore")]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]
 
@@ -35,6 +35,6 @@ using System.Runtime.CompilerServices;
 //      Minor Version 
 //      Build Number
 //      Revision
-[assembly: AssemblyVersion("2.0.9")]
+[assembly: AssemblyVersion("2.0.12")]
 [assembly: AssemblyDelaySign(false)]
-[assembly: AssemblyFileVersionAttribute("2.0.9")]
+[assembly: AssemblyFileVersionAttribute("2.0.12")]

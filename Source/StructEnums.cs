@@ -1,5 +1,5 @@
 ﻿/*
- * Copyright 2013, 2014, John Jore
+ * Copyright 2013, 2014, 2015 John Jore
  * 
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser General Public License as published by
@@ -73,7 +73,8 @@ namespace Navigator
         Destination = 13,
         Statistics = 14,
         Exit = 15,       //LK, 29-nov-2013: Added exit command
-        NearestStreets = 16 //JJ: Added undocumented TCP command
+        NearestStreets = 16, //JJ: Added undocumented TCP command
+        Icon = 17
     }
 
     public enum showWindowAttribute : int 
@@ -148,4 +149,22 @@ namespace Navigator
         public string[] route_geometry;
     }
 
+    //Traffic speed camera CSV format for Digger
+    class TrafficSpeedCamera
+    {
+        public double lat;
+        public double lon;
+        public int azimuth;
+        public string description;
+        public string type;     //Gatso, Mobile, Specs, Redlight, pMobile
+        public double speed;    //Leave as double to have best chance of rouding off correctly when input file is in mph format, converting to km/h for Digger and then back to mph
+    }
+
+
+    //Attributes of a waypoint
+    class Waypoint
+    {
+        public double Latitude { get; set; } // GPS postion
+        public double Longitude { get; set; } // GPS postion
+    }
 }

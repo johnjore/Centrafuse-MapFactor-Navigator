@@ -1,5 +1,5 @@
 ﻿/*
- * Copyright 2013, 2014, John Jore
+ * Copyright 2013, 2014, 2015 John Jore
  * 
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser General Public License as published by
@@ -178,7 +178,6 @@ namespace Navigator
                 else
                     return false;
             }
-
             catch (Exception exception)
             {
                 CFTools.writeError(exception.Message, exception.StackTrace);
@@ -353,6 +352,9 @@ public class CfNavData
     public bool InRoute { get; set; }
     public string Direction { get; set; }
     public int LockedSatellites { get; set; }
+    public string Route { get; set; }
+    public double DestLatitude { get; set; }
+    public double DestLongitude { get; set; }
 }
 
 public class Coordinate

@@ -1,5 +1,5 @@
 ﻿/*
- * Copyright 2013, 2014, John Jore
+ * Copyright 2013, 2014, 2015 John Jore
  * 
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser General Public License as published by
@@ -28,8 +28,6 @@ using Newtonsoft.Json;  // Used to parse OSRM responses
 
 namespace Navigator
 {
-    using System;
-
     public partial class Navigator
     {
         private readonly CfNavData _currentPosition = new CfNavData();
@@ -43,6 +41,44 @@ namespace Navigator
             //Get current decimal separator
             string decimalSeparator = CultureInfo.CurrentCulture.NumberFormat.NumberDecimalSeparator;
             //WriteLog("Localize: " + boolLocalize.ToString() + " " + decimalSeparator);            
+
+            try
+            {
+                CF_updateText("DataRoute", _currentPosition.Route);
+            }
+            catch
+            {
+                CF_updateText("DataRoute", "");
+            }
+
+
+            try
+            {
+                if (boolLocalize)
+                {
+                    CF_updateText("DestLatitude", CF_navGetInfo(CFNavInfo.DestLatitude).Replace(".", decimalSeparator));
+                }
+                else
+                    CF_updateText("DestLatitude", CF_navGetInfo(CFNavInfo.DestLatitude));
+            }
+            catch
+            {
+                CF_updateText("DestLatitude", "");
+            }
+
+            try
+            {
+                if (boolLocalize)
+                {
+                    CF_updateText("DestLongitude", CF_navGetInfo(CFNavInfo.DestLongitude).Replace(".", decimalSeparator));
+                }
+                else
+                    CF_updateText("DestLongitude", CF_navGetInfo(CFNavInfo.DestLongitude));
+            }
+            catch
+            {
+                CF_updateText("DestLongitude", "");
+            }
 
             try 
             { 
@@ -244,7 +280,7 @@ namespace Navigator
 
         /// <summary>
         ///     Centrafuse and other plugins will call this to get information from plugin about various bits of navigation data. 
-        ///     Plugin should return a string with the appropriate value set. All this does is pass-through to the
+        ///     Plugin should return a string with the appropriate value set. For Nav data, all this does is pass-through to the
         ///     overridden function CF_navGetInfo(...)
         /// </summary>
         /// <param name="command">The command to execute.</param>
@@ -252,16 +288,22 @@ namespace Navigator
         /// <returns>Returns whatever is appropriate.</returns>
         public override string CF_pluginData(string command, string param)
         {
-            WriteLog("CF_pluginData: " + command + " " + param);
+            //WriteLog("CF_pluginData: " + command + " " + param);
             string retvalue = "";
 
-            switch (command)
+            switch (command.ToUpper())
             {
                 case "ALTITUDE":
                     retvalue = CF_navGetInfo(CFNavInfo.Altitude);
                     break;
                 case "AZIMUTH":
                     retvalue = CF_navGetInfo(CFNavInfo.Azimuth);
+                    break;
+                case "DESTLATITUDE":
+                    retvalue = CF_navGetInfo(CFNavInfo.DestLatitude);
+                    break;
+                case "DESTLONGITUDE":
+                    retvalue = CF_navGetInfo(CFNavInfo.DestLongitude);
                     break;
                 case "DIRECTION":
                     retvalue = CF_navGetInfo(CFNavInfo.Direction);
@@ -305,12 +347,6 @@ namespace Navigator
                 case "DESTHOUSENUMBER":
                     retvalue = CF_navGetInfo(CFNavInfo.DestHouseNumber);
                     break;
-                case "DESTLATITUDE":
-                    retvalue = CF_navGetInfo(CFNavInfo.DestLatitude);
-                    break;
-                case "DESTLONGITUDE":
-                    retvalue = CF_navGetInfo(CFNavInfo.DestLongitude);
-                    break;
                 case "DESTSTREET":
                     retvalue = CF_navGetInfo(CFNavInfo.DestStreet);
                     break;
@@ -325,6 +361,51 @@ namespace Navigator
                     break;
                 case "SCREENSIZE":
                     if (boolFullScreen) retvalue = "FULL"; else retvalue = "NORMAL";
+                    break;
+                case "RESTARTNAV":
+                    try
+                    {
+                        //Stop Navigator
+                        WriteLog("Setup - Closenavigator()");
+                        CloseNavigator();
+
+                        //Start Navigator
+                        WriteLog("Setup - StartNavigator()");
+                        StartNavigator();
+
+                        //User does not really want to exit Navigator anymore
+                        boolExit = true;
+
+                        //CF_pluginShow() must be called if restart was initiated with plugin active (visible)
+                        if (this.Visible == true) CF_pluginShow();
+
+                        //If we got this far, success
+                        retvalue = bool.TrueString;
+                    }
+                    catch (Exception ex)
+                    {
+                        WriteLog("Failed to run 'RESTARTNAV', " + ex.ToString());
+                        retvalue = bool.FalseString;
+                    }
+                    break;
+                case "GETMCAFOLDER":
+                    retvalue = strMCAFolder.ToString();
+                    break;
+                case "TCPCOMMAND":
+                    //Send TCP Command to MapFactor Navigator
+                    try
+                    {
+                        string[] strCommand = param.Split('|');                    
+                        //WriteLog("TCP Command : '" + strCommand[0] + "', '" + strCommand[1] + "'");
+                        SendCommand(strCommand[0], false, (TCPCommand)Enum.Parse(typeof(TCPCommand), strCommand[1], true));
+                    }
+                    catch (Exception ex)
+                    {
+                        WriteLog("Failed to parse and run TCP Command: '" +  param.ToString() + "', " + ex.ToString());
+                    }
+                    break;
+                case "ROUTE":
+                    retvalue = _currentPosition.Route;
                     break;
             }
 
@@ -351,7 +432,7 @@ namespace Navigator
                                    : "";
                     break;
                 case CFNavInfo.ETA:
-                    if (String.Compare(CF_navGetInfo(CFNavInfo.InRoute), strTRUE, true) == 0) retvalue = (DateTime.Now.AddSeconds(_navStats.TimeSecondsDestination)).ToString(); else retvalue = "";                    
+                    if (String.Compare(CF_navGetInfo(CFNavInfo.InRoute), strTRUE, true) == 0) retvalue = (DateTime.Now.AddSeconds(_navStats.TimeSecondsDestination)).ToString(); else retvalue = "";
                     break;
                 case CFNavInfo.ETR:
                     if (String.Compare(CF_navGetInfo(CFNavInfo.InRoute), strTRUE, true) == 0) retvalue = _navStats.TimeSecondsDestination.ToString(); else retvalue = "";
@@ -390,10 +471,10 @@ namespace Navigator
                     retvalue = "";
                     break;
                 case CFNavInfo.DestLatitude:
-                    retvalue = "";
+                    retvalue = _currentPosition.DestLatitude.ToString("F5", CultureInfo.InvariantCulture);
                     break;
                 case CFNavInfo.DestLongitude:
-                    retvalue = "";
+                    retvalue = _currentPosition.DestLongitude.ToString("F5", CultureInfo.InvariantCulture);
                     break;
                 case CFNavInfo.DestStreet:
                     retvalue = "";
@@ -433,11 +514,13 @@ namespace Navigator
                 retvalue.remainingdistance = CF_navGetInfo(CFNavInfo.RemainingDistance);
                 retvalue.speed = CF_navGetInfo(CFNavInfo.Speed);
                 retvalue.nextturn = CF_navGetInfo(CFNavInfo.NextTurn);
+
                 if (CF_navGetInfo(CFNavInfo.RemainingDistance) != "0") retvalue.inroute = true; else retvalue.inroute = false;
 
                 retvalue.currentlocation.house = CF_navGetInfo(CFNavInfo.HouseNumber);
                 retvalue.currentlocation.latitude = double.Parse(CF_navGetInfo(CFNavInfo.Latitude), CultureInfo.InvariantCulture);
                 retvalue.currentlocation.longitude = double.Parse(CF_navGetInfo(CFNavInfo.Longitude), CultureInfo.InvariantCulture);
+
                 retvalue.currentlocation.street = CF_navGetInfo(CFNavInfo.Street);
                 retvalue.currentlocation.city = CF_navGetInfo(CFNavInfo.City);
                 retvalue.currentlocation.zip = CF_navGetInfo(CFNavInfo.Zip);
@@ -694,6 +777,9 @@ namespace Navigator
             if (ReadCFValue("/APPCONFIG/SPEEDUNIT", "M", configPath)) SpeedUnit = Unit.METRIC;
             if (ReadCFValue("/APPCONFIG/UNIT", "I", configPath)) DistUnit = Unit.IMPERIAL;
             if (ReadCFValue("/APPCONFIG/UNIT", "M", configPath)) DistUnit = Unit.METRIC;
+
+            //Ask navigator for routing and destination information
+            GetNavigatorRoutingXML();
         }
         
         //Called by GPS Status screen to parse GPS Date/Time into local date/time

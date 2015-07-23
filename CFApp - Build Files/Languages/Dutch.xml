@@ -13,6 +13,9 @@
     <LBLLONGITUDE>Lengtegraad:</LBLLONGITUDE>
     <LBLLATITUDE>Breedtegraad:</LBLLATITUDE>
     <LBLALTITUDE>Hoogte:</LBLALTITUDE>
+    <LBLDESTLATITUDE>Destination Lengtegraad:</LBLDESTLATITUDE>
+    <LBLDESTLONGITUDE>Destination Breedtegraad:</LBLDESTLONGITUDE>
+    <LBLROUTE>Route:</LBLROUTE>
     <LBLLOCKEDSATELLITES>Aantal satellieten:</LBLLOCKEDSATELLITES>
     <LBLSPEED>Snelheid:</LBLSPEED>
     <LBLDIRECTION>Richting:</LBLDIRECTION>
@@ -39,6 +42,7 @@
     <NOIDCFILE>Fatal error: Geen IDC-bestand. Navigator wordt niet gestart!</NOIDCFILE>
     <NEARESTSTREET>Upgrade Navigator om dit gebied te ondersteunen</NEARESTSTREET>
     <OSRMERROR>OSRM reageert niet. Met behulp van inheemse Navigator motor plaats</OSRMERROR>
+    <NEWSPEEDCAMERA>Process new speed camera data?</NEWSPEEDCAMERA>
   </NAVIGATOR>
   <SETUP>
     <DESCRIPTION>Configuren Mapfactor Navigator Plugin</DESCRIPTION>
@@ -73,5 +77,7 @@
     <OSRM_PORT>OSRM Poortnummer (standaard is 5000)</OSRM_PORT>
     <OSRM_ENABLE>Enable OSRM?</OSRM_ENABLE>
     <VERSIONS>Plugin/CF Versions</VERSIONS>
+    <POCKET_GPS_SUPPORT>Pocket GPS folder (Blank is off)</POCKET_GPS_SUPPORT>
+    <DYNAMICAUDIOLEVEL>Auto Nav Volume</DYNAMICAUDIOLEVEL>
   </SETUP>
 </APPLANG>

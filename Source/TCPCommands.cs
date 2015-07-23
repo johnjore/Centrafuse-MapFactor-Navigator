@@ -1,5 +1,5 @@
 ﻿/*
- * Copyright 2013, 2014, John Jore
+ * Copyright 2013, 2014, 2015 John Jore
  * 
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser General Public License as published by
@@ -8,11 +8,11 @@
  * 
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
  * GNU Lesser General Public License for more details.
  * 
  * You should have received a copy of the GNU Lesser General Public License
- * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
 /*
@@ -108,11 +108,18 @@ namespace Navigator
 
             if (server.Connected)
             {
-                WriteLog("Sending '" + strNavigatorCommand + "'");
-                server.Send(Encoding.ASCII.GetBytes(strNavigatorCommand));
+                try
+                {
+                    WriteLog("Sending '" + strNavigatorCommand + "'");
+                    server.Send(Encoding.ASCII.GetBytes(strNavigatorCommand));
 
-                //Statistics don't return a value if GPS is not working or receiving data
-                if (tcpCommand != TCPCommand.Statistics) TCPCommandQueue.Enqueue(tcpCommand);
+                    //Statistics don't return a value if GPS is not working or receiving data
+                    if (tcpCommand != TCPCommand.Statistics) TCPCommandQueue.Enqueue(tcpCommand);
+                }
+                catch (Exception ex)
+                {
+                    WriteLog("Failed to Send(), " + ex.ToString());
+                }
             }
             else
             {
@@ -144,8 +151,7 @@ namespace Navigator
             }
             catch { WriteLog("Unknown error during connect"); }
         }
-
-        
+   
         private byte[] m_byBuff = new byte[256];    // Recieved data buffer
         public void SetupRecieveCallback(Socket sock)
         {
@@ -156,7 +162,6 @@ namespace Navigator
             }
             catch { WriteLog("Setup Recieve Callback failed!"); }
         }
-
 
         //Triggered when new data arrives
         public void OnRecievedData(IAsyncResult ar)
@@ -637,8 +642,14 @@ namespace Navigator
         {
             try
             {
-                if (TCPCommandQueue.Count > 0) TCPCommandQueue.Dequeue(); 
-                else WriteLog("Failed to dequeue TCPCommandQueue. Navigator can send TCP responses without being queried like Waypoint and sound information");
+                if (TCPCommandQueue.Count > 0)
+                {
+                    TCPCommandQueue.Dequeue();
+                }
+                else
+                {
+                    WriteLog("Failed to dequeue TCPCommandQueue. Navigator can send TCP responses without being queried like Waypoint and sound information");
+                }
             }
             catch
             {

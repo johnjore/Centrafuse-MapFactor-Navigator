@@ -4,7 +4,7 @@
     <APPNAME>Navigator</APPNAME>
     <APPLOCATION>[CFAPPDIR]\Plugins\Navigator</APPLOCATION>
     <APPTYPE>PLUGIN</APPTYPE>
-    <VERSION>2.0.9</VERSION>
+    <VERSION>2.0.12</VERSION>
     <REQUIRESRESTART>True</REQUIRESRESTART>
   </APPDATA>
   <APPFILES>
@@ -20,20 +20,24 @@
     <FILENAME register="false" overwrite="true" source="Skins\Clean\Skin.xml" destination="[CFAPPDIR]\Plugins\Navigator\Skins\Clean\Skin.xml" />
     <FILENAME register="false" overwrite="true" source="Skins\Clean\Skin.Alternate.xml" destination="[CFAPPDIR]\Plugins\Navigator\Skins\Clean\Skin.Alternate.xml" />
     <FILENAME register="false" overwrite="true" source="Skins\Clean\Screen\Background.png" destination="[CFAPPDIR]\Plugins\Navigator\Skins\Clean\Screen\Background.png" />
-    <FILENAME register="false" overwrite="true" source="Skins\Clean\ButtonImages\resize_down.png" destination="[CFAPPDIR]\Plugins\Navigator\Skins\Clean\ButtonImages\resize_down.png" />
-    <FILENAME register="false" overwrite="true" source="Skins\Clean\ButtonImages\resize_off.png" destination="[CFAPPDIR]\Plugins\Navigator\Skins\Clean\ButtonImages\resize_off.png" />
-    <FILENAME register="false" overwrite="true" source="Skins\Clean\ButtonImages\voldown_down.png" destination="[CFAPPDIR]\Plugins\Navigator\Skins\Clean\ButtonImages\voldown_down.png" />
-    <FILENAME register="false" overwrite="true" source="Skins\Clean\ButtonImages\voldown_off.png" destination="[CFAPPDIR]\Plugins\Navigator\Skins\Clean\ButtonImages\voldown_off.png" />
-    <FILENAME register="false" overwrite="true" source="Skins\Clean\ButtonImages\volup_down.png" destination="[CFAPPDIR]\Plugins\Navigator\Skins\Clean\ButtonImages\volup_down.png" />
-    <FILENAME register="false" overwrite="true" source="Skins\Clean\ButtonImages\volup_off.png" destination="[CFAPPDIR]\Plugins\Navigator\Skins\Clean\ButtonImages\volup_off.png" />
+    <FILENAME register="false" overwrite="true" source="Skins\Clean\ButtonImages\btn_gps_down.png" destination="[CFAPPDIR]\Plugins\Navigator\Skins\Clean\ButtonImages\btn_gps_down.png" />
+    <FILENAME register="false" overwrite="true" source="Skins\Clean\ButtonImages\btn_gps_off.png" destination="[CFAPPDIR]\Plugins\Navigator\Skins\Clean\ButtonImages\btn_gps_off.png" />
+    <FILENAME register="false" overwrite="true" source="Skins\Clean\ButtonImages\btn_resize_down.png" destination="[CFAPPDIR]\Plugins\Navigator\Skins\Clean\ButtonImages\btn_resize_down.png" />
+    <FILENAME register="false" overwrite="true" source="Skins\Clean\ButtonImages\btn_resize_off.png" destination="[CFAPPDIR]\Plugins\Navigator\Skins\Clean\ButtonImages\btn_resize_off.png" />
+    <FILENAME register="false" overwrite="true" source="Skins\Clean\ButtonImages\cfcam_down.png" destination="[CFAPPDIR]\Plugins\Navigator\Skins\Clean\ButtonImages\cfcam_down.png" />
+    <FILENAME register="false" overwrite="true" source="Skins\Clean\ButtonImages\cfcam_off.png" destination="[CFAPPDIR]\Plugins\Navigator\Skins\Clean\ButtonImages\cfcam_off.png" />
     <FILENAME register="false" overwrite="true" source="Skins\Clean\ButtonImages\cfconnect_down.png" destination="[CFAPPDIR]\Plugins\Navigator\Skins\Clean\ButtonImages\cfconnect_down.png" />
     <FILENAME register="false" overwrite="true" source="Skins\Clean\ButtonImages\cfconnect_off.png" destination="[CFAPPDIR]\Plugins\Navigator\Skins\Clean\ButtonImages\cfconnect_off.png" />
     <FILENAME register="false" overwrite="true" source="Skins\Clean\ButtonImages\gps_down.png" destination="[CFAPPDIR]\Plugins\Navigator\Skins\Clean\ButtonImages\gps_down.png" />
     <FILENAME register="false" overwrite="true" source="Skins\Clean\ButtonImages\gps_off.png" destination="[CFAPPDIR]\Plugins\Navigator\Skins\Clean\ButtonImages\gps_off.png" />
+    <FILENAME register="false" overwrite="true" source="Skins\Clean\ButtonImages\resize_down.png" destination="[CFAPPDIR]\Plugins\Navigator\Skins\Clean\ButtonImages\resize_down.png" />
+    <FILENAME register="false" overwrite="true" source="Skins\Clean\ButtonImages\resize_off.png" destination="[CFAPPDIR]\Plugins\Navigator\Skins\Clean\ButtonImages\resize_off.png" />
     <FILENAME register="false" overwrite="true" source="Skins\Clean\ButtonImages\trafficcop_down.png" destination="[CFAPPDIR]\Plugins\Navigator\Skins\Clean\ButtonImages\trafficcop_down.png" />
     <FILENAME register="false" overwrite="true" source="Skins\Clean\ButtonImages\trafficcop_off.png" destination="[CFAPPDIR]\Plugins\Navigator\Skins\Clean\ButtonImages\trafficcop_off.png" />
-    <FILENAME register="false" overwrite="true" source="Skins\Clean\ButtonImages\cfcam_down.png" destination="[CFAPPDIR]\Plugins\Navigator\Skins\Clean\ButtonImages\cfcam_down.png" />
-    <FILENAME register="false" overwrite="true" source="Skins\Clean\ButtonImages\cfcam_off.png" destination="[CFAPPDIR]\Plugins\Navigator\Skins\Clean\ButtonImages\cfcam_off.png" />
+    <FILENAME register="false" overwrite="true" source="Skins\Clean\ButtonImages\voldown_down.png" destination="[CFAPPDIR]\Plugins\Navigator\Skins\Clean\ButtonImages\voldown_down.png" />
+    <FILENAME register="false" overwrite="true" source="Skins\Clean\ButtonImages\voldown_off.png" destination="[CFAPPDIR]\Plugins\Navigator\Skins\Clean\ButtonImages\voldown_off.png" />
+    <FILENAME register="false" overwrite="true" source="Skins\Clean\ButtonImages\volup_down.png" destination="[CFAPPDIR]\Plugins\Navigator\Skins\Clean\ButtonImages\volup_down.png" />
+    <FILENAME register="false" overwrite="true" source="Skins\Clean\ButtonImages\volup_off.png" destination="[CFAPPDIR]\Plugins\Navigator\Skins\Clean\ButtonImages\volup_off.png" />
     <FILENAME register="false" overwrite="true" source="Skins\Fresh Air\Skin.xml" destination="[CFAPPDIR]\Plugins\Navigator\Skins\Fresh Air\Skin.xml" />
     <FILENAME register="false" overwrite="true" source="Skins\Fresh Air\Screen\Background.png" destination="[CFAPPDIR]\Plugins\Navigator\Skins\Fresh Air\Screen\Background.png" />
     <FILENAME register="false" overwrite="true" source="Skins\Fresh Air\ButtonImages\btn_gps_down.png" destination="[CFAPPDIR]\Plugins\Navigator\Skins\Fresh Air\ButtonImages\btn_gps_down.png" />
@@ -41,5 +45,20 @@
     <FILENAME register="false" overwrite="true" source="Skins\Fresh Air\ButtonImages\btn_resize_down.png" destination="[CFAPPDIR]\Plugins\Navigator\Skins\Fresh Air\ButtonImages\btn_resize_down.png" />
     <FILENAME register="false" overwrite="true" source="Skins\Fresh Air\ButtonImages\btn_resize_off.png" destination="[CFAPPDIR]\Plugins\Navigator\Skins\Fresh Air\ButtonImages\btn_resize_off.png" />
     <FILENAME register="false" overwrite="true" source="Skins\Fresh Air\ButtonImages\CFConnect.png" destination="[CFAPPDIR]\Plugins\Navigator\Skins\Fresh Air\ButtonImages\CFConnect.png" />
+    <FILENAME register="false" overwrite="true" source="Digger\dataDigger.dll" destination="[CFAPPDIR]\Plugins\Navigator\Digger\dataDigger.dll" />
+    <FILENAME register="false" overwrite="true" source="Digger\DiggerConsole.exe" destination="[CFAPPDIR]\Plugins\Navigator\Digger\DiggerConsole.exe" />
+    <FILENAME register="false" overwrite="true" source="Digger\QtCore4.dll" destination="[CFAPPDIR]\Plugins\Navigator\Digger\QtCore4.dll" />
+    <FILENAME register="false" overwrite="true" source="Digger\QtSql4.dll" destination="[CFAPPDIR]\Plugins\Navigator\Digger\QtSql4.dll" />
+    <FILENAME register="false" overwrite="true" source="CFSpeedCameras_Source\digger_config.xml" destination="[CFAPPDATA]\Plugins\Navigator\CFSpeedCameras_Source\digger_config.xml" />
+    <FILENAME register="false" overwrite="true" source="CFSpeedCameras_Source\default.png" destination="[CFAPPDATA]\Plugins\Navigator\CFSpeedCameras_Source\default.png" />
+    <FILENAME register="false" overwrite="true" source="CFSpeedCameras_Source\GATSO.png" destination="[CFAPPDATA]\Plugins\Navigator\CFSpeedCameras_Source\GATSO.png" />
+    <FILENAME register="false" overwrite="true" source="CFSpeedCameras_Source\MOBILE.png" destination="[CFAPPDATA]\Plugins\Navigator\CFSpeedCameras_Source\MOBILE.png" />
+    <FILENAME register="false" overwrite="true" source="CFSpeedCameras_Source\MONITRON.png" destination="[CFAPPDATA]\Plugins\Navigator\CFSpeedCameras_Source\MONITRON.png" />
+    <FILENAME register="false" overwrite="true" source="CFSpeedCameras_Source\pMOBILE.png" destination="[CFAPPDATA]\Plugins\Navigator\CFSpeedCameras_Source\pMOBILE.png" />
+    <FILENAME register="false" overwrite="true" source="CFSpeedCameras_Source\REDLIGHT.png" destination="[CFAPPDATA]\Plugins\Navigator\CFSpeedCameras_Source\REDLIGHT.png" />
+    <FILENAME register="false" overwrite="true" source="CFSpeedCameras_Source\REDSPEED.png" destination="[CFAPPDATA]\Plugins\Navigator\CFSpeedCameras_Source\REDSPEED.png" />
+    <FILENAME register="false" overwrite="true" source="CFSpeedCameras_Source\SPECS.png" destination="[CFAPPDATA]\Plugins\Navigator\CFSpeedCameras_Source\SPECS.png" />
+    <FILENAME register="false" overwrite="true" source="CFSpeedCameras_Source\TRUVELO.png" destination="[CFAPPDATA]\Plugins\Navigator\CFSpeedCameras_Source\TRUVELO.png" />
+    <FILENAME register="false" overwrite="true" source="CFSpeedCameras_Source\tSPECS.png" destination="[CFAPPDATA]\Plugins\Navigator\CFSpeedCameras_Source\tSPECS.png" />
   </APPFILES>
 </CFAPP>

@@ -4,7 +4,7 @@
     <ProjectType>Local</ProjectType>
     <ProductVersion>9.0.21022</ProductVersion>
     <SchemaVersion>2.0</SchemaVersion>
-    <ProjectGuid>{AA7C2172-8D5F-4B7B-B1C8-DF310E003EAD}</ProjectGuid>
+    <ProjectGuid>{976F5A60-E359-4E5A-BB03-82B5901BB345}</ProjectGuid>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
     <ApplicationIcon>
@@ -46,7 +46,7 @@
     <TargetFrameworkProfile />
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
-    <OutputPath>..\..\</OutputPath>
+    <OutputPath>C:\Program Files %28x86%29\Centrafuse\Centrafuse Auto\Plugins\Navigator\</OutputPath>
     <AllowUnsafeBlocks>false</AllowUnsafeBlocks>
     <BaseAddress>285212672</BaseAddress>
     <CheckForOverflowUnderflow>false</CheckForOverflowUnderflow>
@@ -70,7 +70,7 @@
     <CodeAnalysisRuleSet>AllRules.ruleset</CodeAnalysisRuleSet>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
-    <OutputPath>..\..\..\..\Bin\Win32\Plugins\HelloWorld\</OutputPath>
+    <OutputPath>C:\Program Files %28x86%29\Centrafuse\Centrafuse Auto\Plugins\Navigator\</OutputPath>
     <AllowUnsafeBlocks>false</AllowUnsafeBlocks>
     <BaseAddress>285212672</BaseAddress>
     <CheckForOverflowUnderflow>false</CheckForOverflowUnderflow>
@@ -99,7 +99,7 @@
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="cfplugin">
-      <HintPath>..\..\..\Program Files (x86)\Centrafuse\Centrafuse Auto\cfplugin.dll</HintPath>
+      <HintPath>C:\Program Files (x86)\Centrafuse\Centrafuse Auto\cfplugin.dll</HintPath>
       <Private>False</Private>
     </Reference>
     <Reference Include="Newtonsoft.Json">
@@ -126,6 +126,12 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Generate_MCA.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="SpeedCameras.cs">
+      <SubType>Form</SubType>
+    </Compile>
     <Compile Include="StructEnums.cs" />
     <Compile Include="Audio.cs">
       <SubType>Form</SubType>
@@ -172,10 +178,24 @@
   <ItemGroup>
     <None Include="Navigator.snk" />
   </ItemGroup>
+  <ItemGroup>
+    <COMReference Include="Shell32">
+      <Guid>{50A7E9B0-70EF-11D1-B75A-00A0C90564FE}</Guid>
+      <VersionMajor>1</VersionMajor>
+      <VersionMinor>0</VersionMinor>
+      <Lcid>0</Lcid>
+      <WrapperTool>tlbimp</WrapperTool>
+      <Isolated>False</Isolated>
+      <EmbedInteropTypes>True</EmbedInteropTypes>
+    </COMReference>
+  </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>
     <PreBuildEvent>
     </PreBuildEvent>
-    <PostBuildEvent>"C:\Program Files (x86)\Centrafuse\Centrafuse Auto\centrafuse.exe" -advsettings -nowarning -nolimit -logevents</PostBuildEvent>
+    <PostBuildEvent>del "C:\ProgramData\Centrafuse\Centrafuse Auto\Administrator\*.log"
+del "C:\ProgramData\Centrafuse\Centrafuse Auto\Administrator\Plugins\LiveTrafficAlerts\*.log"
+del "C:\ProgramData\Centrafuse\Centrafuse Auto\Administrator\Plugins\Navigator\*.log"
+"C:\Program Files (x86)\Centrafuse\Centrafuse Auto\centrafuse.exe" -advsettings -nowarning -nolimit -logevents</PostBuildEvent>
   </PropertyGroup>
 </Project>

@@ -1,5 +1,5 @@
 /*
- * Copyright 2013, 2014, John Jore
+ * Copyright 2013, 2014, 2015 John Jore
  * 
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser General Public License as published by
@@ -175,10 +175,16 @@ namespace Navigator
                     ButtonHandler[i] = new CFSetupHandler(SetMuteUnmuteStatus);
                     ButtonText[i] = this.langReader.ReadField("/APPLANG/SETUP/MUTEUNMUTESTATUS");
                     ButtonValue[i++] = this.configReader.ReadField("/APPCONFIG/MUTEUNMUTESTATUS");
+
+                    ButtonHandler[i] = new CFSetupHandler(EnableDynamicAudioLevel);
+                    ButtonText[i] = this.langReader.ReadField("/APPLANG/SETUP/DYNAMICAUDIOLEVEL");
+                    ButtonValue[i++] = this.configReader.ReadField("/APPCONFIG/DYNAMICAUDIOLEVEL");
                     
+                    /*
                     ButtonHandler[i] = new CFSetupHandler(SetNoHiRes);
                     ButtonText[i] = this.langReader.ReadField("/APPLANG/SETUP/NOHIRES");
-                    ButtonValue[i++] = this.configReader.ReadField("/APPCONFIG/NOHIRES");
+                    ButtonValue[i++] = this.configReader.ReadField("/APPCONFIG/NOHIRES");                   
+                    */
 
                     ButtonHandler[i] = new CFSetupHandler(SetTrimDigits);
                     ButtonText[i] = this.langReader.ReadField("/APPLANG/SETUP/TRIMDIGITS");
@@ -195,7 +201,9 @@ namespace Navigator
                     ButtonText[i] = this.langReader.ReadField("/APPLANG/SETUP/OSRM_PORT");
                     ButtonValue[i++] = this.configReader.ReadField("/APPCONFIG/OSRM_TCP_PORT");
 
-                    ButtonHandler[i] = null; ButtonText[i] = ""; ButtonValue[i++] = "";
+                    ButtonHandler[i] = new CFSetupHandler(Set_Pocket_GPS_Folder);
+                    ButtonText[i] = this.langReader.ReadField("/APPLANG/SETUP/POCKET_GPS_SUPPORT");
+                    ButtonValue[i++] = this.configReader.ReadField("/APPCONFIG/POCKET_GPS_FOLDER");
 
                     ButtonHandler[i] = null;
                     ButtonText[i] = this.langReader.ReadField("APPLANG/SETUP/VERSIONS");
@@ -406,7 +414,13 @@ namespace Navigator
         {
             this.configReader.WriteField("/APPCONFIG/LOGEVENTS", value.ToString());
         }
-        
+
+        //Enable Dynamic Audio Level?
+        private void EnableDynamicAudioLevel(ref object value)
+        {
+            this.configReader.WriteField("/APPCONFIG/DYNAMICAUDIOLEVEL", value.ToString());
+        }
+
         //Off = Licensed edition. On = Free edition. Dictates which IDC file is used at launch
         private void SetEdition(ref object value)
         {
@@ -718,6 +732,60 @@ namespace Navigator
                 value = internalhandler;
             }
             catch (Exception errmsg) { CFTools.writeError(errmsg.Message, errmsg.StackTrace); }
+        }
+        
+        //Folder with Pocket GPS file
+        private void Set_Pocket_GPS_Folder(ref object value)
+        {
+            try
+            {
+                if (value.GetType().Equals(typeof(CFSetupHandlerParams)))
+                {
+                    string location = this.configReader.ReadField("/APPCONFIG/POCKET_GPS_FOLDER");
+                    if (string.IsNullOrEmpty(location)) location = PluginPath;
+
+                    CFDialogParams dialogParams = new CFDialogParams(this.langReader.ReadField("/APPLANG/SETUP/POCKET_GPS_SUPPORT"), location);
+                    dialogParams.browseable = true;
+                    dialogParams.enablesubactions = true;
+                    dialogParams.showfiles = false;
+                    dialogParams.showextension = true;
+
+                    CFDialogResults results = new CFDialogResults();
+                    DialogResult dr_res = mainForm.CF_displayDialog(CF_Dialogs.FileBrowser, dialogParams, results);
+                    if (dr_res == DialogResult.OK)
+                    {
+                        ((CFSetupHandlerParams)value).result.ok = true;
+                        ((CFSetupHandlerParams)value).result.pobject = results.resultobject;
+                        ((CFSetupHandlerParams)value).result.text = results.resulttext;
+                        ((CFSetupHandlerParams)value).result.value = results.resultvalue;
+                        this.configReader.WriteField("/APPCONFIG/POCKET_GPS_FOLDER", results.resultvalue);
+                    }
+                    else if (dr_res == DialogResult.Cancel)
+                    {
+                        ((CFSetupHandlerParams)value).result.ok = true;
+                        ((CFSetupHandlerParams)value).result.pobject = results.resultobject;
+                        //Workaround for CF bug. If return value is empty/blank, CF does not update the screen
+                        ((CFSetupHandlerParams)value).result.text = " ";
+                        ((CFSetupHandlerParams)value).result.value = " ";
+                        this.configReader.WriteField("/APPCONFIG/POCKET_GPS_FOLDER", "");
+                    }
+
+                    ((CFSetupHandlerParams)value).requesttype = CFSetupHandlerRequest.None; //Get out of loop
+                    return;
+                }
+
+                CFSetupHandlerParams internalhandler = new CFSetupHandlerParams();
+                internalhandler.requesttype = CFSetupHandlerRequest.None;
+                internalhandler.button = (int)value;
+                internalhandler.dialogtype = CF_Dialogs.OkBox;
+                internalhandler.listviewitems = null;
+                internalhandler.writebutton = true;
+                internalhandler.writebuttonwithvalue = true;
+                internalhandler.title = this.langReader.ReadField("APPLANG/SETUP/POCKET_GPS_SUPPORT");
+                internalhandler.listheader = this.configReader.ReadField("/APPCONFIG/POCKET_GPS_FOLDER");
+                value = internalhandler;
+            }
+            catch (Exception errmsg) { CFTools.writeError(errmsg.Message, errmsg.StackTrace); }            
         }
 
 #endregion

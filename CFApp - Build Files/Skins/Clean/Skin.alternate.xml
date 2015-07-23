@@ -18,6 +18,10 @@
     <BUTTONIMAGE id="trafficcop_off"  path="buttonimages/trafficcop_off.png" />
     <BUTTONIMAGE id="cfcam_down"      path="buttonimages/cfcam_down.png" />
     <BUTTONIMAGE id="cfcam_off"       path="buttonimages/cfcam_off.png" />
+    <BUTTONIMAGE id="LiveTrafficAlerts_down" path="buttonimages/LiveTrafficAlerts_down.gif" />
+    <BUTTONIMAGE id="LiveTrafficAlerts_off"  path="buttonimages/LiveTrafficAlerts_off.gif" />
+    <BUTTONIMAGE id="Fuel_down"       path="buttonimages/Fuel_down.png" />
+    <BUTTONIMAGE id="Fuel_off"        path="buttonimages/Fuel_off.png" />
   </BUTTONIMAGES>
   <IMAGES>
     <IMAGE id="background" path="screen/background.png" />
@@ -27,68 +31,74 @@
       <CONTROLS>
         <CONTROL type="Panel" 	  id="PanelNavigator" bounds="000;000;620;392" fullbounds="000;000;700;480" enabled="true" fontclass="" fontstyle="" />
 
-        <CONTROL type="DynButton" id="CFTrafficCams"  bounds="625;194;080;058" fullbounds="710;030;080;050" tabindex="1" enabled="true"  cmlaction="Centrafuse.CFActions.Plugin:CFTrafficCams"        off="cfcam_off"       down="cfcam_down" />
+        <CONTROL type="Label"     id="DateTime"       bounds="605;140;195;045" fullbounds="700;000;100;035" tabindex="1" enabled="true"  cmlaction="Centrafuse.Main.DateTime"    off="NowPlayingOff"  down="NowPlayingDown" fontclass="DateTime" holdcmlaction="Centrafuse.CFActions.DateTime" holdtime="2" cmltext="Centrafuse.Main.DateTime"  />
 
         <CONTROL type="DynButton" id="CFConnect"      bounds="625;010;080;058" fullbounds="710;080;080;050" tabindex="2" enabled="true"  cmlaction="Centrafuse.CFActions.Plugin:CentrafuseConnect"    off="cfconnect_off"   down="cfconnect_down" />
         <CONTROL type="DynButton" id="TrafficInfo"    bounds="625;072;080;058" fullbounds="710;180;080;050" tabindex="3" enabled="true"  cmlaction="Centrafuse.CFActions.Plugin:TrafficCopLite"       off="trafficcop_off"  down="trafficcop_down" />
+        <CONTROL type="DynButton" id="CFTrafficCams"  bounds="625;194;080;058" fullbounds="710;030;080;050" tabindex="4" enabled="true"  cmlaction="Centrafuse.CFActions.Plugin:CFTrafficCams"        off="cfcam_off"       down="cfcam_down" />
+        <CONTROL type="DynButton" id="TrafficAlerts"  bounds="625;256;080;058" fullbounds="1;1;1;1" 	    tabindex="5" enabled="true"  cmlaction="Centrafuse.CFActions.Plugin:LiveTrafficAlerts:Update" off="LiveTrafficAlerts_off" down="LiveTrafficAlerts_down" />
+        <CONTROL type="DynButton" id="Fuel"           bounds="625;318;080;058" fullbounds="1;1;1;1" 	    tabindex="6" enabled="true"  cmlaction="Centrafuse.CFActions.Plugin:CFFuel"               off="Fuel_off"        down="Fuel_down" />
 
-        <CONTROL type="DynButton" id="MinMax"         bounds="710;010;080;058" fullbounds="710;130;080;050" tabindex="4" enabled="true"  action="ToggleMinMax"                   off="ResizeOff"      down="ResizeDown" />
-        <CONTROL type="DynButton" id="GPSStatus"      bounds="710;072;080;058" fullbounds="710;230;080;050" tabindex="5" enabled="true"  action="GotoStatus"                     off="gps_off"        down="gps_down" />
-
-        <CONTROL type="Label"     id="DateTime"       bounds="605;140;195;045" fullbounds="700;000;100;035" tabindex="6" enabled="true"  cmlaction="Centrafuse.Main.DateTime"    off="NowPlayingOff"  down="NowPlayingDown" fontclass="DateTime" holdcmlaction="Centrafuse.CFActions.DateTime" holdtime="2" cmltext="Centrafuse.Main.DateTime"  />
-
-        <CONTROL type="DynButton" id="VolUp"          bounds="710;194;080;058" fullbounds="710;282;080;058" tabindex="7" enabled="true"  cmlaction="Centrafuse.Main.VolumeUp"    off="VolumeUpOff"    down="VolumeUpDown"   forcemouseup="true" />
-        <CONTROL type="DynButton" id="VolDown"        bounds="710;252;080;058" fullbounds="710;340;080;058" tabindex="8" enabled="true"  cmlaction="Centrafuse.Main.VolumeDown"  off="VolumeDownOff"  down="VolumeDownDown" forcemouseup="true" />
-        <CONTROL type="DynButton" id="Exit"           bounds="709;314;081;068" fullbounds="709;402;081;068" tabindex="9" enabled="true"  cmlaction="Centrafuse.Main.MainMenu"    off="MainBackOff"    down="MainBackDown" />
+        <CONTROL type="DynButton" id="MinMax"         bounds="710;010;080;058" fullbounds="710;130;080;050" tabindex="7" enabled="true"  action="ToggleMinMax"                   off="ResizeOff"      down="ResizeDown" />
+        <CONTROL type="DynButton" id="GPSStatus"      bounds="710;072;080;058" fullbounds="710;230;080;050" tabindex="8" enabled="true"  action="GotoStatus"                     off="gps_off"        down="gps_down" />
+        <CONTROL type="DynButton" id="VolUp"          bounds="710;194;080;058" fullbounds="710;282;080;058" tabindex="9" enabled="true"  cmlaction="Centrafuse.Main.VolumeUp"    off="VolumeUpOff"    down="VolumeUpDown"   forcemouseup="true" />
+        <CONTROL type="DynButton" id="VolDown"        bounds="710;252;080;058" fullbounds="710;340;080;058" tabindex="10" enabled="true"  cmlaction="Centrafuse.Main.VolumeDown"  off="VolumeDownOff"  down="VolumeDownDown" forcemouseup="true" />
+        <CONTROL type="DynButton" id="Exit"           bounds="709;314;081;068" fullbounds="709;402;081;068" tabindex="11" enabled="true"  cmlaction="Centrafuse.Main.MainMenu"    off="MainBackOff"    down="MainBackDown" />
 
       </CONTROLS>
     </SECTION>
 
     <SECTION id="GPSStatus" effect="ToApp" bounds="0;88;800;392" fullbounds="0;88;800;392" off="background" down="background">
       <CONTROLS>
-        <CONTROL type="Label" id="lblLongitude" bounds="10;10;330;22" fontclass="LabelText" fontstyle="" textenable="true" text="AppLang.Navigator.lblLongitude" enabled="true"/>
-        <CONTROL type="Label" id="lblLatitude" bounds="10;35;330;22" fontclass="LabelText" fontstyle="" textenable="true" text="AppLang.Navigator.lblLatitude" enabled="true"/>
-        <CONTROL type="Label" id="lblAltitude" bounds="10;60;330;22" fontclass="LabelText" fontstyle="" textenable="true" text="AppLang.Navigator.lblAltitude" enabled="true"/>
-        <CONTROL type="Label" id="lblLockedSatellites" bounds="10;85;330;22" fontclass="LabelText" fontstyle="" textenable="true" text="AppLang.Navigator.lblLockedSatellites" enabled="true"/>
-        <CONTROL type="Label" id="lblSpeed" bounds="10;110;330;22" fontclass="LabelText" fontstyle="" textenable="true" text="AppLang.Navigator.lblSpeed" enabled="true"/>
-        <CONTROL type="Label" id="lblDirection" bounds="10;135;330;22" fontclass="LabelText" fontstyle="" textenable="true" text="AppLang.Navigator.lblDirection" enabled="true"/>
-        <CONTROL type="Label" id="lblAzimuth" bounds="10;160;330;22" fontclass="LabelText" fontstyle="" textenable="true" text="AppLang.Navigator.lblAzimuth" enabled="true"/>
-        <CONTROL type="Label" id="lblETR" bounds="10;185;330;22" fontclass="LabelText" fontstyle="" textenable="true" text="AppLang.Navigator.lblETR" enabled="true"/>
-        <CONTROL type="Label" id="lblETA" bounds="10;210;330;22" fontclass="LabelText" fontstyle="" textenable="true" text="AppLang.Navigator.lblETA" enabled="true"/>
-        <CONTROL type="Label" id="lblRemainingDistance" bounds="10;235;330;22" fontclass="LabelText" fontstyle="" textenable="true" text="AppLang.Navigator.lblRemainingDistance" enabled="true"/>
-        <CONTROL type="Label" id="lblNextTurn" bounds="10;260;330;22" fontclass="LabelText" fontstyle="" textenable="true" text="AppLang.Navigator.lblNextTurn" enabled="true"/>
-	<CONTROL type="Label" id="lblStreet" bounds="10;285;330;22" fontclass="LabelText" fontstyle="" textenable="true" text="AppLang.Navigator.lblStreet" enabled="true"/>
-        <CONTROL type="Label" id="lblInRoute" bounds="10;310;330;22" fontclass="LabelText" fontstyle="" textenable="true" text="AppLang.Navigator.lblInRoute" enabled="true"/>
-        <CONTROL type="Label" id="lblGPSTime" bounds="10;335;330;22" fontclass="LabelText" fontstyle="" textenable="true" text="AppLang.Navigator.lblGPSTime" enabled="true"/>
+        <CONTROL type="Label" id="lblLongitude" bounds="10;00;330;22" fontclass="LabelText" fontstyle="" textenable="true" text="AppLang.Navigator.lblLongitude" enabled="true"/>
+        <CONTROL type="Label" id="lblLatitude"  bounds="10;22;330;22" fontclass="LabelText" fontstyle="" textenable="true" text="AppLang.Navigator.lblLatitude" enabled="true"/>
+        <CONTROL type="Label" id="lblDestLongitude" bounds="10;44;330;22" fontclass="LabelText" fontstyle="" textenable="true" text="AppLang.Navigator.lblDestLongitude" enabled="true"/>
+        <CONTROL type="Label" id="lblDestLatitude"  bounds="10;66;330;22" fontclass="LabelText" fontstyle="" textenable="true" text="AppLang.Navigator.lblDestLatitude" enabled="true"/>
+        <CONTROL type="Label" id="lblAltitude"  bounds="10;88;330;22" fontclass="LabelText" fontstyle="" textenable="true" text="AppLang.Navigator.lblAltitude" enabled="true"/>
+        <CONTROL type="Label" id="lblLockedSatellites" bounds="10;110;330;22" fontclass="LabelText" fontstyle="" textenable="true" text="AppLang.Navigator.lblLockedSatellites" enabled="true"/>
+        <CONTROL type="Label" id="lblSpeed" bounds="10;132;330;22" fontclass="LabelText" fontstyle="" textenable="true" text="AppLang.Navigator.lblSpeed" enabled="true"/>
+        <CONTROL type="Label" id="lblDirection" bounds="10;154;330;22" fontclass="LabelText" fontstyle="" textenable="true" text="AppLang.Navigator.lblDirection" enabled="true"/>
+        <CONTROL type="Label" id="lblAzimuth" bounds="10;176;330;22" fontclass="LabelText" fontstyle="" textenable="true" text="AppLang.Navigator.lblAzimuth" enabled="true"/>
+        <CONTROL type="Label" id="lblETR" bounds="10;198;330;22" fontclass="LabelText" fontstyle="" textenable="true" text="AppLang.Navigator.lblETR" enabled="true"/>
+        <CONTROL type="Label" id="lblETA" bounds="10;220;330;22" fontclass="LabelText" fontstyle="" textenable="true" text="AppLang.Navigator.lblETA" enabled="true"/>
+        <CONTROL type="Label" id="lblRemainingDistance" bounds="10;242;330;22" fontclass="LabelText" fontstyle="" textenable="true" text="AppLang.Navigator.lblRemainingDistance" enabled="true"/>
+        <CONTROL type="Label" id="lblNextTurn" bounds="10;264;330;22" fontclass="LabelText" fontstyle="" textenable="true" text="AppLang.Navigator.lblNextTurn" enabled="true"/>
+	<CONTROL type="Label" id="lblStreet" bounds="10;286;330;22" fontclass="LabelText" fontstyle="" textenable="true" text="AppLang.Navigator.lblStreet" enabled="true"/>
+        <CONTROL type="Label" id="lblInRoute" bounds="10;308;330;22" fontclass="LabelText" fontstyle="" textenable="true" text="AppLang.Navigator.lblInRoute" enabled="true"/>
+        <CONTROL type="Label" id="lblGPSTime" bounds="10;330;330;22" fontclass="LabelText" fontstyle="" textenable="true" text="AppLang.Navigator.lblGPSTime" enabled="true"/>
+        <CONTROL type="Label" id="lblRoute"   bounds="10;352;330;22" fontclass="LabelText" fontstyle="" textenable="true" text="AppLang.Navigator.lblRoute" enabled="true"/>
 
-        <CONTROL type="Label" id="DataLongitude" bounds="345;10;240;22" fontclass="DataText" fontstyle="" textenable="true" text="" enabled="true"/>
-        <CONTROL type="Label" id="DataLatitude" bounds="345;35;240;22" fontclass="DataText" fontstyle="" textenable="true" text="" enabled="true"/>
-        <CONTROL type="Label" id="DataAltitude" bounds="345;60;240;22" fontclass="DataText" fontstyle="" textenable="true" text="" enabled="true"/>
-        <CONTROL type="Label" id="DataLockedSatellites" bounds="345;85;100;22" fontclass="DataText" fontstyle="" textenable="true" text="" enabled="true"/>
-        <CONTROL type="Label" id="DataSpeed" bounds="345;110;200;22" fontclass="DataText" fontstyle="" textenable="true" text="" enabled="true"/>
-        <CONTROL type="Label" id="DataDirection" bounds="345;135;100;22" fontclass="DataText" fontstyle="" textenable="true" text="" enabled="true"/>
-        <CONTROL type="Label" id="DataAzimuth" bounds="345;160;100;22" fontclass="DataText" fontstyle="" textenable="true" text="" enabled="true"/>
-        <CONTROL type="Label" id="DataETR" bounds="345;185;320;22" fontclass="DataText" fontstyle="" textenable="true" text="" enabled="true"/>
-        <CONTROL type="Label" id="DataETA" bounds="345;210;320;22" fontclass="DataText" fontstyle="" textenable="true" text="" enabled="true"/>
-        <CONTROL type="Label" id="DataRemainingDistance" bounds="345;235;320;22" fontclass="DataText" fontstyle="" textenable="true" text="" enabled="true"/>
-        <CONTROL type="Label" id="DataNextTurn" bounds="345;260;320;22" fontclass="DataText" fontstyle="" textenable="true" text="" enabled="true"/>
-        <CONTROL type="Label" id="DataStreet" bounds="345;285;320;22" fontclass="DataText" fontstyle="" textenable="true" text="" enabled="true"/>
-        <CONTROL type="Label" id="DataInRoute" bounds="345;310;320;22" fontclass="DataText" fontstyle="" textenable="true" text="" enabled="true"/>
-        <CONTROL type="Label" id="DataGPSTime" bounds="345;335;320;22" fontclass="DataText" fontstyle="" textenable="true" text="" enabled="true"/>
+        <CONTROL type="Label" id="DataLongitude" bounds="345;00;240;22" fontclass="DataText" fontstyle="" textenable="true" text="" enabled="true"/>
+        <CONTROL type="Label" id="DataLatitude" bounds="345;22;240;22" fontclass="DataText" fontstyle="" textenable="true" text="" enabled="true"/>
+        <CONTROL type="Label" id="DestLongitude" bounds="345;44;240;22" fontclass="DataText" fontstyle="" textenable="true" text="" enabled="true"/>
+        <CONTROL type="Label" id="DestLatitude" bounds="345;66;240;22" fontclass="DataText" fontstyle="" textenable="true" text="" enabled="true"/>
+        <CONTROL type="Label" id="DataAltitude" bounds="345;88;240;22" fontclass="DataText" fontstyle="" textenable="true" text="" enabled="true"/>
+        <CONTROL type="Label" id="DataLockedSatellites" bounds="345;110;100;22" fontclass="DataText" fontstyle="" textenable="true" text="" enabled="true"/>
+        <CONTROL type="Label" id="DataSpeed" bounds="345;132;200;22" fontclass="DataText" fontstyle="" textenable="true" text="" enabled="true"/>
+        <CONTROL type="Label" id="DataDirection" bounds="345;154;100;22" fontclass="DataText" fontstyle="" textenable="true" text="" enabled="true"/>
+        <CONTROL type="Label" id="DataAzimuth" bounds="345;176;100;22" fontclass="DataText" fontstyle="" textenable="true" text="" enabled="true"/>
+        <CONTROL type="Label" id="DataETR" bounds="345;198;320;22" fontclass="DataText" fontstyle="" textenable="true" text="" enabled="true"/>
+        <CONTROL type="Label" id="DataETA" bounds="345;220;320;22" fontclass="DataText" fontstyle="" textenable="true" text="" enabled="true"/>
+        <CONTROL type="Label" id="DataRemainingDistance" bounds="345;242;320;22" fontclass="DataText" fontstyle="" textenable="true" text="" enabled="true"/>
+        <CONTROL type="Label" id="DataNextTurn" bounds="345;264;320;22" fontclass="DataText" fontstyle="" textenable="true" text="" enabled="true"/>
+        <CONTROL type="Label" id="DataStreet" bounds="345;286;320;22" fontclass="DataText" fontstyle="" textenable="true" text="" enabled="true"/>
+        <CONTROL type="Label" id="DataInRoute" bounds="345;308;320;22" fontclass="DataText" fontstyle="" textenable="true" text="" enabled="true"/>
+        <CONTROL type="Label" id="DataGPSTime" bounds="345;330;320;22" fontclass="DataText" fontstyle="" textenable="true" text="" enabled="true"/>
+        <CONTROL type="Label" id="DataRoute" bounds="345;352;320;22" fontclass="DataText" fontstyle="" textenable="true" text="" enabled="true"/>
 
-        <CONTROL type="DynButton" id="CFTrafficCams"  bounds="625;194;080;058" fullbounds="710;030;080;050" tabindex="1" enabled="true"  cmlaction="Centrafuse.CFActions.Plugin:CFTrafficCams"        off="cfcam_off"       down="cfcam_down" />
-
-        <CONTROL type="DynButton" id="CFConnect"      bounds="625;010;080;058" fullbounds="710;080;080;050" tabindex="2" enabled="true"  cmlaction="Centrafuse.CFActions.Plugin:CentrafuseConnect"    off="cfconnect_off"   down="cfconnect_down" />
-        <CONTROL type="DynButton" id="TrafficInfo"    bounds="625;072;080;058" fullbounds="710;180;080;050" tabindex="3" enabled="true"  cmlaction="Centrafuse.CFActions.Plugin:TrafficCopLite"       off="trafficcop_off"  down="trafficcop_down" />
-
-        <CONTROL type="DynButton" id="MinMax"         bounds="710;010;080;058" fullbounds="710;130;080;050" tabindex="4" enabled="true"  action="ToggleMinMax"                   off="ResizeOff"      down="ResizeDown" />
-        <CONTROL type="DynButton" id="GPSStatus"      bounds="710;072;080;058" fullbounds="710;230;080;050" tabindex="5" enabled="true"  action="GotoStatus"                     off="gps_off"        down="gps_down" />
+        <CONTROL type="DynButton" id="CFConnect"      bounds="625;010;080;058" fullbounds="710;080;080;050" tabindex="1" enabled="true"  cmlaction="Centrafuse.CFActions.Plugin:CentrafuseConnect"    off="cfconnect_off"   down="cfconnect_down" />
+        <CONTROL type="DynButton" id="TrafficInfo"    bounds="625;072;080;058" fullbounds="710;180;080;050" tabindex="2" enabled="true"  cmlaction="Centrafuse.CFActions.Plugin:TrafficCopLite"       off="trafficcop_off"  down="trafficcop_down" />
+        <CONTROL type="DynButton" id="CFTrafficCams"  bounds="625;194;080;058" fullbounds="710;030;080;050" tabindex="3" enabled="true"  cmlaction="Centrafuse.CFActions.Plugin:CFTrafficCams"        off="cfcam_off"       down="cfcam_down" />
+        <CONTROL type="DynButton" id="TrafficAlerts"  bounds="625;256;080;058" fullbounds="1;1;1;1" 	    tabindex="4" enabled="true"  cmlaction="Centrafuse.CFActions.Plugin:LiveTrafficAlerts:Update" off="LiveTrafficAlerts_off" down="LiveTrafficAlerts_down" />
+        <CONTROL type="DynButton" id="Fuel"           bounds="625;318;080;058" fullbounds="1;1;1;1" 	    tabindex="5" enabled="true"  cmlaction="Centrafuse.CFActions.Plugin:CFFuel"               off="Fuel_off"        down="Fuel_down" />
 
         <CONTROL type="Label"     id="DateTime"       bounds="605;140;195;045" fullbounds="700;000;100;035" tabindex="6" enabled="true"  cmlaction="Centrafuse.Main.DateTime"    off="NowPlayingOff"  down="NowPlayingDown" fontclass="DateTime" holdcmlaction="Centrafuse.CFActions.DateTime" holdtime="2" cmltext="Centrafuse.Main.DateTime"  />
 
-        <CONTROL type="DynButton" id="VolUp"          bounds="710;194;080;058" fullbounds="710;282;080;058" tabindex="7" enabled="true"  cmlaction="Centrafuse.Main.VolumeUp"    off="VolumeUpOff"    down="VolumeUpDown"   forcemouseup="true" />
-        <CONTROL type="DynButton" id="VolDown"        bounds="710;252;080;058" fullbounds="710;340;080;058" tabindex="8" enabled="true"  cmlaction="Centrafuse.Main.VolumeDown"  off="VolumeDownOff"  down="VolumeDownDown" forcemouseup="true" />
-        <CONTROL type="DynButton" id="Exit"           bounds="709;314;081;068" fullbounds="709;402;081;068" tabindex="9" enabled="true"  cmlaction="Centrafuse.Main.MainMenu"    off="MainBackOff"    down="MainBackDown" />
+        <CONTROL type="DynButton" id="MinMax"         bounds="710;010;080;058" fullbounds="710;130;080;050" tabindex="7" enabled="true"  action="ToggleMinMax"                   off="ResizeOff"      down="ResizeDown" />
+        <CONTROL type="DynButton" id="GPSStatus"      bounds="710;072;080;058" fullbounds="710;230;080;050" tabindex="8" enabled="true"  action="GotoStatus"                     off="gps_off"        down="gps_down" />
+        <CONTROL type="DynButton" id="VolUp"          bounds="710;194;080;058" fullbounds="710;282;080;058" tabindex="9" enabled="true"  cmlaction="Centrafuse.Main.VolumeUp"    off="VolumeUpOff"    down="VolumeUpDown"   forcemouseup="true" />
+        <CONTROL type="DynButton" id="VolDown"        bounds="710;252;080;058" fullbounds="710;340;080;058" tabindex="10" enabled="true"  cmlaction="Centrafuse.Main.VolumeDown"  off="VolumeDownOff"  down="VolumeDownDown" forcemouseup="true" />
+        <CONTROL type="DynButton" id="Exit"           bounds="709;314;081;068" fullbounds="709;402;081;068" tabindex="11" enabled="true"  cmlaction="Centrafuse.Main.MainMenu"    off="MainBackOff"    down="MainBackDown" />
 
       </CONTROLS>
     </SECTION>

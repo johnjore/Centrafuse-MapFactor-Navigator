@@ -1,5 +1,5 @@
 /*
- * Copyright 2013, 2014, John Jore
+ * Copyright 2013, 2014, 2015 John Jore
  * 
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser General Public License as published by
@@ -39,6 +39,9 @@ using System.Drawing;
 using System.Net.Sockets;
 using System.Text;
 using Timer = System.Windows.Forms.Timer;
+using System.Threading;
+using System.Collections.Generic;
+using System.Linq;
 
 namespace Navigator
 {
@@ -55,13 +58,14 @@ namespace Navigator
         private const string PluginPath = @"plugins\" + PluginName + @"\";
         private const string REGNavigatorBase = "SOFTWARE\\MapFactor\\set\\pcnavigator_";  // Updated to reflect correct version at runtime
 		private const string LogFile= PluginName + ".log";
-        public static string LogFilePath = CFTools.AppDataPath + "\\Plugins\\" + PluginName + "\\" + LogFile;
+        public static string LogFilePath = CFTools.AppDataPath + "\\" + PluginPath + LogFile;
         public static string settingsPath = CFTools.AppDataPath + "\\system\\settings.xml";
         public static string configPath = CFTools.AppDataPath + "\\system\\config.xml";	//LK, 20-nov-2013: Needed to check if this is the current navigation app
         private static string atlas_free = "atlas_pcn_free.idc";            // Move to config file?
         private static string atlas_paid = "atlas_pcn.idc";                 // Move to config file?
         private static string strCFCam = "LiveTraffic.mca";                 // Database with traffic cameras
         private string REGNavigator = REGNavigatorBase + "12";              // Updated to reflect correct version at runtime by comparing to version number in EXE file
+        private string decimalSeparator = CultureInfo.CurrentCulture.NumberFormat.NumberDecimalSeparator; //Active separator: , or .
 
         //This should be moved to a AppConfiguration class?
         private string strTRUE = "True";                    // True
@@ -71,7 +75,7 @@ namespace Navigator
         private bool boolFullScreen = false;                // Full screen?
         private bool boolTRIMDIGITS = false;                // Trim number of digits for speed etc?
         private bool boolLocalize = false;                  // Localize GPS Status screen
-        private int intExitCounter = 20;                    // Number of retries before Navigator is forcefully closed
+        private int intExitCounter = 10;                    // Number of retries before Navigator is forcefully closed
         public bool boolExit = false;                       // Set True if hibernating or we want to exit
         private bool boolFREE = true;                       // Free edition?
         private bool boolOSMOK = false;                     // If true, supresses OSM License prompt
@@ -97,6 +101,12 @@ namespace Navigator
         private bool boolUseCFMixerforATT = false;          // Use CF mixer for ATT, or use external commands
         private int intOSRMPort = 5000;                     // Default OSRM port number
         private bool boolOSRMEnabled = false;               // OSRM is not enabled by default
+        private string strMCAFolder = "";                   // Navigators data folder
+        private string strPocket_GPS_Folder = "";           // Folder were Pocket GPS zip files are stored. If blank, no PocketGPS support
+        private bool boolDynamicAudioLevel = false;         // Enable background thread to adjust Navigator Audio Level to match CF Audio level
+
+        //List
+        List<Waypoint> waypoints = new List<Waypoint>();    //List of all waypoints from MapFactor Navigator
 
         //Timers
         Timer nightTimer = new System.Windows.Forms.Timer(); // timer for switching day/night skin      
@@ -105,6 +115,10 @@ namespace Navigator
         Timer NavDestinationTimer = new System.Windows.Forms.Timer();    // timer for checking for destination proximity if not active plugin
         Timer NavStatustimer = new System.Windows.Forms.Timer();        //timer for updating GPS status screen
 
+        //Threads
+        Thread ThreadCheckSpeedCameraData;  // thread to process new traffic speed cameras
+        Thread ThreadDynamicAudioLevel;     // thread to process Navigator audio level
+        
         //Mouse constants
         private const int MOUSEEVENTF_MOVE = 0x0001;
         private const int MOUSEEVENTF_LEFTDOWN = 0x0002;
@@ -172,10 +186,16 @@ namespace Navigator
                 // All controls should be created or Setup in CF_localskinsetup.
                 // This method is also called when the resolution or skin has changed.
                 CF_localskinsetup();
+                
+                //Thread for updating Speed cameras
+                ThreadCheckSpeedCameraData = new Thread(SpeedCamera_Worker);
 
+                //Thread for updating Navigator Audio Level
+                ThreadDynamicAudioLevel = new Thread(DynamicAudioLevel_Worker);
+                
                 //Get configuration settings
                 LoadSettings();
-                
+
                 //Setup the Panel used by PC_Navigator.exe
                 WriteLog("Create the panel to use for mapFactor Navigator");
                 thepanel = new CFControls.CFPanel();
@@ -202,7 +222,7 @@ namespace Navigator
 
                 //LK, 30-nov-2013: Moved from Navigation.cs
                 //Timer to update GPS Status screen
-                NavStatustimer.Interval = 500; // Wait this long between the next updates
+                NavStatustimer.Interval = 500; // Wait this long between the next update
                 NavStatustimer.Enabled = false;
                 NavStatustimer.Tick += new EventHandler(NavStatustimer_Tick);
                 
@@ -339,7 +359,19 @@ namespace Navigator
 		public override void CF_pluginClose()
 		{
             WriteLog("CF_pluginClose() - Start");
-            
+
+            //Stop the threads
+            ThreadCheckSpeedCameraData.Abort(); //Make sure thread does not try to restart Navigator
+            ThreadDynamicAudioLevel.Abort(); //Make sure thread does not try to modify Navigator Audio Level
+
+            //Close Navigator before disconnecting, but expect TCP link to die, as Paid version does not support normal close command
+            if (boolFREE == false)
+            {
+                //CloseMainWindow() does not work on paid version
+                SendCommand("$exit\r\n", false, TCPCommand.Exit);
+                Thread.Sleep(1000);
+            }
+                                    
             //By closing the connection before closing Navigator, no TCP communication errors are logged
             try
             {
@@ -378,7 +410,6 @@ namespace Navigator
 
             //Only put files back, if user wants to flip XML files around
             if (bool.Parse(this.pluginConfig.ReadField("/APPCONFIG/SETTINGSXMLSWAP")) == true)
-                
             {
                 //Put the configuration files back again
                 try
@@ -411,7 +442,7 @@ namespace Navigator
             muteCFTimer.Tick -= muteCFTimer_Tick;
             NavDestinationTimer.Tick -= NavDestinationTimer_Tick;
             NavStatustimer.Tick -= NavStatustimer_Tick;
-
+          
             base.CF_pluginClose(); // calls form Dispose() method
             //This works on W7?!?
             WriteLog("CF_pluginClose() - End");
@@ -442,7 +473,7 @@ namespace Navigator
                     WriteLog("Not active CFNav engine or Navigator already initialized");
                 }
 
-                if (boolMainScreen) //LK, 30-nov-2013: Aonly do this when in the main screen (not the status screen)
+                if (boolMainScreen) //LK, 30-nov-2013: Only do this when in the main screen (not the status screen)
                 {
                     //LK, 18-nov-2013: Just make the panel visible (don't load again)
                     //Note: PC_navigator will unhide itself; don't try fight that...
@@ -513,12 +544,12 @@ namespace Navigator
 		/// <param name="param2">The second parameter.</param>
 		public override void CF_pluginCommand(string command, string param1, string param2)
 		{
-            WriteLog("CF_pluginCommand: " + command + " " + param1 + ", " + param2);
+            //WriteLog("CF_pluginCommand: " + command + " " + param1 + ", " + param2);
 
             //Capture and act upon the hotkeys
             try
             {
-                switch (command)
+                switch (command.ToUpper())
                 {
                     case "MINMAX":
                         WriteLog("MINMAX command");
@@ -529,6 +560,42 @@ namespace Navigator
                         WriteLog("TOGGLESCREEN command");
                         //Toggle GPS Status and Navigator sections
                         btnSectionStatus_Click(null, null);
+                        break;
+                    case "RESTARTNAV":
+                        //Restart MapFactor Navigator
+                        WriteLog("RESTARTNAV");
+                        try
+                        {
+                            //Stop Navigator
+                            WriteLog("Setup - Closenavigator()");
+                            CloseNavigator();
+
+                            //Start Navigator
+                            WriteLog("Setup - StartNavigator()");
+                            StartNavigator();
+
+                            //User does not really want to exit Navigator anymore
+                            boolExit = true;
+
+                            //CF_pluginShow() must be called if restart was initiated with plugin active (visible)
+                            if (this.Visible == true) CF_pluginShow();
+                        }
+                        catch (Exception ex)
+                        {
+                            WriteLog("Failed to run 'RESTARTNAV', " + ex.ToString());
+                        }
+                        break;
+                    case "TCPCOMMAND":
+                        //Send TCP Command to MapFactor Navigator
+                        try
+                        {  
+                            //WriteLog("TCP Command : '" + param1 + "', '" + param2 + "'");
+                            SendCommand(param1, false, (TCPCommand)Enum.Parse(typeof(TCPCommand), param2, true));
+                        }
+                        catch (Exception ex)
+                        {
+                            WriteLog("Failed to parse and run TCP Command: '" + param1.ToString() + "', '" + param2.ToString() + "', " + ex.ToString());
+                        }
                         break;
                     default:
                         WriteLog("Unknown command");
@@ -939,11 +1006,10 @@ namespace Navigator
         /// <returns>Returns whatever is appropriate.</returns>
         public override bool CF_pluginCMLCommand(string id, string[] strparams, CF_ButtonState state, int zone)
         {
-            if (state != CF_ButtonState.Click)
+            if (state != CF_ButtonState.Click || state == CF_ButtonState.Down)
                 return false;
 
-            WriteLog("CF_pluginCMLCommand: " + id);
-
+            WriteLog("CF_pluginCMLCommand: " + id + ", state: " + state.ToString());
 
             switch (id.ToUpper())
             {
@@ -954,7 +1020,6 @@ namespace Navigator
                     btnMinMax_Click(null, null);
                     return true;
             }
-
             return false;
         }
 
@@ -1380,7 +1445,6 @@ namespace Navigator
                 }
 
                 // MCA path. Make sure this run's after setting boolFREE
-                string strMCAFolder = "";       //Navigators data folder
                 string strMCAFileCheck = "";    //Checkpoint file to look for to validate Navigators data folder
                 try
                 {
@@ -1559,6 +1623,56 @@ namespace Navigator
                     WriteLog("intOSRMPort: " + intOSRMPort.ToString());
                 }
 
+                //Pocket GPS support
+                try
+                {
+                    strPocket_GPS_Folder = this.pluginConfig.ReadField("/APPCONFIG/POCKET_GPS_FOLDER");
+                }
+                catch
+                {
+                    strPocket_GPS_Folder = "";
+                }
+                finally
+                {
+                    WriteLog("Pocket GPS folder: " + strPocket_GPS_Folder);
+
+                    //Thread for processing traffic speed cameras. Suspend if no folder, start if folder given
+                    if (strPocket_GPS_Folder == "")
+                    {
+                        if (ThreadCheckSpeedCameraData.IsAlive == true) ThreadCheckSpeedCameraData.Suspend();
+                    }
+                    else
+                    {
+                        if (ThreadCheckSpeedCameraData.IsAlive == false) ThreadCheckSpeedCameraData.Start();
+                    }
+                }
+
+                //Dynamic Audio Level
+                try
+                {
+                    boolDynamicAudioLevel = bool.Parse(this.pluginConfig.ReadField("/APPCONFIG/DYNAMICAUDIOLEVEL"));
+                }
+                catch
+                {
+                    boolDynamicAudioLevel = false;
+                }
+                finally
+                {
+                    WriteLog("Dynamic Audio Level: " + boolDynamicAudioLevel);
+
+                    //Thread for processing audio levels
+                    if (boolDynamicAudioLevel)
+                    {
+                        if (ThreadDynamicAudioLevel.IsAlive == false) ThreadDynamicAudioLevel.Start();
+                    }
+                    else
+                    {
+                        if (ThreadDynamicAudioLevel.IsAlive == true) ThreadDynamicAudioLevel.Suspend();
+                    }
+                }
+
+
+
                 //How is ATT handled?
                 //If CF version 4.4.6 or higher then use internal CF mixer, like mediaplayer
                 Version CF_ver = Assembly.GetEntryAssembly().GetName().Version;               
@@ -1664,6 +1778,148 @@ namespace Navigator
             {
                 WriteLog("IDC file '" + tmpIDCFile + "' does not exist");
                 return "";
+            }
+        }
+
+        //Get routing information from Navigator's XML file
+        private List<Waypoint> GetNavigatorRoutingXML()
+        {
+            //WriteLog("GetNavigatorRoutingXML() - Start");
+
+            //Only get routing information from Navigator, if InRoute is TRUE
+            if (String.Compare(CF_navGetInfo(CFNavInfo.InRoute), strTRUE, true) == 0)
+            {
+                //Start with empty route
+                string tmpRoute = "";
+                waypoints.Clear();
+
+                //Get Routing information
+                FileInfo fiXML = new FileInfo(strAppDataPath + "\\routing_points.xml");
+                if (fiXML.Exists)
+                {
+                    try
+                    {
+                        XmlDocument routingxml = new XmlDocument();
+                        routingxml.XmlResolver = null; //Ignore routing_points.dtd file not in same folder
+                        routingxml.Load(strAppDataPath + "\\routing_points.xml");
+
+                        try
+                        {
+                            //Select all the nodes
+                            XmlNodeList xnList = routingxml.SelectNodes("/routing_points/default_set");
+                            //WriteLog("Nodes : " + xnList.Count.ToString());
+                            
+                            foreach (XmlNode xn in xnList)
+                            {
+                                //WriteLog("Node Name: " + xn.Name.ToString() + ", xn ChildNodes: " + xn.ChildNodes.Count.ToString());
+                                foreach (XmlNode xcn in xn.ChildNodes)
+                                {
+                                    //WriteLog("ChildNode Name: " + xcn.Name.ToString() + ", xcn ChildNodes: " + xcn.ChildNodes.Count.ToString());
+
+                                    //No need to get departure values
+                                    if (xcn.Name != "departure")
+                                    {
+                                        bool boolProcess = true;
+
+                                        //Skip any waypoints already passed
+                                        if (xcn.Name == "waypoint")
+                                        {
+                                            if (xcn.Attributes["passed"].Value.ToString() == "yes") boolProcess = false;
+                                        }
+
+                                        //Ok to proceed?
+                                        if (boolProcess)
+                                        {
+                                            Waypoint waypoint = new Waypoint();
+
+                                            //Process Lat/Lon values
+                                            foreach (XmlNode xcnRoute in xcn.ChildNodes)
+                                            {
+                                                switch (xcnRoute.Name.ToString().ToUpper())
+                                                {
+                                                    case "LAT":
+                                                        waypoint.Latitude = Convert.ToDouble(xcnRoute.InnerText.ToString()) / 3600000;
+                                                        break;
+                                                    case "LON":
+                                                        waypoint.Longitude = Convert.ToDouble(xcnRoute.InnerText.ToString()) / 3600000;
+                                                        break;
+                                                }
+                                            }
+
+                                            //Add to list. Last one added is destination
+                                            waypoints.Add(waypoint);
+
+                                            //WriteLog("Lon: " + waypoint.Longitude.ToString() + ", Lat: " + waypoint.Latitude.ToString());
+                                        }
+                                    }
+                                }
+                            }
+                            //WriteLog("Done Parsing the Routing XML File");
+
+                            //Update Dest GPS coordinates
+                            if (waypoints.Count > 0)
+                            {
+                                _currentPosition.DestLatitude = waypoints[waypoints.Count - 1].Latitude;
+                                _currentPosition.DestLongitude = waypoints[waypoints.Count - 1].Longitude;
+                            }
+                            else
+                            {
+                                _currentPosition.DestLatitude = 0;
+                                _currentPosition.DestLongitude = 0;
+                            }
+                            //WriteLog("Updated Destination Fields: " + _currentPosition.DestLatitude.ToString() + ", " + _currentPosition.DestLongitude.ToString());
+
+                            //Update Route, including destination coords
+                            for (int i = 0; i < waypoints.Count; i++)
+                            {
+                                String strWP = Math.Round(waypoints[i].Latitude, 5).ToString().Replace(',', '.') + "," + Math.Round(waypoints[i].Longitude, 5).ToString().Replace(',', '.');
+
+                                if (tmpRoute == "")
+                                    tmpRoute = strWP;
+                                else
+                                    tmpRoute = tmpRoute + ";" + strWP;
+
+                                //WriteLog("Updated Route Field: " + tmpRoute);
+                            }
+                            _currentPosition.Route = tmpRoute;
+                            WriteLog("Updated Route Field: " + _currentPosition.Route);
+
+                            //All done
+                            return waypoints;
+                        }
+                        catch (Exception errMsg) { WriteLog("Failed to parse routing XML file: " + errMsg.Message); }
+                    }
+                    catch (Exception errMsg) { WriteLog("Failed to read routing XML file: " + errMsg.Message); }
+
+                    //Update to reflect we have no destination?
+                    _currentPosition.DestLatitude = 0;
+                    _currentPosition.DestLongitude = 0;
+
+                    //Didn't work out...
+                    return null;
+                }
+                else
+                {
+                    WriteLog("Error : No Routing File found. No route to return");
+
+                    //Update to reflect we have no destination?
+                    _currentPosition.DestLatitude = 0;
+                    _currentPosition.DestLongitude = 0;
+
+                    //Didn't work out...
+                    return null;
+                }
+            }
+            else
+            {
+                WriteLog("Not Navigating. No route to return");
+
+                //Update to reflect we have no destination?
+                _currentPosition.DestLatitude = 0;
+                _currentPosition.DestLongitude = 0;
+
+                //Not route to report back on
+                return null;
             }
         }
 
@@ -2098,6 +2354,58 @@ namespace Navigator
             return boolTerminateOrphanedProcess;
         }
 
+        //Thread to monitor CF audio level and adjust Navigator
+        private void DynamicAudioLevel_Worker()
+        {
+            int intSleep = 500;
+            int oldVolume = -1;
+
+            //Ugly, but avoid error messages until TCP connection is established by waiting here
+            while (server.Connected == false && boolConnecting == false)
+            {
+                System.Threading.Thread.Sleep(intSleep);
+            }
+
+            //Keep checking
+            while (true)
+            {
+                try
+                {
+                    //Get CF Volume level
+                    int CFVolume = CF_getAudioLevel(CF_AudioLevels.VOLUME) * 100 / 65535;
+
+                    //Get GPS offset level
+                    int GPSVolume = int.Parse(CF_getConfigSetting(CF_ConfigSettings.GPSNavSoundLevel));
+
+                    //Combined new level
+                    int CombinedVolume = CFVolume + GPSVolume;
+
+                    //Sanity check
+                    if (CombinedVolume > 100) CombinedVolume = 100;
+                    if (CombinedVolume < 0) CombinedVolume = 0;
+
+                    //Only set new level if different
+                    if (oldVolume != CombinedVolume)
+                    {
+                        //Write to log
+                        WriteLog("CF Volume : " + CFVolume.ToString() + "%, GPSVolume: " + GPSVolume.ToString() + "%, Combined: " + CombinedVolume.ToString());
+                        //Adjust Navigator to new level
+                        SendCommand("$sound_volume=" + CombinedVolume.ToString() + "\r\n", true, TCPCommand.SoundVolume);
+                        //Save new volume level
+                        oldVolume = CombinedVolume;
+                    }
+                }
+                catch (Exception ex)
+                {
+                    WriteLog("Failed to modify volume. Error: " + ex.ToString());
+                };
+
+                WriteLog("Sleep for '" + intSleep.ToString() + "' milliseconds");
+                System.Threading.Thread.Sleep(intSleep);
+            }
+        }
+
+
         public void CloseNavigator()
         {
             //User really wants to exit Navigator...
@@ -2107,6 +2415,14 @@ namespace Navigator
             if (pNavigator != null)
             {
                 IntPtr mainWindowHandle = pNavigator.MainWindowHandle;  //LK, 29-nov-2013: Cache before close
+
+                //Close Navigator before disconnecting, but expect TCP link to die, as Paid version does not support normal close command
+                if (boolFREE == false)
+                {
+                    //CloseMainWindow() does not work on paid version
+                    SendCommand("$exit\r\n", false, TCPCommand.Exit);
+                    Thread.Sleep(1000);
+                }
 
                 //Disconnect the TCP connection so it can be re-established                
                 WriteLog("Disconnecting TCP connection for reuse");
@@ -2129,16 +2445,18 @@ namespace Navigator
                     boolConnecting = false;
                 }
 
-
                 //Stop all timers first to avoid callbacks and additional TCP commands
                 nightTimer.Enabled = false;
                 muteCFTimer.Enabled = false;
                 CallStatusTimer.Enabled = false;
                 NavDestinationTimer.Enabled = false;
 
-                //SendCommand("$exit\r\n", false, TCPCommand.Exit);
-                pNavigator.CloseMainWindow(); //Ask nicely, just like ALT-F4
-                
+                if (boolFREE)
+                {
+                    //CloseMainWindow() does not work on paid version
+                    pNavigator.CloseMainWindow(); //Ask nicely, just like ALT-F4
+                }
+
                 //Louk's Pipe
                 if (this.pipeServer != null && this.pipeServer.Running)//LK, 29-nov-2013: Added check for null object
                 {
