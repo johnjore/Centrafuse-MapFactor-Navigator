@@ -1,6 +1,6 @@
 # Centrafuse plugin for MapFactor Navigator
 
-A Centrafuse plugin for Mapfactor Navigator, one of the few Navigation engines available on the Windows platform, http://www.mapfactor.com
+This Centrafuse plugin embeds Mapfactor Navigator, one of the few Navigation engines available on the Windows platform, http://www.mapfactor.com, as a window into Centrafuse and integrates it as the Navigation Engine.
 
 To compile the source a copy of the Centrafuse SDK is required, www.centrafuse.com
 
