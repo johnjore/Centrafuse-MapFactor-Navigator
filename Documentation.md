@@ -1,0 +1,1 @@
+Please see the Centrafuse forum for documentation; [http://forums.centrafuse.com/showthread.php?14319-Mapfactor-Navigator-Plugin&p=100345&viewfull=1#post100345](http://forums.centrafuse.com/showthread.php?14319-Mapfactor-Navigator-Plugin&p=100345&viewfull=1#post100345)
